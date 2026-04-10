@@ -1,7 +1,12 @@
 // ============================================================
 // DATA STORE — ERP JUMILA
 // Los datos se persisten en localStorage automáticamente
+// Productos se cargan desde Google Sheets
 // ============================================================
+
+// ── ID de tu Google Sheets ──
+const SHEET_ID = '1h7aWr8vfcsY73Eo2SnXUDAf_Prg-nIQdvEPpu399Bg4';
+const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=Sheet1`;
 
 const DB = {
 
@@ -56,7 +61,7 @@ const DB = {
     { id:15, tipo:'RUC', doc:'20456789013', nombre:'DISTRIBUIDORA EL SOL SAC', direccion:'JR. CONSTITUCION 789 HUANUCO', telefono:'062-334455', email:'', tipo_cliente:'proveedor' }
   ],
 
-  // ---- PRODUCTOS (se carga desde localStorage) ----
+  // ---- PRODUCTOS (se carga desde Google Sheets) ----
   productos: [],
 
   // ---- VENTAS (se carga desde localStorage) ----
@@ -83,13 +88,60 @@ const DB = {
 };
 
 // ============================================================
+// CARGA DE PRODUCTOS DESDE GOOGLE SHEETS
+// ============================================================
+
+const SheetsSync = {
+
+  async cargarProductos() {
+    try {
+      const res = await fetch(SHEET_URL);
+      const text = await res.text();
+
+      // Google devuelve el JSON envuelto en /*O_o*/\ngoogle.visualization.Query.setResponse({...});
+      const jsonStart = text.indexOf('{');
+      const jsonEnd = text.lastIndexOf('}');
+      const json = JSON.parse(text.substring(jsonStart, jsonEnd + 1));
+
+      const rows = json.table.rows;
+      const productos = [];
+
+      rows.forEach((row, index) => {
+        if (!row.c || !row.c[1] || !row.c[1].v) return; // saltar filas vacías
+        productos.push({
+          id:        row.c[0]?.v || (index + 1),
+          nombre:    row.c[1]?.v || '',
+          categoria: row.c[2]?.v || 'General',
+          precio:    parseFloat(row.c[3]?.v) || 0,
+          stock:     parseInt(row.c[4]?.v)   || 0,
+          imagen:    row.c[5]?.v || '',
+          // Campos adicionales para compatibilidad con el ERP
+          codigo:    'P' + String(row.c[0]?.v || index + 1).padStart(4, '0'),
+          unidad:    'UND',
+          igv:       18,
+          activo:    true
+        });
+      });
+
+      DB.productos = productos;
+      console.log(`✅ ${productos.length} productos cargados desde Google Sheets`);
+
+    } catch(e) {
+      console.warn('⚠️ No se pudo cargar Google Sheets, usando localStorage:', e);
+      // Fallback: cargar desde localStorage si falla la conexión
+      const p = localStorage.getItem('erp_jumila_productos');
+      if (p) DB.productos = JSON.parse(p);
+    }
+  }
+};
+
+// ============================================================
 // PERSISTENCIA EN localStorage
 // Carga y guarda datos automáticamente
 // ============================================================
 
 const Storage = {
 
-  // Claves en localStorage
   KEYS: {
     productos:   'erp_jumila_productos',
     ventas:      'erp_jumila_ventas',
@@ -104,12 +156,8 @@ const Storage = {
     notasCredito:'erp_jumila_notascredito',
   },
 
-  // Cargar todos los datos al iniciar
   cargar() {
     try {
-      const p = localStorage.getItem(this.KEYS.productos);
-      if (p) DB.productos = JSON.parse(p);
-
       const v = localStorage.getItem(this.KEYS.ventas);
       if (v) DB.ventas = JSON.parse(v);
 
@@ -145,15 +193,13 @@ const Storage = {
     }
   },
 
-  // Guardar una colección específica
   guardar(clave, datos) {
     try {
       localStorage.setItem(clave, JSON.stringify(datos));
       return true;
     } catch(e) {
-      // Cuota excedida (imágenes muy grandes)
       if (e.name === 'QuotaExceededError') {
-        console.warn('localStorage lleno. Considera usar imágenes más pequeñas.');
+        console.warn('localStorage lleno.');
         return false;
       }
       console.warn('Error al guardar:', e);
@@ -161,7 +207,6 @@ const Storage = {
     }
   },
 
-  // Atajos para cada colección
   guardarProductos()    { return this.guardar(this.KEYS.productos,    DB.productos); },
   guardarVentas()       { return this.guardar(this.KEYS.ventas,       DB.ventas); },
   guardarClientes()     { return this.guardar(this.KEYS.clientes,     DB.clientes); },
@@ -174,7 +219,6 @@ const Storage = {
   guardarAgenda()       { return this.guardar(this.KEYS.agenda,       DB.agenda || []); },
   guardarNotasCredito() { return this.guardar(this.KEYS.notasCredito, DB.notasCredito || []); },
 
-  // Limpiar TODO el localStorage del ERP
   limpiarTodo() {
     Object.values(this.KEYS).forEach(k => localStorage.removeItem(k));
   }
@@ -182,3 +226,4 @@ const Storage = {
 
 // ── Cargar datos al iniciar la página ──
 Storage.cargar();
+SheetsSync.cargarProductos();
