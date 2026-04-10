@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>JUMILA ERP - Sistema de Gestión Empresarial</title>
+  <link rel="stylesheet" href="css/styles.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+</head>
+<body>
+
+<!-- LOGIN PAGE -->
+<div id="loginPage" class="login-page">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="logo-circle">J</div>
+      <h1>JUMILA <span>ERP</span></h1>
+      <p>Sistema de Gestión Empresarial</p>
+    </div>
+    <div class="login-form">
+      <div class="form-group">
+        <label><i class="fas fa-user"></i> Usuario</label>
+        <input type="text" id="loginUser" placeholder="Ingrese su usuario" value="MAGAMA"/>
+      </div>
+      <div class="form-group">
+        <label><i class="fas fa-lock"></i> Contraseña</label>
+        <input type="password" id="loginPass" placeholder="Ingrese su contraseña" value="1234"/>
+      </div>
+      <button class="btn-login" onclick="App.login()">
+        <i class="fas fa-sign-in-alt"></i> INGRESAR
+      </button>
+      <div style="margin-top:12px;background:#f8fafc;border-radius:8px;padding:10px;text-align:center;font-size:12px;color:#64748b;">
+        <div style="font-weight:700;margin-bottom:4px;"><i class="fas fa-users"></i> Usuarios de Prueba</div>
+        <div><strong>MAGAMA</strong> (Admin) — pass: <code>983396116</code></div>
+        <div style="margin-top:2px;"><strong>CAJERO1</strong> (Cajero) — pass: <code>123456789</code></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="mainApp" class="main-app hidden">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-circle-sm">J</div>
+      <div class="logo-text">
+        <span class="logo-main">JUMILA</span>
+        <span class="logo-sub">IMPORTACIONES</span>
+      </div>
+    </div>
+
+    <div class="sidebar-info">
+      <div class="info-row"><span class="info-label">EMPRESA</span></div>
+      <div class="info-value">GRUPO JUMILA SOCIEDAD ANONIMA CERRADA</div>
+      <div class="info-row mt-1"><span class="info-label">CARGO</span></div>
+      <div class="info-value">VENDEDOR</div>
+      <div class="info-row mt-1"><span class="info-label">SUCURSAL</span></div>
+      <div class="info-value">JUMILA IMPORTACIONES <i class="fas fa-chevron-down"></i></div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <!-- SECCIÓN PRINCIPAL -->
+      <div class="nav-section-label">PRINCIPAL</div>
+      <div class="nav-grid">
+        <button class="nav-btn blue" onclick="App.navigate('inicio')" data-page="inicio">
+          <i class="fas fa-home"></i><span>INICIO</span>
+        </button>
+        <button class="nav-btn pos-color" onclick="App.navigate('pos')" data-page="pos">
+          <i class="fas fa-cash-register"></i><span>PUNTO DE VENTA</span>
+        </button>
+      </div>
+
+      <!-- SECCIÓN CATÁLOGO -->
+      <div class="nav-section-label">CATÁLOGO</div>
+      <div class="nav-grid">
+        <button class="nav-btn green" onclick="App.navigate('productos')" data-page="productos">
+          <i class="fas fa-boxes"></i><span>PRODUCTOS / SERVICIOS</span>
+        </button>
+        <button class="nav-btn precios-color" onclick="App.navigate('precios')" data-page="precios">
+          <i class="fas fa-tags"></i><span>LISTA DE PRECIOS</span>
+        </button>
+      </div>
+
+      <!-- SECCIÓN CLIENTES -->
+      <div class="nav-section-label">CLIENTES</div>
+      <div class="nav-grid">
+        <button class="nav-btn purple" onclick="App.navigate('clientes')" data-page="clientes">
+          <i class="fas fa-users"></i><span>CLIENTES / PROVEEDORES</span>
+        </button>
+        <button class="nav-btn cuentacte-color" onclick="App.navigate('cuentacorriente')" data-page="cuentacorriente">
+          <i class="fas fa-ticket-alt"></i><span>TICKETS</span>
+        </button>
+      </div>
+
+      <!-- SECCIÓN VENTAS -->
+      <div class="nav-section-label">VENTAS</div>
+      <div class="nav-grid">
+        <button class="nav-btn darkgreen" onclick="App.navigate('ventas')" data-page="ventas">
+          <i class="fas fa-file-invoice-dollar"></i><span>VENTAS</span>
+        </button>
+        <button class="nav-btn cotiz-color" onclick="App.navigate('cotizaciones')" data-page="cotizaciones">
+          <i class="fas fa-file-alt"></i><span>COTIZACIONES</span>
+        </button>
+        <button class="nav-btn notasc-color" onclick="App.navigate('notascredito')" data-page="notascredito">
+          <i class="fas fa-file-invoice"></i><span>NOTAS CRÉD./DÉB.</span>
+        </button>
+        <button class="nav-btn red" onclick="App.navigate('guias')" data-page="guias">
+          <i class="fas fa-truck"></i><span>GUÍAS DE REMISIÓN</span>
+        </button>
+      </div>
+
+      <!-- SECCIÓN COMPRAS -->
+      <div class="nav-section-label">COMPRAS</div>
+      <div class="nav-grid">
+        <button class="nav-btn blue2" onclick="App.navigate('compras')" data-page="compras">
+          <i class="fas fa-shopping-cart"></i><span>COMPRAS</span>
+        </button>
+        <button class="nav-btn gold" onclick="App.navigate('cuentas')" data-page="cuentas">
+          <i class="fas fa-university"></i><span>CUENTAS BANCARIAS</span>
+        </button>
+      </div>
+
+      <!-- SECCIÓN ALMACÉN -->
+      <div class="nav-section-label">ALMACÉN</div>
+      <div class="nav-grid">
+        <button class="nav-btn blue3" onclick="App.navigate('inventario')" data-page="inventario">
+          <i class="fas fa-warehouse"></i><span>INVENTARIO</span>
+        </button>
+        <button class="nav-btn kardex-color" onclick="App.navigate('kardex')" data-page="kardex">
+          <i class="fas fa-history"></i><span>KARDEX</span>
+        </button>
+      </div>
+
+      <!-- SECCIÓN FINANZAS -->
+      <div class="nav-section-label">FINANZAS</div>
+      <div class="nav-grid">
+        <button class="nav-btn slate" onclick="App.navigate('finanzas')" data-page="finanzas">
+          <i class="fas fa-chart-line"></i><span>FINANZAS</span>
+        </button>
+        <button class="nav-btn teal" onclick="App.navigate('caja')" data-page="caja">
+          <i class="fas fa-cash-register"></i><span>CAJA</span>
+        </button>
+      </div>
+
+      <!-- SECCIÓN GESTIÓN -->
+      <div class="nav-section-label">GESTIÓN</div>
+      <div class="nav-grid">
+        <button class="nav-btn olive" onclick="App.navigate('reportes')" data-page="reportes">
+          <i class="fas fa-chart-bar"></i><span>REPORTES</span>
+        </button>
+        <button class="nav-btn agenda-color" onclick="App.navigate('agenda')" data-page="agenda">
+          <i class="fas fa-calendar-alt"></i><span>AGENDA</span>
+        </button>
+        <button class="nav-btn herram-color" onclick="App.navigate('herramientas')" data-page="herramientas">
+          <i class="fas fa-tools"></i><span>HERRAMIENTAS</span>
+        </button>
+        <button class="nav-btn brown" onclick="App.navigate('administracion')" data-page="administracion">
+          <i class="fas fa-database"></i><span>ADMINISTRACIÓN</span>
+        </button>
+        <button class="nav-btn blue4" onclick="App.navigate('configuracion')" data-page="configuracion">
+          <i class="fas fa-cog"></i><span>CONFIGURACIÓN</span>
+        </button>
+        <button class="nav-btn pink" onclick="App.navigate('soporte')" data-page="soporte">
+          <i class="fas fa-headset"></i><span>SOPORTE / AYUDA</span>
+        </button>
+      </div>
+    </nav>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <div class="content-area">
+
+    <!-- TOP BAR -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="menu-toggle" onclick="App.toggleSidebar()">
+          <i class="fas fa-bars"></i>
+        </button>
+        <span class="welcome-text">Bienvenido <strong id="welcomeName">MAGAMA</strong></span>
+      </div>
+      <div class="topbar-tabs" id="topbarTabs"></div>
+      <div class="topbar-right">
+        <button class="topbar-btn" title="Descargar"><i class="fas fa-download"></i></button>
+        <button class="topbar-btn" title="Perfil"><i class="fas fa-user-circle"></i></button>
+        <button class="theme-toggle-btn" onclick="App.toggleTheme()" title="Cambiar tema">
+          <i class="fas fa-sun theme-icon-sun"></i>
+          <i class="fas fa-moon theme-icon-moon"></i>
+          <span id="themeLabel">Oscuro</span>
+        </button>
+        <button class="topbar-btn btn-logout" onclick="App.logout()" title="Cerrar sesión"><i class="fas fa-sign-out-alt"></i></button>
+        <button class="btn-ayuda">AYUDA <i class="fas fa-question-circle"></i></button>
+      </div>
+    </header>
+
+    <!-- PAGE CONTENT -->
+    <main class="page-content" id="pageContent"></main>
+  </div>
+</div>
+
+<!-- MODAL CONTAINER -->
+<div id="modalOverlay" class="modal-overlay hidden" onclick="App.closeModal(event)">
+  <div class="modal-box" id="modalBox" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <h3 id="modalTitle">Modal</h3>
+      <button onclick="App.closeModal()" class="modal-close"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-footer" id="modalFooter"></div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toastContainer" class="toast-container"></div>
+
+<script src="js/data.js"></script>
+<script src="js/modules/clientes.js"></script>
+<script src="js/modules/productos.js"></script>
+<script src="js/modules/ventas.js"></script>
+<script src="js/modules/caja.js"></script>
+<script src="js/modules/inventario.js"></script>
+<script src="js/modules/reportes.js"></script>
+<script src="js/modules/pos.js"></script>
+<script src="js/modules/precios.js"></script>
+<script src="js/modules/cuentacorriente.js"></script>
+<script src="js/modules/cotizaciones.js"></script>
+<script src="js/modules/notascredito.js"></script>
+<script src="js/modules/kardex.js"></script>
+<script src="js/modules/agenda.js"></script>
+<script src="js/modules/herramientas.js"></script>
+<script src="js/modules/inicio.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
