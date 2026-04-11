@@ -12,6 +12,20 @@ const ProductosModule = {
   sortDir:         'asc',
   seleccionados:   [],
 
+  // ─── GOOGLE SHEETS SYNC ───
+  SHEET_URL: 'https://script.google.com/macros/s/AKfycbxkbrM53RlXDKNyDtQUTQ1dB0kzG0o3XP3KSm_hGXybJsa98zzgBqtOqyfMomCsGHT2MQ/exec',
+
+  _syncSheet(productos) {
+    fetch(this.SHEET_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ accion: 'sincronizar', productos: productos })
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(d){ console.log('✅ Sheets sync OK:', d); })
+    .catch(function(e){ console.warn('⚠ Sheets sync error:', e); });
+  },
+
   // ─── RENDER ───
   render() {
     App.setTabs2('Productos / Servicios', 'INVENTARIO');
@@ -313,7 +327,16 @@ const ProductosModule = {
   // ─── SELECCIÓN MASIVA ───
   toggleSeleccion(id,checked){ if(checked){if(!this.seleccionados.includes(id))this.seleccionados.push(id);}else{this.seleccionados=this.seleccionados.filter(x=>x!==id);} App.renderPage(); },
   seleccionarTodos(checked){ const ids=this.getPaged(this.getFiltered()).map(p=>p.id); if(checked){ids.forEach(id=>{if(!this.seleccionados.includes(id))this.seleccionados.push(id);});}else{this.seleccionados=this.seleccionados.filter(id=>!ids.includes(id));} App.renderPage(); },
-  eliminarSeleccionados(){ if(!this.seleccionados.length)return; if(!confirm('¿Eliminar '+this.seleccionados.length+' productos?'))return; DB.productos=DB.productos.filter(p=>!this.seleccionados.includes(p.id)); Storage.guardarProductos(); App.toast(this.seleccionados.length+' productos eliminados','warning'); this.seleccionados=[]; App.renderPage(); },
+  eliminarSeleccionados(){
+    if(!this.seleccionados.length) return;
+    if(!confirm('¿Eliminar '+this.seleccionados.length+' productos?')) return;
+    DB.productos = DB.productos.filter(p => !this.seleccionados.includes(p.id));
+    Storage.guardarProductos();
+    this._syncSheet(DB.productos); // ← SYNC SHEETS
+    App.toast(this.seleccionados.length+' productos eliminados','warning');
+    this.seleccionados = [];
+    App.renderPage();
+  },
   exportarSeleccionados(){ this._descargarCSV(DB.productos.filter(p=>this.seleccionados.includes(p.id)),'productos_seleccionados'); },
   toggleMenu(id){ document.querySelectorAll('.action-menu').forEach(m=>{if(m.id!=='menu-prod-'+id)m.classList.add('hidden');}); document.getElementById('menu-prod-'+id)?.classList.toggle('hidden'); },
 
@@ -603,6 +626,7 @@ const ProductosModule = {
     if(id){const i=DB.productos.findIndex(x=>x.id===id);if(i>=0)DB.productos[i]={...DB.productos[i],...data};App.toast('✅ Producto actualizado','success');}
     else{const newId=DB.productos.length?Math.max(...DB.productos.map(x=>x.id))+1:1;DB.productos.push({id:newId,...data});App.toast('✅ Producto registrado','success');}
     Storage.guardarProductos();
+    this._syncSheet(DB.productos); // ← SYNC SHEETS
     App.closeModal();App.renderPage();
   },
 
@@ -612,6 +636,7 @@ const ProductosModule = {
     const newId=Math.max(...DB.productos.map(x=>x.id))+1;
     DB.productos.push({...p,id:newId,codigo:p.codigo+'_COPIA',nombre:p.nombre+' (Copia)',stock:0});
     Storage.guardarProductos();
+    this._syncSheet(DB.productos); // ← SYNC SHEETS
     App.toast('Producto duplicado','success');App.renderPage();
     setTimeout(()=>this.editar(newId),300);
   },
@@ -655,6 +680,7 @@ const ProductosModule = {
         else DB.productos[i].stock=cant;
         if(typeof KardexModule!=='undefined'){KardexModule.registrar([{prod_id:id,qty:Math.abs(DB.productos[i].stock-antes)}],tipo==='salida'?'SALIDA':tipo==='entrada'?'ENTRADA':'AJUSTE',motivo);}
         Storage.guardarProductos();
+        this._syncSheet(DB.productos); // ← SYNC SHEETS
         App.toast('Stock: '+antes+' → '+DB.productos[i].stock+' '+p.unidad,'success');
         App.closeModal();App.renderPage();
       }}]
@@ -696,6 +722,7 @@ const ProductosModule = {
       DB.productos=DB.productos.filter(x=>x.id!==id);
       this.seleccionados=this.seleccionados.filter(x=>x!==id);
       Storage.guardarProductos();
+      this._syncSheet(DB.productos); // ← SYNC SHEETS
       App.toast('Producto eliminado: '+p.nombre,'warning');
       App.renderPage();
     }
@@ -749,6 +776,8 @@ const ProductosModule = {
       else{const newId=DB.productos.length?Math.max(...DB.productos.map(x=>x.id))+1:1;DB.productos.push({id:newId,...data});imp++;}
     });
     App.toast('✅ '+imp+' importados · '+act+' actualizados · '+err+' errores',imp>0?'success':'warning');
+    Storage.guardarProductos();
+    this._syncSheet(DB.productos); // ← SYNC SHEETS
     App.closeModal();App.renderPage();
   },
 
