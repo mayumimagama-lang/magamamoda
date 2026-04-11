@@ -1,12 +1,9 @@
 // ============================================================
 // DATA STORE — ERP JUMILA
-// Los datos se persisten en localStorage automáticamente
-// Productos se cargan desde Google Sheets
+// Productos se leen y escriben en Google Sheets via Apps Script
 // ============================================================
 
-// ── ID de tu Google Sheets ──
-const SHEET_ID = '1h7aWr8vfcsY73Eo2SnXUDAf_Prg-nIQdvEPpu399Bg4';
-const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=Sheet1`;
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxkbrM53RlXDKNyDtQUTQ1dB0kzG0o3XP3KSm_hGXybJsa98zzgBqtOqyfMomCsGHT2MQ/exec';
 
 const DB = {
 
@@ -88,64 +85,103 @@ const DB = {
 };
 
 // ============================================================
-// CARGA DE PRODUCTOS DESDE GOOGLE SHEETS
-// Se llama DESPUÉS de que el sistema carga localStorage
+// SHEETS SYNC — Lee y escribe productos en Google Sheets
 // ============================================================
 
 const SheetsSync = {
 
-  cargado: false,
-
+  // ── Cargar todos los productos ──
   async cargarProductos() {
     try {
-      const res = await fetch(SHEET_URL);
-      const text = await res.text();
-
-      const jsonStart = text.indexOf('{');
-      const jsonEnd = text.lastIndexOf('}');
-      const json = JSON.parse(text.substring(jsonStart, jsonEnd + 1));
-
-      const rows = json.table.rows;
-      if (!rows || rows.length === 0) {
-        console.warn('Google Sheets sin datos');
-        return;
+      const res = await fetch(SCRIPT_URL + '?action=getAll');
+      const json = await res.json();
+      if (json.ok && json.productos.length > 0) {
+        DB.productos = json.productos.map(p => ({
+          ...p,
+          codigo: 'P' + String(p.id).padStart(4, '0'),
+          unidad: 'UND',
+          igv: 18,
+          activo: true
+        }));
+        console.log(`✅ ${DB.productos.length} productos cargados desde Google Sheets`);
       }
-
-      const productos = [];
-      rows.forEach((row, index) => {
-        if (!row.c || !row.c[1] || !row.c[1].v) return;
-        productos.push({
-          id:        row.c[0]?.v || (index + 1),
-          nombre:    String(row.c[1]?.v || ''),
-          categoria: String(row.c[2]?.v || 'General'),
-          precio:    parseFloat(row.c[3]?.v) || 0,
-          stock:     parseInt(row.c[4]?.v)   || 0,
-          imagen:    String(row.c[5]?.v || ''),
-          codigo:    'P' + String(row.c[0]?.v || index + 1).padStart(4, '0'),
-          unidad:    'UND',
-          igv:       18,
-          activo:    true
-        });
-      });
-
-      DB.productos = productos;
-      this.cargado = true;
-      console.log(`✅ ${productos.length} productos cargados desde Google Sheets`);
-
-      // Si la app ya está visible, refrescar pantalla actual
+      // Refrescar pantalla si la app ya está activa
       const mainApp = document.getElementById('mainApp');
       if (typeof App !== 'undefined' && mainApp && !mainApp.classList.contains('hidden')) {
         App.renderPage();
       }
-
     } catch(e) {
-      console.warn('⚠️ Error cargando Google Sheets:', e);
+      console.warn('⚠️ Error cargando productos:', e);
+    }
+  },
+
+  // ── Agregar producto ──
+  async agregarProducto(producto) {
+    try {
+      const params = new URLSearchParams({
+        action:    'add',
+        nombre:    producto.nombre,
+        categoria: producto.categoria || 'General',
+        precio:    producto.precio || 0,
+        stock:     producto.stock || 0,
+        imagen:    producto.imagen || ''
+      });
+      const res = await fetch(SCRIPT_URL + '?' + params.toString());
+      const json = await res.json();
+      if (json.ok) {
+        await this.cargarProductos();
+        return { ok: true, id: json.id };
+      }
+      return { ok: false, msg: json.msg };
+    } catch(e) {
+      console.error('Error agregando producto:', e);
+      return { ok: false, msg: e.toString() };
+    }
+  },
+
+  // ── Actualizar producto ──
+  async actualizarProducto(producto) {
+    try {
+      const params = new URLSearchParams({
+        action:    'update',
+        id:        producto.id,
+        nombre:    producto.nombre,
+        categoria: producto.categoria || 'General',
+        precio:    producto.precio || 0,
+        stock:     producto.stock || 0,
+        imagen:    producto.imagen || ''
+      });
+      const res = await fetch(SCRIPT_URL + '?' + params.toString());
+      const json = await res.json();
+      if (json.ok) {
+        await this.cargarProductos();
+        return { ok: true };
+      }
+      return { ok: false, msg: json.msg };
+    } catch(e) {
+      return { ok: false, msg: e.toString() };
+    }
+  },
+
+  // ── Eliminar producto ──
+  async eliminarProducto(id) {
+    try {
+      const params = new URLSearchParams({ action: 'delete', id: id });
+      const res = await fetch(SCRIPT_URL + '?' + params.toString());
+      const json = await res.json();
+      if (json.ok) {
+        await this.cargarProductos();
+        return { ok: true };
+      }
+      return { ok: false, msg: json.msg };
+    } catch(e) {
+      return { ok: false, msg: e.toString() };
     }
   }
 };
 
 // ============================================================
-// PERSISTENCIA EN localStorage
+// PERSISTENCIA EN localStorage (ventas, clientes, etc.)
 // ============================================================
 
 const Storage = {
@@ -205,15 +241,11 @@ const Storage = {
       localStorage.setItem(clave, JSON.stringify(datos));
       return true;
     } catch(e) {
-      if (e.name === 'QuotaExceededError') {
-        console.warn('localStorage lleno.');
-        return false;
-      }
       return false;
     }
   },
 
-  guardarProductos()    { return true; }, // productos vienen de Google Sheets
+  guardarProductos()    { return true; }, // productos van a Google Sheets
   guardarVentas()       { return this.guardar(this.KEYS.ventas,       DB.ventas); },
   guardarClientes()     { return this.guardar(this.KEYS.clientes,     DB.clientes); },
   guardarCompras()      { return this.guardar(this.KEYS.compras,      DB.compras); },
@@ -230,5 +262,8 @@ const Storage = {
   }
 };
 
-// ── Cargar localStorage al iniciar (sin productos, esos vienen de Sheets) ──
+// ── Cargar localStorage al iniciar ──
 Storage.cargar();
+
+// ── Cargar productos desde Google Sheets ──
+SheetsSync.cargarProductos();
