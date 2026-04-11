@@ -2,7 +2,7 @@
 // MÓDULO: TICKETS — Lista + Configuración profesional
 // ============================================================
 
-const CuentaCorrienteModule = {
+const TicketsModule = {
 
   // ── Estado ──
   tabActiva:      'lista',
@@ -80,8 +80,8 @@ const CuentaCorrienteModule = {
     ];
     return '<div style="display:flex;gap:4px;margin-bottom:16px;background:var(--gray-100);padding:5px;border-radius:12px;width:fit-content;">' +
       tabs.map(function(t) {
-        var activo = CuentaCorrienteModule.tabActiva === t.key;
-        return '<button onclick="CuentaCorrienteModule.tabActiva=\''+t.key+'\';App.renderPage();" ' +
+        var activo = TicketsModule.tabActiva === t.key;
+        return '<button onclick="TicketsModule.tabActiva=\''+t.key+'\';App.renderPage();" ' +
           'style="padding:10px 22px;border-radius:9px;border:none;cursor:pointer;font-size:14px;font-weight:800;' +
           'transition:all 0.15s;background:'+(activo?'white':'transparent')+';' +
           'color:'+(activo?'var(--accent)':'var(--gray-500)')+';' +
@@ -120,7 +120,7 @@ const CuentaCorrienteModule = {
           '<p class="text-muted text-sm">'+filtered.length+' tickets · <strong style="color:var(--success);">S/ '+totalVtas.toFixed(2)+'</strong></p>' +
         '</div>' +
         '<div class="page-actions">' +
-          '<button class="btn btn-outline" onclick="CuentaCorrienteModule.exportarCSV()"><i class="fas fa-file-download"></i> Exportar</button>' +
+          '<button class="btn btn-outline" onclick="TicketsModule.exportarCSV()"><i class="fas fa-file-download"></i> Exportar</button>' +
           '<button class="btn btn-success" onclick="VentasModule.nuevaVenta();App.navigate(\'ventas\');"><i class="fas fa-plus"></i> Nuevo Ticket</button>' +
         '</div>' +
       '</div>' +
@@ -136,17 +136,17 @@ const CuentaCorrienteModule = {
       '<div class="card">' +
         '<div class="card-body" style="padding-bottom:0;">' +
           '<div class="filter-row mb-3" style="flex-wrap:wrap;gap:10px;">' +
-            '<div class="filter-group"><label>DESDE</label><input type="date" class="filter-input" value="'+this.fechaInicio+'" onchange="CuentaCorrienteModule.fechaInicio=this.value;App.renderPage()"/></div>' +
-            '<div class="filter-group"><label>HASTA</label><input type="date" class="filter-input" value="'+this.fechaFin+'" onchange="CuentaCorrienteModule.fechaFin=this.value;App.renderPage()"/></div>' +
+            '<div class="filter-group"><label>DESDE</label><input type="date" class="filter-input" value="'+this.fechaInicio+'" onchange="TicketsModule.fechaInicio=this.value;App.renderPage()"/></div>' +
+            '<div class="filter-group"><label>HASTA</label><input type="date" class="filter-input" value="'+this.fechaFin+'" onchange="TicketsModule.fechaFin=this.value;App.renderPage()"/></div>' +
             '<div class="filter-group"><label>TIPO</label>' +
-              '<select class="filter-select" onchange="CuentaCorrienteModule.tipoFilter=this.value;CuentaCorrienteModule.currentPage=1;App.renderPage()">' +
+              '<select class="filter-select" onchange="TicketsModule.tipoFilter=this.value;TicketsModule.currentPage=1;App.renderPage()">' +
                 '<option value="todos" '+(this.tipoFilter==='todos'?'selected':'')+'>Todos</option>' +
                 '<option value="N. VENTA" '+(this.tipoFilter==='N. VENTA'?'selected':'')+'>Nota de Venta</option>' +
                 '<option value="BOL" '+(this.tipoFilter==='BOL'?'selected':'')+'>Boleta</option>' +
                 '<option value="FAC" '+(this.tipoFilter==='FAC'?'selected':'')+'>Factura</option>' +
               '</select></div>' +
             '<div class="filter-group"><label>ESTADO</label>' +
-              '<select class="filter-select" onchange="CuentaCorrienteModule.estadoFilter=this.value;CuentaCorrienteModule.currentPage=1;App.renderPage()">' +
+              '<select class="filter-select" onchange="TicketsModule.estadoFilter=this.value;TicketsModule.currentPage=1;App.renderPage()">' +
                 '<option value="todos" '+(this.estadoFilter==='todos'?'selected':'')+'>Todos</option>' +
                 '<option value="NO_ENVIADO" '+(this.estadoFilter==='NO_ENVIADO'?'selected':'')+'>Por enviar</option>' +
                 '<option value="ACEPTADO" '+(this.estadoFilter==='ACEPTADO'?'selected':'')+'>Aceptados</option>' +
@@ -155,8 +155,8 @@ const CuentaCorrienteModule = {
             '<div class="search-bar" style="flex:1;min-width:200px;align-self:flex-end;">' +
               '<i class="fas fa-search"></i>' +
               '<input type="text" placeholder="Buscar por N°, cliente, producto..." value="'+this.searchTerm+'" ' +
-                'oninput="CuentaCorrienteModule.searchTerm=this.value;App.renderPage()"/></div>' +
-            '<button class="btn btn-outline btn-sm" style="align-self:flex-end;" onclick="CuentaCorrienteModule.limpiarFiltros()"><i class="fas fa-times"></i> Limpiar</button>' +
+                'oninput="TicketsModule.searchTerm=this.value;App.renderPage()"/></div>' +
+            '<button class="btn btn-outline btn-sm" style="align-self:flex-end;" onclick="TicketsModule.limpiarFiltros()"><i class="fas fa-times"></i> Limpiar</button>' +
           '</div>' +
         '</div>' +
         '<div class="table-wrapper">' +
@@ -182,13 +182,13 @@ const CuentaCorrienteModule = {
                     '<td><span style="padding:4px 12px;border-radius:20px;font-size:11px;font-weight:800;background:'+eBg+';color:'+eClr+';">'+eLabel+'</span></td>' +
                     '<td>' +
                       '<div class="action-menu-wrapper">' +
-                        '<button class="action-menu-btn" onclick="CuentaCorrienteModule.toggleMenu('+v.id+')"><i class="fas fa-ellipsis-v"></i></button>' +
+                        '<button class="action-menu-btn" onclick="TicketsModule.toggleMenu('+v.id+')"><i class="fas fa-ellipsis-v"></i></button>' +
                         '<div class="action-menu hidden" id="menu-ticket-'+v.id+'">' +
-                          '<button class="action-menu-item" onclick="CuentaCorrienteModule.verDetalle('+v.id+')"><i class="fas fa-eye"></i> Ver detalle</button>' +
-                          (v.estado!=='ANULADO'?'<button class="action-menu-item" onclick="CuentaCorrienteModule.editarTicket('+v.id+')"><i class="fas fa-edit"></i> Editar ticket</button>':'') +
-                          '<button class="action-menu-item" onclick="CuentaCorrienteModule.imprimirTicket('+v.id+')"><i class="fas fa-print"></i> Imprimir</button>' +
-                          (v.estado==='NO_ENVIADO'?'<button class="action-menu-item" onclick="CuentaCorrienteModule.enviarSunat('+v.id+')"><i class="fas fa-paper-plane"></i> Enviar SUNAT</button>':'') +
-                          (v.estado!=='ANULADO'?'<div style="border-top:1px solid var(--gray-200);margin:4px 0;"></div><button class="action-menu-item danger" onclick="CuentaCorrienteModule.anularTicket('+v.id+')"><i class="fas fa-ban"></i> Anular</button>':'') +
+                          '<button class="action-menu-item" onclick="TicketsModule.verDetalle('+v.id+')"><i class="fas fa-eye"></i> Ver detalle</button>' +
+                          (v.estado!=='ANULADO'?'<button class="action-menu-item" onclick="TicketsModule.editarTicket('+v.id+')"><i class="fas fa-edit"></i> Editar ticket</button>':'') +
+                          '<button class="action-menu-item" onclick="TicketsModule.imprimirTicket('+v.id+')"><i class="fas fa-print"></i> Imprimir</button>' +
+                          (v.estado==='NO_ENVIADO'?'<button class="action-menu-item" onclick="TicketsModule.enviarSunat('+v.id+')"><i class="fas fa-paper-plane"></i> Enviar SUNAT</button>':'') +
+                          (v.estado!=='ANULADO'?'<div style="border-top:1px solid var(--gray-200);margin:4px 0;"></div><button class="action-menu-item danger" onclick="TicketsModule.anularTicket('+v.id+')"><i class="fas fa-ban"></i> Anular</button>':'') +
                         '</div>' +
                       '</div>' +
                     '</td>' +
@@ -199,10 +199,10 @@ const CuentaCorrienteModule = {
         '</div>' +
         '<div class="pagination">' +
           '<span class="text-sm text-muted">'+Math.min((this.currentPage-1)*this.itemsPerPage+1,filtered.length)+'–'+Math.min(this.currentPage*this.itemsPerPage,filtered.length)+' de '+filtered.length+'</span>' +
-          '<button class="pagination-btn" onclick="CuentaCorrienteModule.currentPage=1;App.renderPage()" '+(this.currentPage===1?'disabled':'')+'><i class="fas fa-angle-double-left"></i></button>' +
-          '<button class="pagination-btn" onclick="CuentaCorrienteModule.currentPage--;App.renderPage()" '+(this.currentPage===1?'disabled':'')+'><i class="fas fa-chevron-left"></i></button>' +
-          '<button class="pagination-btn" onclick="CuentaCorrienteModule.currentPage++;App.renderPage()" '+(this.currentPage===totalPgs?'disabled':'')+'><i class="fas fa-chevron-right"></i></button>' +
-          '<button class="pagination-btn" onclick="CuentaCorrienteModule.currentPage='+totalPgs+';App.renderPage()" '+(this.currentPage===totalPgs?'disabled':'')+'><i class="fas fa-angle-double-right"></i></button>' +
+          '<button class="pagination-btn" onclick="TicketsModule.currentPage=1;App.renderPage()" '+(this.currentPage===1?'disabled':'')+'><i class="fas fa-angle-double-left"></i></button>' +
+          '<button class="pagination-btn" onclick="TicketsModule.currentPage--;App.renderPage()" '+(this.currentPage===1?'disabled':'')+'><i class="fas fa-chevron-left"></i></button>' +
+          '<button class="pagination-btn" onclick="TicketsModule.currentPage++;App.renderPage()" '+(this.currentPage===totalPgs?'disabled':'')+'><i class="fas fa-chevron-right"></i></button>' +
+          '<button class="pagination-btn" onclick="TicketsModule.currentPage='+totalPgs+';App.renderPage()" '+(this.currentPage===totalPgs?'disabled':'')+'><i class="fas fa-angle-double-right"></i></button>' +
         '</div>' +
       '</div>'
     );
@@ -220,7 +220,7 @@ const CuentaCorrienteModule = {
       return '<div style="margin-bottom:14px;">' +
         '<label style="display:block;font-size:11px;font-weight:700;color:var(--gray-500);text-transform:uppercase;margin-bottom:5px;">'+label+'</label>' +
         '<input type="'+tipo+'" id="cfg_'+id+'" value="'+(valor||'')+'" placeholder="'+(placeholder||'')+'" ' +
-          'onchange="CuentaCorrienteModule._actualizarCfg()" ' +
+          'onchange="TicketsModule._actualizarCfg()" ' +
           'style="width:100%;padding:10px 12px;border:2px solid var(--gray-200);border-radius:8px;font-size:14px;' +
           'background:var(--gray-50);color:var(--gray-900);box-sizing:border-box;outline:none;"/>' +
       '</div>';
@@ -230,7 +230,7 @@ const CuentaCorrienteModule = {
       return '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--gray-100);">' +
         '<span style="font-size:14px;font-weight:600;color:var(--gray-700);">'+label+'</span>' +
         '<label style="position:relative;display:inline-block;width:44px;height:24px;cursor:pointer;">' +
-          '<input type="checkbox" id="cfg_'+id+'" '+(valor?'checked':'')+' onchange="CuentaCorrienteModule._actualizarCfg()" ' +
+          '<input type="checkbox" id="cfg_'+id+'" '+(valor?'checked':'')+' onchange="TicketsModule._actualizarCfg()" ' +
             'style="opacity:0;width:0;height:0;"/>' +
           '<span style="position:absolute;inset:0;border-radius:24px;transition:0.3s;background:'+(valor?'var(--accent)':'var(--gray-300)')+';">' +
             '<span style="position:absolute;width:18px;height:18px;border-radius:50%;background:white;top:3px;' +
@@ -247,7 +247,7 @@ const CuentaCorrienteModule = {
           '<p class="text-muted text-sm">Personaliza el diseño y la información de tus tickets de venta</p>' +
         '</div>' +
         '<div class="page-actions">' +
-          '<button class="btn btn-success" onclick="CuentaCorrienteModule.guardarConfig()">' +
+          '<button class="btn btn-success" onclick="TicketsModule.guardarConfig()">' +
             '<i class="fas fa-save"></i> Guardar Configuración' +
           '</button>' +
         '</div>' +
@@ -271,9 +271,9 @@ const CuentaCorrienteModule = {
                 ) +
               '</div>' +
               '<div style="flex:1;">' +
-                '<input type="file" id="cfg_logo_file" accept="image/*" style="display:none;" onchange="CuentaCorrienteModule._subirLogo(this)"/>' +
+                '<input type="file" id="cfg_logo_file" accept="image/*" style="display:none;" onchange="TicketsModule._subirLogo(this)"/>' +
                 '<button onclick="document.getElementById(\'cfg_logo_file\').click()" class="btn btn-primary" style="width:100%;margin-bottom:8px;"><i class="fas fa-upload"></i> Subir Logo</button>' +
-                (cfg.logo ? '<button onclick="CuentaCorrienteModule._quitarLogo()" class="btn btn-outline" style="width:100%;margin-bottom:8px;color:var(--danger);border-color:var(--danger);"><i class="fas fa-trash"></i> Quitar Logo</button>' : '') +
+                (cfg.logo ? '<button onclick="TicketsModule._quitarLogo()" class="btn btn-outline" style="width:100%;margin-bottom:8px;color:var(--danger);border-color:var(--danger);"><i class="fas fa-trash"></i> Quitar Logo</button>' : '') +
                 '<p style="font-size:11px;color:var(--gray-400);line-height:1.5;">PNG, JPG o WebP · Máx. 2 MB<br/>Recomendado: fondo transparente (PNG), 300×300 px</p>' +
               '</div>' +
             '</div>' +
@@ -313,7 +313,7 @@ const CuentaCorrienteModule = {
                  {val:'A4',  icon:'fa-file-alt',  label:'A4',   sub:'Hoja completa'}
                 ].map(function(t){
                   var a = cfg.tamano===t.val;
-                  return '<button onclick="CuentaCorrienteModule.cfg.tamano=\''+t.val+'\';CuentaCorrienteModule._actualizarPreview();" ' +
+                  return '<button onclick="TicketsModule.cfg.tamano=\''+t.val+'\';TicketsModule._actualizarPreview();" ' +
                     'style="padding:12px 8px;border-radius:10px;border:2px solid '+(a?'var(--accent)':'var(--gray-200)')+';' +
                     'background:'+(a?'#eff6ff':'white')+';cursor:pointer;text-align:center;">' +
                     '<i class="fas '+t.icon+'" style="font-size:22px;color:'+(a?'var(--accent)':'var(--gray-400)')+';display:block;margin-bottom:5px;"></i>' +
@@ -329,7 +329,7 @@ const CuentaCorrienteModule = {
                 [{val:'11',label:'Pequeño'},{val:'12',label:'Normal'},{val:'13',label:'Grande'},{val:'14',label:'Muy grande'}
                 ].map(function(f){
                   var a = cfg.fuenteSize===f.val;
-                  return '<button onclick="CuentaCorrienteModule.cfg.fuenteSize=\''+f.val+'\';CuentaCorrienteModule._actualizarPreview();" ' +
+                  return '<button onclick="TicketsModule.cfg.fuenteSize=\''+f.val+'\';TicketsModule._actualizarPreview();" ' +
                     'style="flex:1;padding:10px;border-radius:8px;border:2px solid '+(a?'var(--accent)':'var(--gray-200)')+';' +
                     'background:'+(a?'#eff6ff':'white')+';cursor:pointer;font-size:12px;font-weight:700;color:'+(a?'var(--accent)':'var(--gray-600)')+';">'+f.label+'</button>';
                 }).join('') +
@@ -338,12 +338,12 @@ const CuentaCorrienteModule = {
               '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">' +
                 '<div><label style="display:block;font-size:11px;font-weight:700;color:var(--gray-500);text-transform:uppercase;margin-bottom:6px;">COLOR ENCABEZADO</label>' +
                   '<div style="display:flex;align-items:center;gap:8px;">' +
-                    '<input type="color" id="cfg_colorHeader" value="'+cfg.colorHeader+'" onchange="CuentaCorrienteModule._actualizarCfg()" style="width:44px;height:44px;border:none;border-radius:8px;cursor:pointer;"/>' +
+                    '<input type="color" id="cfg_colorHeader" value="'+cfg.colorHeader+'" onchange="TicketsModule._actualizarCfg()" style="width:44px;height:44px;border:none;border-radius:8px;cursor:pointer;"/>' +
                     '<span id="cfg_colorHeader_val" style="font-size:13px;font-weight:700;color:var(--gray-600);">'+cfg.colorHeader+'</span>' +
                   '</div></div>' +
                 '<div><label style="display:block;font-size:11px;font-weight:700;color:var(--gray-500);text-transform:uppercase;margin-bottom:6px;">COLOR TOTAL</label>' +
                   '<div style="display:flex;align-items:center;gap:8px;">' +
-                    '<input type="color" id="cfg_colorTotal" value="'+cfg.colorTotal+'" onchange="CuentaCorrienteModule._actualizarCfg()" style="width:44px;height:44px;border:none;border-radius:8px;cursor:pointer;"/>' +
+                    '<input type="color" id="cfg_colorTotal" value="'+cfg.colorTotal+'" onchange="TicketsModule._actualizarCfg()" style="width:44px;height:44px;border:none;border-radius:8px;cursor:pointer;"/>' +
                     '<span id="cfg_colorTotal_val" style="font-size:13px;font-weight:700;color:var(--gray-600);">'+cfg.colorTotal+'</span>' +
                   '</div></div>' +
               '</div>' +
@@ -376,8 +376,8 @@ const CuentaCorrienteModule = {
             '</div>' +
             '<div id="ticketPreviewContainer" style="padding:16px;overflow-y:auto;max-height:700px;">'+preview+'</div>' +
             '<div style="padding:12px 18px;border-top:1px solid var(--gray-200);display:flex;gap:8px;">' +
-              '<button onclick="CuentaCorrienteModule.guardarConfig()" style="flex:1;padding:12px;background:linear-gradient(135deg,#15803d,#16a34a);color:white;border:none;border-radius:8px;font-size:14px;font-weight:800;cursor:pointer;"><i class="fas fa-save" style="margin-right:6px;"></i>Guardar</button>' +
-              '<button onclick="CuentaCorrienteModule._imprimirPreview()" style="flex:1;padding:12px;background:var(--gray-100);color:var(--gray-600);border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;"><i class="fas fa-print" style="margin-right:6px;"></i>Imprimir prueba</button>' +
+              '<button onclick="TicketsModule.guardarConfig()" style="flex:1;padding:12px;background:linear-gradient(135deg,#15803d,#16a34a);color:white;border:none;border-radius:8px;font-size:14px;font-weight:800;cursor:pointer;"><i class="fas fa-save" style="margin-right:6px;"></i>Guardar</button>' +
+              '<button onclick="TicketsModule._imprimirPreview()" style="flex:1;padding:12px;background:var(--gray-100);color:var(--gray-600);border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;"><i class="fas fa-print" style="margin-right:6px;"></i>Imprimir prueba</button>' +
             '</div>' +
           '</div>' +
         '</div>' +
@@ -523,30 +523,30 @@ const CuentaCorrienteModule = {
           imgH +
           '<div style="flex:1;min-width:0;">' +
             '<input type="text" value="'+item.nombre.replace(/"/g,'&quot;')+'" ' +
-              'onchange="CuentaCorrienteModule._editItem('+id+','+i+',\'nombre\',this.value)" ' +
+              'onchange="TicketsModule._editItem('+id+','+i+',\'nombre\',this.value)" ' +
               'style="width:100%;font-size:16px;font-weight:800;border:none;border-bottom:2px solid var(--gray-200);padding:2px 0;background:transparent;outline:none;margin-bottom:5px;box-sizing:border-box;"/>' +
             '<div style="font-size:12px;color:var(--gray-400);">'+(prod?prod.codigo:'')+'</div>' +
           '</div>' +
           '<div style="text-align:center;flex-shrink:0;">' +
             '<div style="font-size:10px;font-weight:700;color:var(--gray-400);text-transform:uppercase;margin-bottom:5px;">CANTIDAD</div>' +
             '<div style="display:flex;align-items:center;gap:4px;">' +
-              '<button onclick="CuentaCorrienteModule._editItem('+id+','+i+',\'qty\','+(item.qty-1)+')" style="width:30px;height:30px;border:1.5px solid var(--gray-200);border-radius:6px;background:var(--gray-50);font-size:17px;cursor:pointer;color:var(--gray-600);display:flex;align-items:center;justify-content:center;font-weight:900;">−</button>' +
-              '<input type="number" min="1" value="'+item.qty+'" onchange="CuentaCorrienteModule._editItem('+id+','+i+',\'qty\',parseInt(this.value)||1)" style="width:50px;height:30px;border:1.5px solid var(--accent);border-radius:6px;text-align:center;font-weight:900;font-size:15px;color:var(--accent);"/>' +
-              '<button onclick="CuentaCorrienteModule._editItem('+id+','+i+',\'qty\','+(item.qty+1)+')" style="width:30px;height:30px;border:1.5px solid var(--gray-200);border-radius:6px;background:var(--gray-50);font-size:17px;cursor:pointer;color:var(--gray-600);display:flex;align-items:center;justify-content:center;font-weight:900;">+</button>' +
+              '<button onclick="TicketsModule._editItem('+id+','+i+',\'qty\','+(item.qty-1)+')" style="width:30px;height:30px;border:1.5px solid var(--gray-200);border-radius:6px;background:var(--gray-50);font-size:17px;cursor:pointer;color:var(--gray-600);display:flex;align-items:center;justify-content:center;font-weight:900;">−</button>' +
+              '<input type="number" min="1" value="'+item.qty+'" onchange="TicketsModule._editItem('+id+','+i+',\'qty\',parseInt(this.value)||1)" style="width:50px;height:30px;border:1.5px solid var(--accent);border-radius:6px;text-align:center;font-weight:900;font-size:15px;color:var(--accent);"/>' +
+              '<button onclick="TicketsModule._editItem('+id+','+i+',\'qty\','+(item.qty+1)+')" style="width:30px;height:30px;border:1.5px solid var(--gray-200);border-radius:6px;background:var(--gray-50);font-size:17px;cursor:pointer;color:var(--gray-600);display:flex;align-items:center;justify-content:center;font-weight:900;">+</button>' +
             '</div>' +
           '</div>' +
           '<div style="text-align:center;flex-shrink:0;min-width:110px;">' +
             '<div style="font-size:10px;font-weight:700;color:var(--gray-400);text-transform:uppercase;margin-bottom:5px;">PRECIO (S/)</div>' +
             '<div style="display:flex;align-items:center;gap:3px;">' +
               '<span style="font-size:12px;font-weight:700;color:var(--gray-400);">S/</span>' +
-              '<input type="number" min="0" step="0.01" value="'+item.precio.toFixed(2)+'" onchange="CuentaCorrienteModule._editItem('+id+','+i+',\'precio\',parseFloat(this.value)||0)" style="width:80px;height:30px;border:1.5px solid var(--gray-200);border-radius:6px;padding:0 6px;font-size:15px;font-weight:800;text-align:center;"/>' +
+              '<input type="number" min="0" step="0.01" value="'+item.precio.toFixed(2)+'" onchange="TicketsModule._editItem('+id+','+i+',\'precio\',parseFloat(this.value)||0)" style="width:80px;height:30px;border:1.5px solid var(--gray-200);border-radius:6px;padding:0 6px;font-size:15px;font-weight:800;text-align:center;"/>' +
             '</div>' +
           '</div>' +
           '<div style="text-align:center;flex-shrink:0;min-width:100px;background:linear-gradient(135deg,#eff6ff,#dbeafe);border-radius:10px;padding:8px 12px;">' +
             '<div style="font-size:10px;font-weight:700;color:#1d4ed8;text-transform:uppercase;margin-bottom:4px;">TOTAL</div>' +
             '<div style="font-size:20px;font-weight:900;color:var(--accent);">S/ '+item.total.toFixed(2)+'</div>' +
           '</div>' +
-          '<button onclick="CuentaCorrienteModule._eliminarItemTicket('+id+','+i+')" style="width:36px;height:36px;background:#fef2f2;color:#dc2626;border:1.5px solid #fecaca;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;"><i class="fas fa-trash"></i></button>' +
+          '<button onclick="TicketsModule._eliminarItemTicket('+id+','+i+')" style="width:36px;height:36px;background:#fef2f2;color:#dc2626;border:1.5px solid #fecaca;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;"><i class="fas fa-trash"></i></button>' +
         '</div>'
       );
     }).join('');
@@ -557,14 +557,14 @@ const CuentaCorrienteModule = {
     return (
       '<div style="display:flex;align-items:center;justify-content:space-between;padding:13px 18px;background:var(--gray-50);border-radius:12px;border:1.5px solid var(--gray-200);margin-bottom:16px;">' +
         '<div style="display:flex;align-items:center;gap:12px;">' +
-          '<button onclick="CuentaCorrienteModule.ticketEditando=null;App.renderPage();" style="background:white;color:var(--gray-700);border:1.5px solid var(--gray-200);border-radius:8px;padding:8px 16px;font-weight:700;cursor:pointer;font-size:13px;"><i class="fas fa-arrow-left" style="margin-right:6px;"></i>Volver a Tickets</button>' +
+          '<button onclick="TicketsModule.ticketEditando=null;App.renderPage();" style="background:white;color:var(--gray-700);border:1.5px solid var(--gray-200);border-radius:8px;padding:8px 16px;font-weight:700;cursor:pointer;font-size:13px;"><i class="fas fa-arrow-left" style="margin-right:6px;"></i>Volver a Tickets</button>' +
           '<div style="width:2px;height:26px;background:var(--gray-200);"></div>' +
           '<div>' +
             '<div style="font-size:17px;font-weight:900;">Editando: <span style="color:'+tClr+';">'+v.serie+'-'+v.numero+'</span></div>' +
             '<div style="font-size:12px;color:var(--gray-400);">'+v.fecha+' · '+(cli?cli.nombre:'')+'</div>' +
           '</div>' +
         '</div>' +
-        '<button onclick="CuentaCorrienteModule.guardarEdicion('+id+')" style="background:linear-gradient(135deg,#15803d,#16a34a);color:white;border:none;border-radius:8px;padding:10px 24px;font-weight:900;cursor:pointer;font-size:15px;box-shadow:0 4px 12px rgba(22,163,74,0.3);"><i class="fas fa-save" style="margin-right:7px;"></i>GUARDAR CAMBIOS</button>' +
+        '<button onclick="TicketsModule.guardarEdicion('+id+')" style="background:linear-gradient(135deg,#15803d,#16a34a);color:white;border:none;border-radius:8px;padding:10px 24px;font-weight:900;cursor:pointer;font-size:15px;box-shadow:0 4px 12px rgba(22,163,74,0.3);"><i class="fas fa-save" style="margin-right:7px;"></i>GUARDAR CAMBIOS</button>' +
       '</div>' +
       '<div style="display:grid;grid-template-columns:1fr 360px;gap:16px;">' +
         '<div style="display:flex;flex-direction:column;gap:14px;">' +
@@ -573,7 +573,7 @@ const CuentaCorrienteModule = {
             '<div style="padding:14px 20px;display:grid;grid-template-columns:repeat(4,1fr);gap:12px;">' +
               '<div><div style="font-size:10px;font-weight:700;color:var(--gray-400);text-transform:uppercase;margin-bottom:5px;">TIPO</div><div style="padding:8px 12px;background:var(--gray-50);border:1.5px solid var(--gray-200);border-radius:8px;font-size:15px;font-weight:900;color:'+tClr+';">'+v.tipo+'</div></div>' +
               '<div><div style="font-size:10px;font-weight:700;color:var(--gray-400);text-transform:uppercase;margin-bottom:5px;">SERIE - NÚMERO</div><div style="padding:8px 12px;background:var(--gray-50);border:1.5px solid var(--gray-200);border-radius:8px;font-size:15px;font-weight:900;">'+v.serie+'-'+v.numero+'</div></div>' +
-              '<div><div style="font-size:10px;font-weight:700;color:var(--gray-400);text-transform:uppercase;margin-bottom:5px;">FECHA</div><input type="date" value="'+v.fecha+'" onchange="CuentaCorrienteModule._editCampo('+id+',\'fecha\',this.value)" style="width:100%;padding:8px 10px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:13px;"/></div>' +
+              '<div><div style="font-size:10px;font-weight:700;color:var(--gray-400);text-transform:uppercase;margin-bottom:5px;">FECHA</div><input type="date" value="'+v.fecha+'" onchange="TicketsModule._editCampo('+id+',\'fecha\',this.value)" style="width:100%;padding:8px 10px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:13px;"/></div>' +
               '<div><div style="font-size:10px;font-weight:700;color:var(--gray-400);text-transform:uppercase;margin-bottom:5px;">CLIENTE</div><div style="padding:8px 12px;background:var(--gray-50);border:1.5px solid var(--gray-200);border-radius:8px;font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+(cli?cli.nombre:'N/A')+'</div></div>' +
             '</div>' +
           '</div>' +
@@ -592,7 +592,7 @@ const CuentaCorrienteModule = {
              {val:'TRANSFERENCIA',icon:'fa-university',color:'#0ea5e9',label:'Transferencia'}
             ].map(function(m){
               var activo=v.metodo_pago===m.val;
-              return '<button onclick="CuentaCorrienteModule._editCampo('+id+',\'metodo_pago\',\''+m.val+'\')" ' +
+              return '<button onclick="TicketsModule._editCampo('+id+',\'metodo_pago\',\''+m.val+'\')" ' +
                 'style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:8px;' +
                 'border:2px solid '+(activo?m.color:'var(--gray-200)')+';background:'+(activo?m.color+'20':'transparent')+';cursor:pointer;">' +
                 '<div style="width:32px;height:32px;border-radius:7px;background:'+(activo?m.color:'var(--gray-100)')+';display:flex;align-items:center;justify-content:center;flex-shrink:0;">' +
@@ -611,9 +611,9 @@ const CuentaCorrienteModule = {
               '<div style="display:flex;justify-content:space-between;align-items:center;padding:16px 18px;background:linear-gradient(135deg,#1e3a5f,#2563eb);border-radius:12px;color:white;margin-bottom:14px;">' +
                 '<span style="font-size:20px;font-weight:900;">TOTAL</span><span style="font-size:32px;font-weight:900;">S/ '+total.toFixed(2)+'</span>' +
               '</div>' +
-              '<button onclick="CuentaCorrienteModule.guardarEdicion('+id+')" style="width:100%;padding:15px;background:linear-gradient(135deg,#15803d,#16a34a);color:white;border:none;border-radius:12px;font-size:16px;font-weight:900;cursor:pointer;box-shadow:0 4px 14px rgba(22,163,74,0.4);display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:8px;">' +
+              '<button onclick="TicketsModule.guardarEdicion('+id+')" style="width:100%;padding:15px;background:linear-gradient(135deg,#15803d,#16a34a);color:white;border:none;border-radius:12px;font-size:16px;font-weight:900;cursor:pointer;box-shadow:0 4px 14px rgba(22,163,74,0.4);display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:8px;">' +
                 '<i class="fas fa-save" style="font-size:18px;"></i> GUARDAR CAMBIOS</button>' +
-              '<button onclick="CuentaCorrienteModule.imprimirTicket('+id+')" style="width:100%;padding:11px;background:var(--gray-100);color:var(--gray-600);border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">' +
+              '<button onclick="TicketsModule.imprimirTicket('+id+')" style="width:100%;padding:11px;background:var(--gray-100);color:var(--gray-600);border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">' +
                 '<i class="fas fa-print"></i> Imprimir Ticket</button>' +
             '</div>' +
           '</div>' +
@@ -688,8 +688,8 @@ const CuentaCorrienteModule = {
           '<span>TOTAL</span><span>S/ '+v.total.toFixed(2)+'</span></div>' +
         '<div style="margin-top:8px;font-size:12px;color:var(--gray-500);">Método: <strong>'+v.metodo_pago+'</strong> · Pagó: <strong>S/ '+v.monto_pago.toFixed(2)+'</strong> · Vuelto: <strong>S/ '+v.vuelto.toFixed(2)+'</strong></div>' +
       '</div>',
-      [{text:'✏️ Editar',   cls:'btn-outline', cb:function(){App.closeModal();CuentaCorrienteModule.editarTicket(id);}},
-       {text:'🖨️ Imprimir', cls:'btn-primary',  cb:function(){CuentaCorrienteModule.imprimirTicket(id);App.closeModal();}}]
+      [{text:'✏️ Editar',   cls:'btn-outline', cb:function(){App.closeModal();TicketsModule.editarTicket(id);}},
+       {text:'🖨️ Imprimir', cls:'btn-primary',  cb:function(){TicketsModule.imprimirTicket(id);App.closeModal();}}]
     );
     document.getElementById('modalBox').style.maxWidth='560px';
   },
