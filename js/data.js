@@ -93,15 +93,26 @@ const SheetsSync = {
   // ── Cargar todos los productos ──
   async cargarProductos() {
     try {
-      const res = await fetch(SCRIPT_URL + '?action=getAll');
+      const res  = await fetch(SCRIPT_URL + '?action=getAll');
       const json = await res.json();
       if (json.ok && json.productos.length > 0) {
+        // ✅ Mapeo correcto: precio → precio_venta + campos requeridos por productos.js
         DB.productos = json.productos.map(p => ({
-          ...p,
-          codigo: 'P' + String(p.id).padStart(4, '0'),
-          unidad: 'UND',
-          igv: 18,
-          activo: true
+          id:               p.id,
+          nombre:           p.nombre            || '',
+          categoria:        p.categoria         || 'General',
+          precio_venta:     parseFloat(p.precio) || 0,
+          precio_compra:    0,
+          precio_mayorista: 0,
+          stock:            parseInt(p.stock)    || 0,
+          stock_minimo:     10,
+          imagen:           p.imagen             || '',
+          codigo:           'P' + String(p.id).padStart(4, '0'),
+          unidad:           'UND',
+          igv:              true,
+          activo:           true,
+          descripcion:      '',
+          barcode:          ''
         }));
         console.log(`✅ ${DB.productos.length} productos cargados desde Google Sheets`);
       }
@@ -121,12 +132,12 @@ const SheetsSync = {
       const params = new URLSearchParams({
         action:    'add',
         nombre:    producto.nombre,
-        categoria: producto.categoria || 'General',
-        precio:    producto.precio || 0,
-        stock:     producto.stock || 0,
-        imagen:    producto.imagen || ''
+        categoria: producto.categoria  || 'General',
+        precio:    producto.precio_venta || producto.precio || 0,
+        stock:     producto.stock      || 0,
+        imagen:    producto.imagen     || ''
       });
-      const res = await fetch(SCRIPT_URL + '?' + params.toString());
+      const res  = await fetch(SCRIPT_URL + '?' + params.toString());
       const json = await res.json();
       if (json.ok) {
         await this.cargarProductos();
@@ -146,12 +157,12 @@ const SheetsSync = {
         action:    'update',
         id:        producto.id,
         nombre:    producto.nombre,
-        categoria: producto.categoria || 'General',
-        precio:    producto.precio || 0,
-        stock:     producto.stock || 0,
-        imagen:    producto.imagen || ''
+        categoria: producto.categoria  || 'General',
+        precio:    producto.precio_venta || producto.precio || 0,
+        stock:     producto.stock      || 0,
+        imagen:    producto.imagen     || ''
       });
-      const res = await fetch(SCRIPT_URL + '?' + params.toString());
+      const res  = await fetch(SCRIPT_URL + '?' + params.toString());
       const json = await res.json();
       if (json.ok) {
         await this.cargarProductos();
@@ -167,7 +178,7 @@ const SheetsSync = {
   async eliminarProducto(id) {
     try {
       const params = new URLSearchParams({ action: 'delete', id: id });
-      const res = await fetch(SCRIPT_URL + '?' + params.toString());
+      const res  = await fetch(SCRIPT_URL + '?' + params.toString());
       const json = await res.json();
       if (json.ok) {
         await this.cargarProductos();
