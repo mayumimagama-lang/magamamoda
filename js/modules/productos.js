@@ -15,15 +15,29 @@ const ProductosModule = {
   // ─── GOOGLE SHEETS SYNC ───
   SHEET_URL: 'https://script.google.com/macros/s/AKfycbxkbrM53RlXDKNyDtQUTQ1dB0kzG0o3XP3KSm_hGXybJsa98zzgBqtOqyfMomCsGHT2MQ/exec',
 
-  _syncSheet(productos) {
-    fetch(this.SHEET_URL, {
+  // accion: 'addProducto' | 'updateProducto' | 'deleteProducto'
+  _syncSheet(accion, params) {
+    var self = this;
+    fetch(self.SHEET_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ accion: 'sincronizar', productos: productos })
+      body: JSON.stringify({ accion: accion, ...params })
     })
     .then(function(r){ return r.json(); })
-    .then(function(d){ console.log('✅ Sheets sync OK:', d); })
-    .catch(function(e){ console.warn('⚠ Sheets sync error:', e); });
+    .then(function(d){ console.log('✅ Sheets [' + accion + '] OK:', d); })
+    .catch(function(e){ console.warn('⚠ Sheets [' + accion + '] error:', e); });
+  },
+
+  // Construye el objeto de params que espera el Apps Script
+  _sheetParams(p) {
+    return {
+      id:        p.id,
+      nombre:    p.nombre,
+      categoria: p.categoria || 'General',
+      precio:    p.precio_venta,
+      stock:     p.stock,
+      imagen:    p.imagen || ''
+    };
   },
 
   // ─── RENDER ───
@@ -332,7 +346,7 @@ const ProductosModule = {
     if(!confirm('¿Eliminar '+this.seleccionados.length+' productos?')) return;
     DB.productos = DB.productos.filter(p => !this.seleccionados.includes(p.id));
     Storage.guardarProductos();
-    this._syncSheet(DB.productos); // ← SYNC SHEETS
+    this.seleccionados.forEach(id => this._syncSheet('deleteProducto', { id: id })); // ← SYNC SHEETS
     App.toast(this.seleccionados.length+' productos eliminados','warning');
     this.seleccionados = [];
     App.renderPage();
@@ -626,7 +640,9 @@ const ProductosModule = {
     if(id){const i=DB.productos.findIndex(x=>x.id===id);if(i>=0)DB.productos[i]={...DB.productos[i],...data};App.toast('✅ Producto actualizado','success');}
     else{const newId=DB.productos.length?Math.max(...DB.productos.map(x=>x.id))+1:1;DB.productos.push({id:newId,...data});App.toast('✅ Producto registrado','success');}
     Storage.guardarProductos();
-    this._syncSheet(DB.productos); // ← SYNC SHEETS
+    // ← SYNC SHEETS
+    if(id){ this._syncSheet('updateProducto', this._sheetParams(DB.productos.find(x=>x.id===id))); }
+    else  { this._syncSheet('addProducto',    this._sheetParams(DB.productos[DB.productos.length-1])); }
     App.closeModal();App.renderPage();
   },
 
@@ -636,7 +652,7 @@ const ProductosModule = {
     const newId=Math.max(...DB.productos.map(x=>x.id))+1;
     DB.productos.push({...p,id:newId,codigo:p.codigo+'_COPIA',nombre:p.nombre+' (Copia)',stock:0});
     Storage.guardarProductos();
-    this._syncSheet(DB.productos); // ← SYNC SHEETS
+    this._syncSheet('addProducto', this._sheetParams(DB.productos[DB.productos.length-1])); // ← SYNC SHEETS
     App.toast('Producto duplicado','success');App.renderPage();
     setTimeout(()=>this.editar(newId),300);
   },
@@ -680,7 +696,7 @@ const ProductosModule = {
         else DB.productos[i].stock=cant;
         if(typeof KardexModule!=='undefined'){KardexModule.registrar([{prod_id:id,qty:Math.abs(DB.productos[i].stock-antes)}],tipo==='salida'?'SALIDA':tipo==='entrada'?'ENTRADA':'AJUSTE',motivo);}
         Storage.guardarProductos();
-        this._syncSheet(DB.productos); // ← SYNC SHEETS
+        this._syncSheet('updateProducto', this._sheetParams(DB.productos[i])); // ← SYNC SHEETS
         App.toast('Stock: '+antes+' → '+DB.productos[i].stock+' '+p.unidad,'success');
         App.closeModal();App.renderPage();
       }}]
@@ -722,7 +738,7 @@ const ProductosModule = {
       DB.productos=DB.productos.filter(x=>x.id!==id);
       this.seleccionados=this.seleccionados.filter(x=>x!==id);
       Storage.guardarProductos();
-      this._syncSheet(DB.productos); // ← SYNC SHEETS
+      this._syncSheet('deleteProducto', { id: id }); // ← SYNC SHEETS
       App.toast('Producto eliminado: '+p.nombre,'warning');
       App.renderPage();
     }
@@ -772,12 +788,11 @@ const ProductosModule = {
       if(!codigo||!nombre||!pv){err++;return;}
       const ex=DB.productos.findIndex(p=>p.codigo===codigo);
       const data={codigo,nombre,categoria:categoria||'General',unidad:unidad||'UND',precio_venta:parseFloat(pv)||0,precio_compra:parseFloat(pc)||0,stock:parseInt(stock)||0,stock_minimo:10,igv:true,descripcion:'',imagen:'',barcode:''};
-      if(ex>=0){if(mode==='update'){DB.productos[ex]={...DB.productos[ex],...data};act++;}}
-      else{const newId=DB.productos.length?Math.max(...DB.productos.map(x=>x.id))+1:1;DB.productos.push({id:newId,...data});imp++;}
+      if(ex>=0){if(mode==='update'){DB.productos[ex]={...DB.productos[ex],...data};act++;this._syncSheet('updateProducto', this._sheetParams(DB.productos[ex]));}}
+      else{const newId=DB.productos.length?Math.max(...DB.productos.map(x=>x.id))+1:1;DB.productos.push({id:newId,...data});imp++;this._syncSheet('addProducto', this._sheetParams(DB.productos[DB.productos.length-1]));}
     });
     App.toast('✅ '+imp+' importados · '+act+' actualizados · '+err+' errores',imp>0?'success':'warning');
     Storage.guardarProductos();
-    this._syncSheet(DB.productos); // ← SYNC SHEETS
     App.closeModal();App.renderPage();
   },
 
