@@ -800,7 +800,10 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   // 1. Restaurar datos guardados (productos, ventas, etc.)
-  App._loadDB();
+App._loadDB();
+
+// 2. Cargar productos desde Google Sheets
+SheetsSync.cargarProductos();
 
   // 2. Intentar restaurar sesión activa (evita cerrar sesión al recargar)
   var sessionRestored = App._restoreSession();
