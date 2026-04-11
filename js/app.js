@@ -118,7 +118,7 @@ const App = {
       document.getElementById('loginPage').classList.add('hidden');
       document.getElementById('mainApp').classList.remove('hidden');
       document.getElementById('welcomeName').textContent = user.nombre;
-      localStorage.setItem('erp_jumila_uid', found.id);
+      localStorage.setItem('erp_jumila_uid', user.id);
       this.buildSidebar();
       this.navigate('inicio');
       return true;
@@ -194,7 +194,7 @@ const App = {
       case 'soporte':         html = this.renderSoporte(); break;
       case 'pos':             html = POSModule.render(); setTimeout(function(){ POSModule._initKeyboard(); document.getElementById('posSearch')?.focus(); },80); break;
       case 'precios':         html = PreciosModule.render(); break;
-      case 'cuentacorriente': html = CuentaCorrienteModule.render(); break;
+      case 'tickets':         html = CuentaCorrienteModule.render(); break;  // ← CAMBIADO
       case 'cotizaciones':    html = CotizacionesModule.render(); break;
       case 'notascredito':    html = NotasCreditoModule.render(); break;
       case 'kardex':          html = KardexModule.render(); break;
@@ -320,7 +320,7 @@ const App = {
         '<div class="quick-btn" onclick="App.navigate(\'productos\');setTimeout(function(){ProductosModule.nuevo();},100);" style="color:#2e7d32;"><i class="fas fa-plus-circle" style="color:#2e7d32;"></i>Nuevo Producto</div>' +
         '<div class="quick-btn" onclick="App.navigate(\'inventario\');" style="color:#283593;"><i class="fas fa-warehouse" style="color:#283593;"></i>Inventario</div>' +
         '<div class="quick-btn" onclick="App.navigate(\'caja\');" style="color:#00695c;"><i class="fas fa-cash-register" style="color:#00695c;"></i>Caja</div>' +
-        '<div class="quick-btn" onclick="App.navigate(\'cuentacorriente\');" style="color:#4a148c;"><i class="fas fa-ticket-alt" style="color:#4a148c;"></i>Tickets</div>' +
+        '<div class="quick-btn" onclick="App.navigate(\'tickets\');" style="color:#4a148c;"><i class="fas fa-ticket-alt" style="color:#4a148c;"></i>Tickets</div>' +  // ← CAMBIADO
         '<div class="quick-btn" onclick="App.navigate(\'reportes\');" style="color:#33691e;"><i class="fas fa-chart-bar" style="color:#33691e;"></i>Reportes</div>' +
         '<div class="quick-btn" onclick="App.navigate(\'agenda\');" style="color:#1b5e20;"><i class="fas fa-calendar-alt" style="color:#1b5e20;"></i>Agenda</div>' +
         '<div class="quick-btn" onclick="App.navigate(\'herramientas\');" style="color:#4e342e;"><i class="fas fa-tools" style="color:#4e342e;"></i>Herramientas</div>' +
@@ -542,7 +542,7 @@ const App = {
     { key:'productos',       label:'Productos/Servicios',  grupo:'Catalogo'  },
     { key:'precios',         label:'Lista de Precios',     grupo:'Catalogo'  },
     { key:'clientes',        label:'Clientes/Proveedores', grupo:'Clientes'  },
-    { key:'cuentacorriente', label:'Tickets',              grupo:'Clientes'  },
+    { key:'tickets',         label:'Tickets',              grupo:'Clientes'  },  // ← CAMBIADO
     { key:'ventas',          label:'Ventas',               grupo:'Ventas'    },
     { key:'cotizaciones',    label:'Cotizaciones',         grupo:'Ventas'    },
     { key:'notascredito',    label:'Notas Cred./Deb.',     grupo:'Ventas'    },
@@ -629,7 +629,7 @@ const App = {
         inicio:true, pos:true, ventas:true, caja:true, clientes:true,
         productos:true, inventario:false, compras:false, cotizaciones:false,
         notascredito:false, guias:false, cuentas:false, finanzas:false,
-        reportes:false, kardex:false, precios:false, cuentacorriente:false,
+        reportes:false, kardex:false, precios:false, tickets:false,
         agenda:false, herramientas:false, administracion:false,
         configuracion:false, soporte:true
       };
@@ -800,15 +800,15 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   // 1. Restaurar datos guardados (productos, ventas, etc.)
-App._loadDB();
+  App._loadDB();
 
-// 2. Cargar productos desde Google Sheets
-SheetsSync.cargarProductos();
+  // 2. Cargar productos desde Google Sheets
+  SheetsSync.cargarProductos();
 
-  // 2. Intentar restaurar sesión activa (evita cerrar sesión al recargar)
+  // 3. Intentar restaurar sesión activa (evita cerrar sesión al recargar)
   var sessionRestored = App._restoreSession();
 
-  // 3. Si no hay sesión guardada, mostrar login normalmente
+  // 4. Si no hay sesión guardada, mostrar login normalmente
   if (!sessionRestored) {
     document.getElementById('loginPass')?.addEventListener('keydown', function(e) {
       if (e.key === 'Enter') App.login();
@@ -817,7 +817,6 @@ SheetsSync.cargarProductos();
       if (e.key === 'Enter') document.getElementById('loginPass')?.focus();
     });
   } else {
-    // Agregar listeners aunque ya haya sesión (por si hace logout y vuelve a login)
     document.getElementById('loginPass')?.addEventListener('keydown', function(e) {
       if (e.key === 'Enter') App.login();
     });
@@ -826,12 +825,12 @@ SheetsSync.cargarProductos();
     });
   }
 
-  // 4. Auto-guardar cada 60 segundos en segundo plano
+  // 5. Auto-guardar cada 60 segundos en segundo plano
   setInterval(function() {
     try { App._saveDB(); } catch(e) {}
   }, 60000);
 
-  // 5. Guardar antes de cerrar la pestaña
+  // 6. Guardar antes de cerrar la pestaña
   window.addEventListener('beforeunload', function() {
     try { App._saveDB(); } catch(e) {}
   });
