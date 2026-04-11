@@ -64,7 +64,7 @@ const DB = {
   // ---- PRODUCTOS (se carga desde Google Sheets) ----
   productos: [],
 
-  // ---- VENTAS (se carga desde localStorage) ----
+  // ---- VENTAS ----
   ventas: [],
 
   // ---- CAJA ----
@@ -89,33 +89,38 @@ const DB = {
 
 // ============================================================
 // CARGA DE PRODUCTOS DESDE GOOGLE SHEETS
+// Se llama DESPUÉS de que el sistema carga localStorage
 // ============================================================
 
 const SheetsSync = {
+
+  cargado: false,
 
   async cargarProductos() {
     try {
       const res = await fetch(SHEET_URL);
       const text = await res.text();
 
-      // Google devuelve el JSON envuelto en /*O_o*/\ngoogle.visualization.Query.setResponse({...});
       const jsonStart = text.indexOf('{');
       const jsonEnd = text.lastIndexOf('}');
       const json = JSON.parse(text.substring(jsonStart, jsonEnd + 1));
 
       const rows = json.table.rows;
-      const productos = [];
+      if (!rows || rows.length === 0) {
+        console.warn('Google Sheets sin datos');
+        return;
+      }
 
+      const productos = [];
       rows.forEach((row, index) => {
-        if (!row.c || !row.c[1] || !row.c[1].v) return; // saltar filas vacías
+        if (!row.c || !row.c[1] || !row.c[1].v) return;
         productos.push({
           id:        row.c[0]?.v || (index + 1),
-          nombre:    row.c[1]?.v || '',
-          categoria: row.c[2]?.v || 'General',
+          nombre:    String(row.c[1]?.v || ''),
+          categoria: String(row.c[2]?.v || 'General'),
           precio:    parseFloat(row.c[3]?.v) || 0,
           stock:     parseInt(row.c[4]?.v)   || 0,
-          imagen:    row.c[5]?.v || '',
-          // Campos adicionales para compatibilidad con el ERP
+          imagen:    String(row.c[5]?.v || ''),
           codigo:    'P' + String(row.c[0]?.v || index + 1).padStart(4, '0'),
           unidad:    'UND',
           igv:       18,
@@ -124,26 +129,28 @@ const SheetsSync = {
       });
 
       DB.productos = productos;
+      this.cargado = true;
       console.log(`✅ ${productos.length} productos cargados desde Google Sheets`);
 
+      // Si la app ya está visible, refrescar pantalla actual
+      const mainApp = document.getElementById('mainApp');
+      if (typeof App !== 'undefined' && mainApp && !mainApp.classList.contains('hidden')) {
+        App.renderPage();
+      }
+
     } catch(e) {
-      console.warn('⚠️ No se pudo cargar Google Sheets, usando localStorage:', e);
-      // Fallback: cargar desde localStorage si falla la conexión
-      const p = localStorage.getItem('erp_jumila_productos');
-      if (p) DB.productos = JSON.parse(p);
+      console.warn('⚠️ Error cargando Google Sheets:', e);
     }
   }
 };
 
 // ============================================================
 // PERSISTENCIA EN localStorage
-// Carga y guarda datos automáticamente
 // ============================================================
 
 const Storage = {
 
   KEYS: {
-    productos:   'erp_jumila_productos',
     ventas:      'erp_jumila_ventas',
     clientes:    'erp_jumila_clientes',
     compras:     'erp_jumila_compras',
@@ -174,7 +181,7 @@ const Storage = {
       if (e) DB.empresa = JSON.parse(e);
 
       const k = localStorage.getItem(this.KEYS.kardex);
-      if (k && typeof DB.kardex !== 'undefined') DB.kardex = JSON.parse(k);
+      if (k) DB.kardex = JSON.parse(k);
 
       const cot = localStorage.getItem(this.KEYS.cotizaciones);
       if (cot) DB.cotizaciones = JSON.parse(cot);
@@ -202,12 +209,11 @@ const Storage = {
         console.warn('localStorage lleno.');
         return false;
       }
-      console.warn('Error al guardar:', e);
       return false;
     }
   },
 
-  guardarProductos()    { return this.guardar(this.KEYS.productos,    DB.productos); },
+  guardarProductos()    { return true; }, // productos vienen de Google Sheets
   guardarVentas()       { return this.guardar(this.KEYS.ventas,       DB.ventas); },
   guardarClientes()     { return this.guardar(this.KEYS.clientes,     DB.clientes); },
   guardarCompras()      { return this.guardar(this.KEYS.compras,      DB.compras); },
@@ -224,6 +230,5 @@ const Storage = {
   }
 };
 
-// ── Cargar datos al iniciar la página ──
+// ── Cargar localStorage al iniciar (sin productos, esos vienen de Sheets) ──
 Storage.cargar();
-SheetsSync.cargarProductos();
