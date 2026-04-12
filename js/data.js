@@ -3,7 +3,7 @@
 // Productos se leen y escriben en Google Sheets via Apps Script
 // ============================================================
 
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxkbrM53RlXDKNyDtQUTQ1dB0kzG0o3XP3KSm_hGXybJsa98zzgBqtOqyfMomCsGHT2MQ/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwc3wA4WUrgwFfjt8t6MZT_rv1BUcTotHcvGluJ4vU932qwoVMsdrfoJTXQikRzA7mkAg/exec';
 
 const DB = {
 
