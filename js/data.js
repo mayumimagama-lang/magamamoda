@@ -113,12 +113,10 @@ const SheetsSync = {
           descripcion:      p.descripcion || '',
           barcode:          ''
         }));
-        // MERGE: Sheets + productos locales no sincronizados aún
-        const idsSheets = new Set(deSheets.map(p => String(p.id)));
-        const soloLocal = DB.productos.filter(p => !idsSheets.has(String(p.id)));
-        DB.productos = [...deSheets, ...soloLocal];
+        // ✅ Sheets es la fuente de verdad — reemplazar todo
+        DB.productos = deSheets;
         Storage.guardarProductos();
-        console.log('✅ ' + DB.productos.length + ' productos cargados');
+        console.log('✅ ' + DB.productos.length + ' productos cargados desde Sheets');
       }
       const mainApp = document.getElementById('mainApp');
       if (typeof App !== 'undefined' && mainApp && !mainApp.classList.contains('hidden')) {
@@ -140,12 +138,14 @@ const SheetsSync = {
         stock:       producto.stock       || 0,
         descripcion: producto.descripcion || '',
         codigo:      producto.codigo      || ''
-        // imagen NO se envía (Base64 es demasiado grande para URL)
       });
       const res  = await fetch(SCRIPT_URL + '?' + params.toString());
       const json = await res.json();
       if (json.ok) {
         console.log('✅ Producto guardado en Sheets id=' + json.id);
+        // ✅ Recargar desde Sheets para reemplazar el ID temporal local
+        // con el ID real de Sheets y evitar duplicados
+        await this.cargarProductos();
         return { ok: true, id: json.id };
       }
       console.warn('⚠️ Sheets error:', json.error);
