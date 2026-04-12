@@ -96,7 +96,9 @@ const SheetsSync = {
       const res  = await fetch(SCRIPT_URL + '?accion=listar');
       const json = await res.json();
       if (json.ok && json.productos && json.productos.length > 0) {
-        DB.productos = json.productos.map(p => ({
+
+        // Convertir productos de Sheets al formato del ERP
+        const deSheets = json.productos.map(p => ({
           id:               p.id,
           nombre:           p.nombre       || '',
           categoria:        p.categoria    || 'General',
@@ -113,17 +115,26 @@ const SheetsSync = {
           descripcion:      p.descripcion  || '',
           barcode:          ''
         }));
-        // Guardar copia en localStorage
+
+        // ✅ MERGE: combinar Sheets + localStorage sin borrar ninguno
+        // Sheets es la fuente de verdad para productos que ya existen allá
+        // localStorage puede tener productos nuevos aún no sincronizados
+        const idsSheets = new Set(deSheets.map(p => String(p.id)));
+        const soloLocal = DB.productos.filter(p => !idsSheets.has(String(p.id)));
+
+        // Resultado final: todos los de Sheets + los locales que aún no llegaron a Sheets
+        DB.productos = [...deSheets, ...soloLocal];
         Storage.guardarProductos();
-        console.log(`✅ ${DB.productos.length} productos cargados desde Google Sheets`);
+        console.log(`✅ Sheets:${deSheets.length} + local pendiente:${soloLocal.length} = ${DB.productos.length} productos`);
       }
+
       // Refrescar pantalla si la app ya está activa
       const mainApp = document.getElementById('mainApp');
       if (typeof App !== 'undefined' && mainApp && !mainApp.classList.contains('hidden')) {
         App.renderPage();
       }
     } catch(e) {
-      console.warn('⚠️ Error cargando productos (usando localStorage):', e);
+      console.warn('⚠️ Error Sheets — usando solo localStorage:', e);
     }
   },
 
