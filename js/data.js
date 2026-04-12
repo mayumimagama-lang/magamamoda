@@ -132,20 +132,19 @@ const SheetsSync = {
       const params = new URLSearchParams({
         action:    'add',
         nombre:    producto.nombre,
-        categoria: producto.categoria  || 'General',
+        categoria: producto.categoria    || 'General',
         precio:    producto.precio_venta || producto.precio || 0,
-        stock:     producto.stock      || 0,
-        imagen:    producto.imagen     || ''
+        stock:     producto.stock        || 0,
+        imagen:    producto.imagen       || ''
       });
       const res  = await fetch(SCRIPT_URL + '?' + params.toString());
       const json = await res.json();
-      if (json.ok) {
-        await this.cargarProductos();
-        return { ok: true, id: json.id };
-      }
+      // ✅ NO recargar — el producto ya está en DB.productos localmente
+      if (json.ok) { console.log('✅ Sheets add OK id='+json.id); return { ok: true, id: json.id }; }
+      console.warn('⚠️ Sheets add falló:', json.msg);
       return { ok: false, msg: json.msg };
     } catch(e) {
-      console.error('Error agregando producto:', e);
+      console.warn('⚠️ Error sync Sheets (producto sí quedó local):', e);
       return { ok: false, msg: e.toString() };
     }
   },
@@ -157,19 +156,40 @@ const SheetsSync = {
         action:    'update',
         id:        producto.id,
         nombre:    producto.nombre,
-        categoria: producto.categoria  || 'General',
+        categoria: producto.categoria    || 'General',
         precio:    producto.precio_venta || producto.precio || 0,
-        stock:     producto.stock      || 0,
-        imagen:    producto.imagen     || ''
+        stock:     producto.stock        || 0,
+        imagen:    producto.imagen       || ''
       });
       const res  = await fetch(SCRIPT_URL + '?' + params.toString());
       const json = await res.json();
-      if (json.ok) {
-        await this.cargarProductos();
-        return { ok: true };
-      }
+      if (json.ok) { console.log('✅ Sheets actualizado'); return { ok: true }; }
+      console.warn('⚠️ Sheets no actualizó:', json.msg);
       return { ok: false, msg: json.msg };
     } catch(e) {
+      console.warn('⚠️ Error sync Sheets (local OK):', e);
+      return { ok: false, msg: e.toString() };
+    }
+  },
+
+  // ── Agregar producto ──
+  async agregarProducto(producto) {
+    try {
+      const params = new URLSearchParams({
+        action:    'add',
+        nombre:    producto.nombre,
+        categoria: producto.categoria    || 'General',
+        precio:    producto.precio_venta || producto.precio || 0,
+        stock:     producto.stock        || 0,
+        imagen:    producto.imagen       || ''
+      });
+      const res  = await fetch(SCRIPT_URL + '?' + params.toString());
+      const json = await res.json();
+      if (json.ok) { console.log('✅ Sheets agregado id='+json.id); return { ok: true, id: json.id }; }
+      console.warn('⚠️ Sheets no guardó:', json.msg);
+      return { ok: false, msg: json.msg };
+    } catch(e) {
+      console.warn('⚠️ Error sync Sheets (local OK):', e);
       return { ok: false, msg: e.toString() };
     }
   },
@@ -180,12 +200,11 @@ const SheetsSync = {
       const params = new URLSearchParams({ action: 'delete', id: id });
       const res  = await fetch(SCRIPT_URL + '?' + params.toString());
       const json = await res.json();
-      if (json.ok) {
-        await this.cargarProductos();
-        return { ok: true };
-      }
+      if (json.ok) { console.log('✅ Sheets eliminado'); return { ok: true }; }
+      console.warn('⚠️ Sheets no eliminó:', json.msg);
       return { ok: false, msg: json.msg };
     } catch(e) {
+      console.warn('⚠️ Error sync Sheets (local OK):', e);
       return { ok: false, msg: e.toString() };
     }
   }
