@@ -217,6 +217,7 @@ const SheetsSync = {
 const Storage = {
 
   KEYS: {
+    productos:   'erp_magama_productos',      // ← NUEVO: productos en localStorage
     ventas:      'erp_jumila_ventas',
     clientes:    'erp_jumila_clientes',
     compras:     'erp_jumila_compras',
@@ -231,6 +232,10 @@ const Storage = {
 
   cargar() {
     try {
+      // ← Cargar productos desde localStorage (respaldo local)
+      const pr = localStorage.getItem(this.KEYS.productos);
+      if (pr) { const parsed = JSON.parse(pr); if (parsed.length > 0) DB.productos = parsed; }
+
       const v = localStorage.getItem(this.KEYS.ventas);
       if (v) DB.ventas = JSON.parse(v);
 
@@ -275,7 +280,7 @@ const Storage = {
     }
   },
 
-  guardarProductos()    { return true; }, // productos van a Google Sheets
+  guardarProductos()    { return this.guardar(this.KEYS.productos, DB.productos); }, // guarda local + Sheets
   guardarVentas()       { return this.guardar(this.KEYS.ventas,       DB.ventas); },
   guardarClientes()     { return this.guardar(this.KEYS.clientes,     DB.clientes); },
   guardarCompras()      { return this.guardar(this.KEYS.compras,      DB.compras); },
