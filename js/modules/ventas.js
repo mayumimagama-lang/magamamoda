@@ -970,7 +970,7 @@ const VentasModule = {
     var tipoCorto = serie.startsWith('BV') ? 'BOL' : serie.startsWith('FC') ? 'FAC' : 'N. VENTA';
 
     var venta = {
-      id:               DB.ventas.length + 1,
+      id:               Date.now(),
       fecha:            fecha, hora: hora,
       serie:            serie, numero: numero,
       tipo:             tipoCorto,
@@ -997,9 +997,10 @@ const VentasModule = {
     });
 
     DB.ventas.unshift(venta);
-    Storage.guardarVentas();
-    Storage.guardarProductos();
-    Storage.guardarSequences();
+Storage.guardarVentas();
+Storage.guardarProductos();
+Storage.guardarSequences();
+SheetsSync.guardarVenta(venta);
 
     App.toast('✅ ' + serie + '-' + numero + ' procesado — Vuelto: S/ ' + venta.vuelto.toFixed(2), 'success');
     this.imprimirComprobante(venta);
