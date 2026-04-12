@@ -3,7 +3,7 @@
 // Productos se leen y escriben en Google Sheets via Apps Script
 // ============================================================
 
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwc3wA4WUrgwFfjt8t6MZT_rv1BUcTotHcvGluJ4vU932qwoVMsdrfoJTXQikRzA7mkAg/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyLMOKW1gPTP2ZjrktwuZIqq5a54nHOi6QHZIsg6RQsOlf8GeB0JcsVwvjrMCRMfpPg/exec';
 
 const DB = {
 
@@ -93,27 +93,28 @@ const SheetsSync = {
   // ── Cargar todos los productos ──
   async cargarProductos() {
     try {
-      const res  = await fetch(SCRIPT_URL + '?action=getAll');
+      const res  = await fetch(SCRIPT_URL + '?accion=listar');
       const json = await res.json();
-      if (json.ok && json.productos.length > 0) {
-        // ✅ Mapeo correcto: precio → precio_venta + campos requeridos por productos.js
+      if (json.ok && json.productos && json.productos.length > 0) {
         DB.productos = json.productos.map(p => ({
           id:               p.id,
-          nombre:           p.nombre            || '',
-          categoria:        p.categoria         || 'General',
+          nombre:           p.nombre       || '',
+          categoria:        p.categoria    || 'General',
           precio_venta:     parseFloat(p.precio) || 0,
           precio_compra:    0,
           precio_mayorista: 0,
           stock:            parseInt(p.stock)    || 0,
           stock_minimo:     10,
-          imagen:           p.imagen             || '',
-          codigo:           'P' + String(p.id).padStart(4, '0'),
+          imagen:           p.imagen       || '',
+          codigo:           p.codigo || ('P' + String(p.id).padStart(4, '0')),
           unidad:           'UND',
           igv:              true,
           activo:           true,
-          descripcion:      '',
+          descripcion:      p.descripcion  || '',
           barcode:          ''
         }));
+        // Guardar copia en localStorage
+        Storage.guardarProductos();
         console.log(`✅ ${DB.productos.length} productos cargados desde Google Sheets`);
       }
       // Refrescar pantalla si la app ya está activa
@@ -122,89 +123,69 @@ const SheetsSync = {
         App.renderPage();
       }
     } catch(e) {
-      console.warn('⚠️ Error cargando productos:', e);
+      console.warn('⚠️ Error cargando productos (usando localStorage):', e);
     }
   },
 
-  // ── Agregar producto ──
+  // ── Agregar producto (POST JSON) ──
   async agregarProducto(producto) {
     try {
-      const params = new URLSearchParams({
-        action:    'add',
-        nombre:    producto.nombre,
-        categoria: producto.categoria    || 'General',
-        precio:    producto.precio_venta || producto.precio || 0,
-        stock:     producto.stock        || 0,
-        imagen:    producto.imagen       || ''
+      const res  = await fetch(SCRIPT_URL, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ accion: 'agregar', producto: producto })
       });
-      const res  = await fetch(SCRIPT_URL + '?' + params.toString());
       const json = await res.json();
-      // ✅ NO recargar — el producto ya está en DB.productos localmente
-      if (json.ok) { console.log('✅ Sheets add OK id='+json.id); return { ok: true, id: json.id }; }
-      console.warn('⚠️ Sheets add falló:', json.msg);
-      return { ok: false, msg: json.msg };
+      if (json.ok) {
+        console.log('✅ Producto guardado en Sheets, id=' + json.id);
+        return { ok: true, id: json.id };
+      }
+      console.warn('⚠️ Sheets no guardó:', json.error);
+      return { ok: false, msg: json.error };
     } catch(e) {
       console.warn('⚠️ Error sync Sheets (producto sí quedó local):', e);
       return { ok: false, msg: e.toString() };
     }
   },
 
-  // ── Actualizar producto ──
+  // ── Actualizar producto (POST JSON) ──
   async actualizarProducto(producto) {
     try {
-      const params = new URLSearchParams({
-        action:    'update',
-        id:        producto.id,
-        nombre:    producto.nombre,
-        categoria: producto.categoria    || 'General',
-        precio:    producto.precio_venta || producto.precio || 0,
-        stock:     producto.stock        || 0,
-        imagen:    producto.imagen       || ''
+      const res  = await fetch(SCRIPT_URL, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ accion: 'editar', producto: producto })
       });
-      const res  = await fetch(SCRIPT_URL + '?' + params.toString());
       const json = await res.json();
-      if (json.ok) { console.log('✅ Sheets actualizado'); return { ok: true }; }
-      console.warn('⚠️ Sheets no actualizó:', json.msg);
-      return { ok: false, msg: json.msg };
+      if (json.ok) {
+        console.log('✅ Producto actualizado en Sheets');
+        return { ok: true };
+      }
+      console.warn('⚠️ Sheets no actualizó:', json.error);
+      return { ok: false, msg: json.error };
     } catch(e) {
-      console.warn('⚠️ Error sync Sheets (local OK):', e);
+      console.warn('⚠️ Error sync Sheets (local sí actualizado):', e);
       return { ok: false, msg: e.toString() };
     }
   },
 
-  // ── Agregar producto ──
-  async agregarProducto(producto) {
-    try {
-      const params = new URLSearchParams({
-        action:    'add',
-        nombre:    producto.nombre,
-        categoria: producto.categoria    || 'General',
-        precio:    producto.precio_venta || producto.precio || 0,
-        stock:     producto.stock        || 0,
-        imagen:    producto.imagen       || ''
-      });
-      const res  = await fetch(SCRIPT_URL + '?' + params.toString());
-      const json = await res.json();
-      if (json.ok) { console.log('✅ Sheets agregado id='+json.id); return { ok: true, id: json.id }; }
-      console.warn('⚠️ Sheets no guardó:', json.msg);
-      return { ok: false, msg: json.msg };
-    } catch(e) {
-      console.warn('⚠️ Error sync Sheets (local OK):', e);
-      return { ok: false, msg: e.toString() };
-    }
-  },
-
-  // ── Eliminar producto ──
+  // ── Eliminar producto (POST JSON) ──
   async eliminarProducto(id) {
     try {
-      const params = new URLSearchParams({ action: 'delete', id: id });
-      const res  = await fetch(SCRIPT_URL + '?' + params.toString());
+      const res  = await fetch(SCRIPT_URL, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ accion: 'borrar', id: id })
+      });
       const json = await res.json();
-      if (json.ok) { console.log('✅ Sheets eliminado'); return { ok: true }; }
-      console.warn('⚠️ Sheets no eliminó:', json.msg);
-      return { ok: false, msg: json.msg };
+      if (json.ok) {
+        console.log('✅ Producto eliminado en Sheets');
+        return { ok: true };
+      }
+      console.warn('⚠️ Sheets no eliminó:', json.error);
+      return { ok: false, msg: json.error };
     } catch(e) {
-      console.warn('⚠️ Error sync Sheets (local OK):', e);
+      console.warn('⚠️ Error sync Sheets (local sí eliminado):', e);
       return { ok: false, msg: e.toString() };
     }
   }
