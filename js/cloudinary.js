@@ -10,9 +10,9 @@ const CloudinaryUpload = {
       formData.append('upload_preset', CLOUDINARY_PRESET);
       formData.append('folder', 'magama/' + (carpeta || 'productos'));
       const res = await fetch(
-        'https://api.cloudinary.com/v1_1/' + CLOUDINARY_CLOUD + '/image/upload',
-        { method: 'POST', body: formData }
-      );
+  'https://api.cloudinary.com/v1_1/dwlymmnsh/image/upload',
+  { method: 'POST', body: formData }
+);
       const data = await res.json();
       if (data.secure_url) {
         console.log('✅ Imagen subida a Cloudinary:', data.secure_url);
