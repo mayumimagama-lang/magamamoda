@@ -1000,7 +1000,7 @@ const VentasModule = {
 Storage.guardarVentas();
 Storage.guardarProductos();
 Storage.guardarSequences();
-SheetsSync.guardarVenta(venta);
+SupabaseDB.guardarVenta(venta);
 
     App.toast('✅ ' + serie + '-' + numero + ' procesado — Vuelto: S/ ' + venta.vuelto.toFixed(2), 'success');
     this.imprimirComprobante(venta);
