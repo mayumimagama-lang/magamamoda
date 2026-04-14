@@ -243,13 +243,6 @@ const SheetsSync = {
   }
 };
 
-// ── Cargar localStorage al iniciar ──
-Storage.cargar();
-
-// ── Cargar desde Supabase al iniciar ──
-SupabaseDB.cargarProductos();
-SupabaseDB.cargarVentas();
-
 // ============================================================
 // PERSISTENCIA EN localStorage (ventas, clientes, etc.)
 // ============================================================
