@@ -334,6 +334,6 @@ const Storage = {
 // ── Cargar localStorage al iniciar ──
 Storage.cargar();
 
-// ── Cargar desde Google Sheets al iniciar ──
-SheetsSync.cargarProductos();
-SheetsSync.cargarVentas();
+// ── Cargar desde Supabase al iniciar ──
+SupabaseDB.cargarProductos();
+SupabaseDB.cargarVentas();
