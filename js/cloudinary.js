@@ -1,4 +1,4 @@
-const CLOUDINARY_CLOUD = 'dwlymm nsh';
+const CLOUDINARY_CLOUD = 'dwlymmnsh';
 const CLOUDINARY_PRESET = 'magama';
 
 const CloudinaryUpload = {
