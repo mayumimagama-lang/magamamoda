@@ -8,20 +8,18 @@ const CloudinaryUpload = {
       const formData = new FormData();
       formData.append('file', comprimida);
       formData.append('upload_preset', CLOUDINARY_PRESET);
-      formData.append('folder', 'magama/' + (carpeta || 'productos'));
       const res = await fetch(
-  'https://api.cloudinary.com/v1_1/dwlymmnsh/image/upload',
-  { method: 'POST', body: formData }
-);
+        'https://api.cloudinary.com/v1_1/' + CLOUDINARY_CLOUD + '/image/upload',
+        { method: 'POST', body: formData }
+      );
       const data = await res.json();
       if (data.secure_url) {
-        console.log('✅ Imagen subida a Cloudinary:', data.secure_url);
-        return { ok: true, url: data.secure_url, public_id: data.public_id };
+        console.log('✅ Imagen subida:', data.secure_url);
+        return { ok: true, url: data.secure_url };
       }
-      console.warn('⚠️ Error Cloudinary:', data.error);
+      console.warn('❌ Error:', data);
       return { ok: false };
     } catch(e) {
-      console.warn('⚠️ Error subiendo imagen:', e);
       return { ok: false };
     }
   },
