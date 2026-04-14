@@ -2,6 +2,8 @@
 // MÓDULO: PRODUCTOS / SERVICIOS — Versión Profesional
 // ============================================================
 
+let urlImagenTemporal = "";
+
 const ProductosModule = {
   searchTerm:      '',
   currentPage:     1,
