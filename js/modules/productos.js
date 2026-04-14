@@ -831,46 +831,36 @@ const ProductosModule = {
   // ─── IMAGEN: MÉTODOS ───
 
   _onImageChange(input) {
-    const file = input.files[0];
-    if (!file) return;
-    // Validar tamaño (máx 2MB)
-    if (file.size > 5 * 1024 * 1024) {
-      App.toast('La imagen supera 5MB. Usa una imagen más pequeña.', 'error');
-      input.value = '';
-      return;
+  const file = input.files[0];
+  if (!file) return;
+  if (file.size > 5 * 1024 * 1024) {
+    App.toast('La imagen supera 5MB.', 'error');
+    input.value = '';
+    return;
+  }
+
+  // Mostrar preview local mientras sube
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const wrap = document.getElementById('imgPreviewWrap');
+    if (wrap) {
+      wrap.innerHTML = '<img src="' + e.target.result + '" style="width:100%;height:100%;object-fit:cover;border-radius:10px;"/>';
     }
-    const reader = new FileReader();
-    reader.onload = function(e) {
-      const base64 = e.target.result;
-      // Guardar en el campo hidden
+  };
+  reader.readAsDataURL(file);
+
+  // Subir a Cloudinary
+  App.toast('⏳ Subiendo imagen...', 'info');
+  CloudinaryUpload.subir(file, 'productos').then(res => {
+    if (res.ok) {
       const hiddenInput = document.getElementById('fp_imagen');
-      if (hiddenInput) hiddenInput.value = base64;
-      // Actualizar preview
-      const wrap = document.getElementById('imgPreviewWrap');
-      if (wrap) {
-        wrap.innerHTML = '<img id="imgPreview" src="' + base64 + '" style="width:100%;height:100%;object-fit:cover;border-radius:10px;" alt="Producto"/>';
-      }
-      // Agregar botón quitar si no existe
-      const qBtn = document.getElementById('btnQuitarImg');
-      if (!qBtn) {
-        const ctrl = wrap && wrap.nextElementSibling;
-        if (ctrl) {
-          const btn = document.createElement('button');
-          btn.type = 'button'; btn.id = 'btnQuitarImg';
-          btn.className = 'btn btn-outline';
-          btn.style.cssText = 'width:100%;color:var(--danger);border-color:var(--danger);margin-bottom:8px;';
-          btn.innerHTML = '<i class="fas fa-trash"></i> Quitar imagen';
-          btn.onclick = function(){ ProductosModule._quitarImagen(); };
-          // Insert before the last info div
-          const infos = ctrl.querySelectorAll('div');
-          const lastInfo = infos[infos.length-1];
-          if (lastInfo) ctrl.insertBefore(btn, lastInfo);
-        }
-      }
-      App.toast('Imagen cargada correctamente', 'success');
-    };
-    reader.readAsDataURL(file);
-  },
+      if (hiddenInput) hiddenInput.value = res.url;
+      App.toast('✅ Imagen subida correctamente', 'success');
+    } else {
+      App.toast('❌ Error al subir imagen', 'error');
+    }
+  });
+},
 
   _quitarImagen() {
     const hiddenInput = document.getElementById('fp_imagen');
