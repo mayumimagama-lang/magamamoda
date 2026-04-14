@@ -1,5 +1,5 @@
 const CLOUDINARY_CLOUD = 'dwlymmnsh';
-const CLOUDINARY_PRESET = 'ml_default';
+const CLOUDINARY_PRESET = 'magama';
 
 const CloudinaryUpload = {
   async subir(file, carpeta) {
