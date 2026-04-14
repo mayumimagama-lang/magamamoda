@@ -3,7 +3,7 @@
 // ============================================================
 
 const SUPABASE_URL = 'https://eandhzmzotmundjsbpng.supabase.co'; // ← tu URL real
-const SUPABASE_KEY = 'sb_publishable_c53Zhf...'; // ← tu clave real
+const SUPABASE_KEY = 'sb_publishable_c53ZhfK5P2nGYlP5JP8Mow_IGciQWui'; // ← tu clave real
 
 const { createClient } = supabase;
 const db = createClient(SUPABASE_URL, SUPABASE_KEY);
