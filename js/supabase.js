@@ -2,8 +2,8 @@
 // SUPABASE — Conexión con la base de datos en la nube
 // ============================================================
 
-const SUPABASE_URL  = 'AQUI_TU_PROJECT_URL';   // ← reemplaza
-const SUPABASE_KEY  = 'AQUI_TU_PUBLISHABLE_KEY'; // ← reemplaza
+const SUPABASE_URL = 'https://eandhzmzotmundjsbpng.supabase.co'; // ← tu URL real
+const SUPABASE_KEY = 'sb_publishable_c53Zhf...'; // ← tu clave real
 
 const { createClient } = supabase;
 const db = createClient(SUPABASE_URL, SUPABASE_KEY);
