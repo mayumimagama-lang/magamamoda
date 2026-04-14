@@ -12,10 +12,10 @@ const ProductosModule = {
   sortDir:         'asc',
   seleccionados:   [],
 
-  // ─── GOOGLE SHEETS SYNC — usa SheetsSync de data.js ───
-  // SheetsSync.agregarProducto(data)   → action=add
-  // SheetsSync.actualizarProducto(data) → action=update
-  // SheetsSync.eliminarProducto(id)    → action=delete
+  // ─── GOOGLE SHEETS SYNC — usa SupabaseDB de data.js ───
+  // SupabaseDB.agregarProducto(data)   → action=add
+  // SupabaseDB.actualizarProducto(data) → action=update
+  // SupabaseDB.eliminarProducto(id)    → action=delete
 
   // ─── RENDER ───
   render() {
@@ -323,7 +323,7 @@ const ProductosModule = {
     if(!confirm('¿Eliminar '+this.seleccionados.length+' productos?')) return;
     DB.productos = DB.productos.filter(p => !this.seleccionados.includes(p.id));
     Storage.guardarProductos();
-    this.seleccionados.forEach(id => SheetsSync.eliminarProducto(id)); // ← SHEETS
+    this.seleccionados.forEach(id => SupabaseDB.eliminarProducto(id)); // ← SHEETS
     App.toast(this.seleccionados.length+' productos eliminados','warning');
     this.seleccionados = [];
     App.renderPage();
@@ -618,8 +618,8 @@ const ProductosModule = {
     else{const newId=DB.productos.length?Math.max(...DB.productos.map(x=>x.id))+1:1;DB.productos.push({id:newId,...data});App.toast('✅ Producto registrado','success');}
     Storage.guardarProductos();
     // ← SHEETS
-    if(id){ SheetsSync.actualizarProducto(DB.productos.find(x=>x.id===id)); }
-    else  { SheetsSync.agregarProducto(DB.productos[DB.productos.length-1]); }
+    if(id){ SupabaseDB.actualizarProducto(DB.productos.find(x=>x.id===id)); }
+    else  { SupabaseDB.agregarProducto(DB.productos[DB.productos.length-1]); }
     App.closeModal();App.renderPage();
   },
 
@@ -629,7 +629,7 @@ const ProductosModule = {
     const newId=Math.max(...DB.productos.map(x=>x.id))+1;
     DB.productos.push({...p,id:newId,codigo:p.codigo+'_COPIA',nombre:p.nombre+' (Copia)',stock:0});
     Storage.guardarProductos();
-    SheetsSync.agregarProducto(DB.productos[DB.productos.length-1]); // ← SHEETS
+    SupabaseDB.agregarProducto(DB.productos[DB.productos.length-1]); // ← SHEETS
     App.toast('Producto duplicado','success');App.renderPage();
     setTimeout(()=>this.editar(newId),300);
   },
@@ -673,7 +673,7 @@ const ProductosModule = {
         else DB.productos[i].stock=cant;
         if(typeof KardexModule!=='undefined'){KardexModule.registrar([{prod_id:id,qty:Math.abs(DB.productos[i].stock-antes)}],tipo==='salida'?'SALIDA':tipo==='entrada'?'ENTRADA':'AJUSTE',motivo);}
         Storage.guardarProductos();
-        SheetsSync.actualizarProducto(DB.productos[i]); // ← SHEETS
+        SupabaseDB.actualizarProducto(DB.productos[i]); // ← SHEETS
         App.toast('Stock: '+antes+' → '+DB.productos[i].stock+' '+p.unidad,'success');
         App.closeModal();App.renderPage();
       }}]
@@ -715,7 +715,7 @@ const ProductosModule = {
       DB.productos=DB.productos.filter(x=>x.id!==id);
       this.seleccionados=this.seleccionados.filter(x=>x!==id);
       Storage.guardarProductos();
-      SheetsSync.eliminarProducto(id); // ← SHEETS
+      SupabaseDB.eliminarProducto(id); // ← SHEETS
       App.toast('Producto eliminado: '+p.nombre,'warning');
       App.renderPage();
     }
@@ -765,8 +765,8 @@ const ProductosModule = {
       if(!codigo||!nombre||!pv){err++;return;}
       const ex=DB.productos.findIndex(p=>p.codigo===codigo);
       const data={codigo,nombre,categoria:categoria||'General',unidad:unidad||'UND',precio_venta:parseFloat(pv)||0,precio_compra:parseFloat(pc)||0,stock:parseInt(stock)||0,stock_minimo:10,igv:true,descripcion:'',imagen:'',barcode:''};
-      if(ex>=0){if(mode==='update'){DB.productos[ex]={...DB.productos[ex],...data};act++;SheetsSync.actualizarProducto(DB.productos[ex]);}}
-      else{const newId=DB.productos.length?Math.max(...DB.productos.map(x=>x.id))+1:1;DB.productos.push({id:newId,...data});imp++;SheetsSync.agregarProducto(DB.productos[DB.productos.length-1]);}
+      if(ex>=0){if(mode==='update'){DB.productos[ex]={...DB.productos[ex],...data};act++;SupabaseDB.actualizarProducto(DB.productos[ex]);}}
+      else{const newId=DB.productos.length?Math.max(...DB.productos.map(x=>x.id))+1:1;DB.productos.push({id:newId,...data});imp++;SupabaseDB.agregarProducto(DB.productos[DB.productos.length-1]);}
     });
     App.toast('✅ '+imp+' importados · '+act+' actualizados · '+err+' errores',imp>0?'success':'warning');
     Storage.guardarProductos();
