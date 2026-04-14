@@ -235,7 +235,6 @@ const SheetsSync = {
       const res  = await fetch(SCRIPT_URL + '?' + params.toString(), { redirect: 'follow' });
       const json = await res.json();
       if (json.ok) { console.log('✅ Venta guardada en Sheets'); return { ok: true }; }
-      console.warn('⚠️ Error guardando venta:', json.error);
       return { ok: false };
     } catch(e) {
       console.warn('⚠️ Sheets no disponible, venta guardada local:', e);
@@ -243,6 +242,13 @@ const SheetsSync = {
     }
   }
 };
+
+// ── Cargar localStorage al iniciar ──
+Storage.cargar();
+
+// ── Cargar desde Supabase al iniciar ──
+SupabaseDB.cargarProductos();
+SupabaseDB.cargarVentas();
 
 // ============================================================
 // PERSISTENCIA EN localStorage (ventas, clientes, etc.)
