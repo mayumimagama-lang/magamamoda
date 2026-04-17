@@ -113,53 +113,124 @@ const CotizacionesModule = {
     App.renderPage();
   },
 
-  _renderForm() {
+    _renderForm() {
     const total    = this.currentItems.reduce((s, i) => s + i.total, 0);
+    const subtotal = total / 1.18;
+    const igv      = total - subtotal;
     const self     = this;
     const hoy      = new Date().toISOString().split('T')[0];
     const venc     = new Date(Date.now() + 30*24*60*60*1000).toISOString().split('T')[0];
     const numero   = 'COT-' + String(DB._cotSeq).padStart(3,'0');
 
-    // Buscador live de productos
-    let buscadorArea = '';
+    // Productos recientes
+    const productosRecientes = (function() {
+      const usados = {};
+      DB.cotizaciones.slice(0,10).forEach(c => c.items.forEach(it => { usados[it.prod_id] = true; }));
+      let recientes = DB.productos.filter(p => usados[p.id]).slice(0,8);
+      if (recientes.length < 4) {
+        DB.productos.forEach(p => { if (!usados[p.id] && recientes.length < 8) recientes.push(p); });
+      }
+      return recientes;
+    })();
+
+    // Area central de items/busqueda
+    let itemsArea = '';
     if (this._searchResults && this._searchResults.length > 0) {
-      buscadorArea = `
-        <div style="border:2px solid var(--accent);border-radius:10px;overflow:hidden;margin-top:8px;">
-          <div style="padding:8px 12px;background:var(--accent);color:white;font-size:11px;font-weight:800;display:flex;justify-content:space-between;align-items:center;">
-            <span>${this._searchResults.length} resultados</span>
-            <button onclick="CotizacionesModule._searchResults=null;App.renderPage();" style="background:none;border:none;color:white;cursor:pointer;font-size:14px;">✕</button>
+      itemsArea = `
+        <div style="padding:10px 14px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+            <span style="font-size:12px;font-weight:800;color:var(--gray-500);">
+              <i class="fas fa-search" style="margin-right:5px;color:var(--accent);"></i>
+              ${this._searchResults.length} resultados encontrados
+            </span>
+            <button onclick="CotizacionesModule._searchResults=null;App.renderPage();"
+              style="background:var(--gray-100);color:var(--gray-600);border:none;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;">
+              <i class="fas fa-times"></i> Cerrar
+            </button>
           </div>
-          <div style="max-height:280px;overflow-y:auto;">
-            <table class="data-table">
-              <tbody>
-                ${this._searchResults.map(p => {
-                  const sClr = p.stock===0?'#dc2626':p.stock<=10?'#d97706':'#16a34a';
-                  return `<tr style="cursor:pointer;" onclick="CotizacionesModule._agregarProd(${p.id})">
-                    <td>
-                      <div style="font-weight:700;font-size:13px;">${p.nombre}</div>
-                      <div style="font-size:11px;color:var(--gray-400);">${p.codigo} · ${p.unidad}</div>
-                    </td>
-                    <td><strong style="color:var(--accent);">S/ ${p.precio_venta.toFixed(2)}</strong></td>
-                    <td><span style="font-weight:700;color:${sClr};font-size:12px;">${p.stock===0?'Sin stock':'✓ '+p.stock}</span></td>
-                    <td>
-                      <button class="btn btn-primary btn-sm" ${p.stock===0?'disabled':''}><i class="fas fa-plus"></i> Agregar</button>
-                    </td>
-                  </tr>`;
-                }).join('')}
-              </tbody>
-            </table>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;">
+            ${this._searchResults.map(p => {
+              const sClr = p.stock===0?'#dc2626':p.stock<=10?'#d97706':'#16a34a';
+              return `<div onclick="CotizacionesModule._agregarProd(${p.id})"
+                style="display:flex;gap:10px;align-items:center;padding:10px;border-radius:10px;
+                border:1.5px solid var(--gray-200);background:white;cursor:pointer;
+                box-shadow:0 1px 4px rgba(0,0,0,0.06);">
+                <div style="width:56px;height:56px;border-radius:8px;background:var(--gray-100);
+                  display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                  <i class="fas fa-image" style="font-size:18px;color:var(--gray-300);"></i>
+                </div>
+                <div style="flex:1;min-width:0;">
+                  <div style="font-size:13px;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${p.nombre}</div>
+                  <div style="font-size:11px;color:var(--gray-400);">${p.codigo} · ${p.unidad}</div>
+                  <div style="display:flex;justify-content:space-between;">
+                    <span style="font-size:15px;font-weight:900;color:var(--accent);">S/ ${p.precio_venta.toFixed(2)}</span>
+                    <span style="font-size:11px;font-weight:700;color:${sClr};">${p.stock===0?'Sin stock':'✓ '+p.stock}</span>
+                  </div>
+                </div>
+              </div>`;
+            }).join('')}
           </div>
+          ${this.currentItems.length > 0 ? `
+            <div style="border-top:1px solid var(--gray-200);margin-top:12px;padding-top:12px;">
+              <div style="font-size:11px;font-weight:800;color:var(--gray-500);text-transform:uppercase;margin-bottom:8px;">EN LA COTIZACIÓN</div>
+              ${this._renderItemsList()}
+            </div>` : ''}
         </div>`;
     } else if (this._searchResults && this._searchResults.length === 0) {
-      buscadorArea = `<div style="padding:16px;text-align:center;color:var(--gray-400);background:var(--gray-50);border-radius:8px;margin-top:8px;">Sin resultados</div>`;
+      itemsArea = `
+        <div style="text-align:center;padding:40px;color:var(--gray-400);">
+          <i class="fas fa-search" style="font-size:40px;display:block;margin-bottom:12px;opacity:0.3;"></i>
+          <p style="font-size:14px;font-weight:700;">Sin resultados</p>
+          <button onclick="CotizacionesModule._searchResults=null;App.renderPage();"
+            style="margin-top:10px;background:var(--gray-100);color:var(--gray-600);border:none;border-radius:6px;padding:6px 14px;font-size:12px;cursor:pointer;">
+            Limpiar búsqueda
+          </button>
+        </div>`;
+    } else if (this.currentItems.length > 0) {
+      itemsArea = `<div style="padding:8px 12px;">${this._renderItemsList()}</div>`;
+    } else {
+      // Mostrar productos recientes
+      itemsArea = `
+        <div style="padding:14px 16px;">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:12px;">
+            <i class="fas fa-star" style="color:#f59e0b;font-size:14px;"></i>
+            <span style="font-size:12px;font-weight:800;color:var(--gray-500);text-transform:uppercase;letter-spacing:1px;">Productos Recientes</span>
+            <span style="font-size:11px;color:var(--gray-400);margin-left:4px;">— Clic para agregar</span>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;">
+            ${productosRecientes.map(p => {
+              const sClr = p.stock===0?'#dc2626':p.stock<=10?'#d97706':'#16a34a';
+              const sTxt = p.stock===0?'Sin stock':'Stock: '+p.stock;
+              return `<div onclick="CotizacionesModule._agregarProd(${p.id})"
+                style="display:flex;flex-direction:column;align-items:center;text-align:center;
+                padding:14px 10px;border-radius:12px;border:2px solid var(--gray-200);
+                background:white;cursor:pointer;${p.stock===0?'opacity:0.5;':''}">
+                <div style="width:70px;height:70px;border-radius:10px;background:var(--gray-100);
+                  display:flex;align-items:center;justify-content:center;margin-bottom:8px;
+                  border:2px dashed var(--gray-300);">
+                  <i class="fas fa-image" style="font-size:22px;color:var(--gray-300);"></i>
+                </div>
+                <div style="font-size:13px;font-weight:800;color:var(--gray-900);margin-bottom:4px;
+                  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;width:100%;">${p.nombre}</div>
+                <div style="font-size:15px;font-weight:900;color:var(--accent);margin-bottom:3px;">S/ ${p.precio_venta.toFixed(2)}</div>
+                <div style="font-size:11px;font-weight:700;color:${sClr};">${sTxt}</div>
+                ${p.stock>0 ? `<div style="margin-top:8px;padding:5px 14px;background:var(--accent);color:white;border-radius:6px;font-size:12px;font-weight:700;">
+                  <i class="fas fa-plus" style="margin-right:4px;"></i>Agregar</div>` : ''}
+              </div>`;
+            }).join('')}
+          </div>
+        </div>`;
     }
 
     return `
     <!-- TOPBAR -->
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:13px 18px;background:var(--gray-50);border-radius:12px;border:1.5px solid var(--gray-200);margin-bottom:16px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;
+      padding:13px 18px;background:var(--gray-50);border-radius:12px;
+      border:1.5px solid var(--gray-200);margin-bottom:16px;">
       <div style="display:flex;align-items:center;gap:12px;">
         <button onclick="CotizacionesModule.modoVista='lista';App.renderPage();"
-          style="background:white;color:var(--gray-700);border:1.5px solid var(--gray-200);border-radius:8px;padding:8px 16px;font-weight:700;cursor:pointer;font-size:13px;">
+          style="background:white;color:var(--gray-700);border:1.5px solid var(--gray-200);
+          border-radius:8px;padding:8px 16px;font-weight:700;cursor:pointer;font-size:13px;">
           <i class="fas fa-arrow-left" style="margin-right:6px;"></i>Regresar
         </button>
         <div>
@@ -168,8 +239,10 @@ const CotizacionesModule = {
         </div>
       </div>
       <button onclick="CotizacionesModule._guardar()"
-        style="background:linear-gradient(135deg,#15803d,#16a34a);color:white;border:none;border-radius:8px;padding:10px 26px;font-weight:900;cursor:pointer;font-size:15px;">
-        <i class="fas fa-save" style="margin-right:6px;"></i>GUARDAR COTIZACIÓN
+        style="background:linear-gradient(135deg,#15803d,#16a34a);color:white;border:none;
+        border-radius:8px;padding:8px 26px;font-weight:900;cursor:pointer;font-size:15px;
+        box-shadow:0 4px 12px rgba(22,163,74,0.3);">
+        <i class="fas fa-save" style="margin-right:6px;"></i>GUARDAR
       </button>
     </div>
 
@@ -177,28 +250,33 @@ const CotizacionesModule = {
 
       <!-- Datos del cliente -->
       <div class="card">
-        <div style="padding:14px 20px;border-bottom:1px solid var(--gray-200);">
-          <div style="font-size:11px;font-weight:800;color:var(--gray-400);text-transform:uppercase;letter-spacing:1px;">
-            <i class="fas fa-user" style="color:var(--accent);margin-right:5px;"></i>Datos del Cliente
-          </div>
-        </div>
-        <div style="padding:16px 20px;">
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;">
+        <div style="padding:14px 20px;">
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;">
             <div>
-              <div style="font-size:11px;font-weight:700;color:var(--gray-500);text-transform:uppercase;margin-bottom:6px;">CLIENTE *</div>
-              <select class="form-control" id="cot_cli" style="font-size:13px;">
-                ${DB.clientes.filter(c => c.tipo_cliente === 'cliente' || c.doc === '00000000').map(c =>
-                  `<option value="${c.id}" ${this.clienteSeleccionado?.id === c.id ? 'selected' : ''}>${c.nombre}</option>`
-                ).join('')}
-              </select>
+              <div style="font-size:10px;font-weight:700;color:var(--gray-400);text-transform:uppercase;margin-bottom:5px;">N° COTIZACIÓN</div>
+              <div style="padding:8px 12px;background:var(--gray-50);border:1.5px solid var(--gray-200);border-radius:8px;font-size:15px;font-weight:900;color:var(--accent);">${numero}</div>
             </div>
             <div>
-              <div style="font-size:11px;font-weight:700;color:var(--gray-500);text-transform:uppercase;margin-bottom:6px;">VÁLIDA HASTA</div>
+              <div style="font-size:10px;font-weight:700;color:var(--gray-400);text-transform:uppercase;margin-bottom:5px;">FECHA</div>
+              <div style="padding:8px 12px;background:var(--gray-50);border:1.5px solid var(--gray-200);border-radius:8px;font-size:14px;font-weight:700;color:var(--gray-700);">${hoy}</div>
+            </div>
+            <div>
+              <div style="font-size:10px;font-weight:700;color:var(--gray-400);text-transform:uppercase;margin-bottom:5px;">VÁLIDA HASTA</div>
               <input class="form-control" id="cot_venc" type="date" value="${venc}" style="font-size:13px;"/>
             </div>
             <div>
-              <div style="font-size:11px;font-weight:700;color:var(--gray-500);text-transform:uppercase;margin-bottom:6px;">NOTAS</div>
-              <input class="form-control" id="cot_notas" placeholder="Condiciones, observaciones..." style="font-size:13px;"/>
+              <div style="font-size:10px;font-weight:700;color:var(--gray-400);text-transform:uppercase;margin-bottom:5px;">NOTAS</div>
+              <input class="form-control" id="cot_notas" placeholder="Condiciones..." style="font-size:13px;"/>
+            </div>
+          </div>
+          <div style="margin-top:12px;">
+            <div style="font-size:11px;font-weight:700;color:var(--gray-500);text-transform:uppercase;margin-bottom:6px;">CLIENTE *</div>
+            <div style="display:flex;gap:8px;">
+              <select class="form-control" id="cot_cli" style="font-size:14px;flex:1;">
+                ${DB.clientes.filter(c => c.tipo_cliente==='cliente' || c.doc==='00000000').map(c =>
+                  `<option value="${c.id}" ${this.clienteSeleccionado?.id===c.id?'selected':''}>${c.nombre}</option>`
+                ).join('')}
+              </select>
             </div>
           </div>
         </div>
@@ -208,70 +286,91 @@ const CotizacionesModule = {
       <div class="card">
         <div style="padding:12px 20px;border-bottom:1px solid var(--gray-200);display:flex;align-items:center;justify-content:space-between;">
           <div style="font-size:11px;font-weight:800;color:var(--gray-400);text-transform:uppercase;letter-spacing:1px;">
-            <i class="fas fa-boxes" style="color:var(--accent);margin-right:5px;"></i>Productos
+            <i class="fas fa-boxes" style="color:var(--accent);margin-right:5px;"></i>Productos / Servicios
             <span style="background:var(--accent);color:white;font-size:10px;padding:1px 8px;border-radius:10px;margin-left:4px;">${this.currentItems.length}</span>
           </div>
         </div>
+        <div style="min-height:360px;">${itemsArea}</div>
 
-        <!-- Lista de items agregados -->
-        <div style="padding:14px 20px;">
-          ${this.currentItems.length === 0 ?
-            `<div style="text-align:center;padding:30px;color:var(--gray-400);background:var(--gray-50);border-radius:10px;margin-bottom:14px;">
-              <i class="fas fa-box-open" style="font-size:36px;display:block;margin-bottom:10px;opacity:0.3;"></i>
-              <div style="font-size:14px;font-weight:700;">Busca y agrega productos abajo</div>
-            </div>` :
-            `<div style="margin-bottom:14px;">
-              ${this.currentItems.map((item, i) => `
-                <div style="display:flex;align-items:center;gap:12px;background:white;border:1.5px solid var(--gray-200);border-radius:10px;padding:10px 14px;margin-bottom:8px;">
-                  <div style="flex:1;font-weight:700;font-size:14px;">${item.nombre}</div>
-                  <div style="display:flex;align-items:center;gap:6px;">
-                    <button onclick="CotizacionesModule._updQty(${i},${item.qty-1})" style="width:28px;height:28px;border:1.5px solid var(--gray-200);border-radius:6px;background:var(--gray-50);font-weight:900;cursor:pointer;">−</button>
-                    <input type="number" min="1" value="${item.qty}" onchange="CotizacionesModule._updQty(${i},this.value)"
-                      style="width:50px;height:28px;border:1.5px solid var(--accent);border-radius:6px;text-align:center;font-weight:800;font-size:14px;color:var(--accent);"/>
-                    <button onclick="CotizacionesModule._updQty(${i},${item.qty+1})" style="width:28px;height:28px;border:1.5px solid var(--gray-200);border-radius:6px;background:var(--gray-50);font-weight:900;cursor:pointer;">+</button>
-                  </div>
-                  <div style="min-width:80px;text-align:center;">
-                    <div style="font-size:11px;color:var(--gray-400);">P.Unit</div>
-                    <div style="font-weight:700;">S/ ${item.precio.toFixed(2)}</div>
-                  </div>
-                  <div style="min-width:90px;text-align:center;background:linear-gradient(135deg,#eff6ff,#dbeafe);border-radius:8px;padding:6px 10px;">
-                    <div style="font-size:11px;color:#1d4ed8;">Total</div>
-                    <div style="font-size:16px;font-weight:900;color:var(--accent);">S/ ${item.total.toFixed(2)}</div>
-                  </div>
-                  <button onclick="CotizacionesModule._remove(${i})" style="width:32px;height:32px;background:#fef2f2;color:#dc2626;border:1.5px solid #fecaca;border-radius:7px;cursor:pointer;">
-                    <i class="fas fa-trash"></i>
-                  </button>
-                </div>`).join('')}
-            </div>`}
-
-          <!-- Total -->
-          <div style="display:flex;justify-content:flex-end;margin-bottom:16px;">
-            <div style="padding:16px 24px;background:linear-gradient(135deg,#1e3a5f,#2563eb);border-radius:12px;color:white;text-align:center;">
-              <div style="font-size:14px;font-weight:700;opacity:0.8;">TOTAL COTIZACIÓN</div>
-              <div style="font-size:32px;font-weight:900;">S/ ${total.toFixed(2)}</div>
-            </div>
+        <!-- Buscador -->
+        <div style="padding:14px 20px;border-top:2px solid var(--gray-200);background:var(--gray-50);">
+          <div style="font-size:11px;font-weight:800;color:var(--gray-500);text-transform:uppercase;margin-bottom:8px;">
+            <i class="fas fa-search" style="margin-right:5px;"></i>Buscar Producto
           </div>
+          <div style="display:flex;gap:8px;">
+            <div style="flex:1;position:relative;">
+              <i class="fas fa-barcode" style="position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--gray-400);font-size:17px;"></i>
+              <input type="text" id="cotBuscador" placeholder="Nombre, código o escanea con lector de barras..."
+                style="width:100%;padding:12px 12px 12px 42px;border:2px solid var(--gray-200);border-radius:10px;font-size:14px;background:white;outline:none;box-sizing:border-box;"
+                oninput="CotizacionesModule._filtrarProds(this.value)"
+                onkeydown="if(event.key==='Escape'){CotizacionesModule._searchResults=null;App.renderPage();}"/>
+            </div>
+            <button onclick="CotizacionesModule._filtrarProds(document.getElementById('cotBuscador')?.value||'')"
+              style="padding:0 20px;background:var(--accent);color:white;border:none;border-radius:10px;font-weight:800;cursor:pointer;font-size:13px;white-space:nowrap;">
+              <i class="fas fa-search" style="margin-right:5px;"></i>Buscar
+            </button>
+          </div>
+        </div>
+      </div>
 
-          <!-- Buscador de productos -->
-          <div style="border-top:2px solid var(--gray-200);padding-top:14px;">
-            <div style="font-size:11px;font-weight:800;color:var(--gray-500);text-transform:uppercase;margin-bottom:8px;">
-              <i class="fas fa-search" style="margin-right:5px;"></i>Buscar y Agregar Producto
+      <!-- Resumen y pago -->
+      <div class="card">
+        <div style="padding:20px;display:flex;justify-content:flex-end;">
+          <div style="background:var(--gray-50);border:2px solid var(--gray-200);border-radius:14px;padding:22px;width:350px;">
+            <div style="font-size:12px;font-weight:800;color:var(--gray-400);text-transform:uppercase;margin-bottom:18px;">RESUMEN</div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:14px;">
+              <span style="font-size:15px;color:var(--gray-500);font-weight:600;">Subtotal (sin IGV):</span>
+              <span style="font-size:18px;font-weight:900;color:var(--gray-800);">S/ ${subtotal.toFixed(2)}</span>
             </div>
-            <div style="display:flex;gap:8px;">
-              <div style="flex:1;position:relative;">
-                <i class="fas fa-barcode" style="position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--gray-400);font-size:16px;"></i>
-                <input type="text" id="cotBuscador" placeholder="Escribe el nombre o código del producto..."
-                  style="width:100%;padding:12px 12px 12px 42px;border:2px solid var(--gray-200);border-radius:10px;font-size:14px;background:white;outline:none;box-sizing:border-box;"
-                  oninput="CotizacionesModule._filtrarProds(this.value)"
-                  onkeydown="if(event.key==='Escape'){CotizacionesModule._searchResults=null;App.renderPage();}"/>
-              </div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:18px;padding-bottom:18px;border-bottom:2px solid var(--gray-200);">
+              <span style="font-size:15px;color:var(--gray-500);font-weight:600;">IGV (18%):</span>
+              <span style="font-size:18px;font-weight:900;color:var(--gray-800);">S/ ${igv.toFixed(2)}</span>
             </div>
-            ${buscadorArea}
+            <div style="display:flex;justify-content:space-between;align-items:center;
+              padding:16px 18px;background:linear-gradient(135deg,#1e3a5f,#2563eb);border-radius:12px;color:white;">
+              <span style="font-size:20px;font-weight:900;">TOTAL</span>
+              <span style="font-size:34px;font-weight:900;">S/ ${total.toFixed(2)}</span>
+            </div>
+            <button onclick="CotizacionesModule._guardar()"
+              style="width:100%;margin-top:14px;padding:16px;background:linear-gradient(135deg,#15803d,#16a34a);
+              color:white;border:none;border-radius:12px;font-size:17px;font-weight:900;cursor:pointer;
+              box-shadow:0 4px 14px rgba(22,163,74,0.4);">
+              <i class="fas fa-save" style="margin-right:8px;"></i>GUARDAR COTIZACIÓN
+            </button>
           </div>
         </div>
       </div>
 
     </div>`;
+  },
+
+  _renderItemsList() {
+    return this.currentItems.map((item, i) => `
+      <div style="display:flex;align-items:center;gap:12px;background:white;border:1.5px solid var(--gray-200);
+        border-radius:12px;padding:12px 14px;margin-bottom:8px;box-shadow:0 2px 6px rgba(0,0,0,0.05);">
+        <div style="width:28px;height:28px;border-radius:50%;background:var(--accent);
+          display:flex;align-items:center;justify-content:center;color:white;font-weight:900;font-size:13px;flex-shrink:0;">${i+1}</div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:15px;font-weight:800;color:var(--gray-900);">${item.nombre}</div>
+          <div style="font-size:11px;color:var(--gray-400);">S/ ${item.precio.toFixed(2)} c/u</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:4px;">
+          <button onclick="CotizacionesModule._updQty(${i},${item.qty-1})"
+            style="width:30px;height:30px;border:1.5px solid var(--gray-200);border-radius:6px;background:var(--gray-50);font-weight:900;cursor:pointer;">−</button>
+          <input type="number" min="1" value="${item.qty}" onchange="CotizacionesModule._updQty(${i},this.value)"
+            style="width:48px;height:30px;border:1.5px solid var(--accent);border-radius:6px;text-align:center;font-weight:900;font-size:15px;color:var(--accent);"/>
+          <button onclick="CotizacionesModule._updQty(${i},${item.qty+1})"
+            style="width:30px;height:30px;border:1.5px solid var(--gray-200);border-radius:6px;background:var(--gray-50);font-weight:900;cursor:pointer;">+</button>
+        </div>
+        <div style="text-align:center;min-width:100px;background:linear-gradient(135deg,#eff6ff,#dbeafe);border-radius:10px;padding:8px 10px;">
+          <div style="font-size:9px;font-weight:700;color:#1d4ed8;text-transform:uppercase;">Total</div>
+          <div style="font-size:18px;font-weight:900;color:var(--accent);">S/ ${item.total.toFixed(2)}</div>
+        </div>
+        <button onclick="CotizacionesModule._remove(${i})"
+          style="width:32px;height:32px;background:#fef2f2;color:#dc2626;border:1.5px solid #fecaca;border-radius:7px;cursor:pointer;">
+          <i class="fas fa-trash"></i>
+        </button>
+      </div>`).join('');
   },
 
   _filtrarProds(term) {
