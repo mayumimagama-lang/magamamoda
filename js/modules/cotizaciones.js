@@ -138,18 +138,73 @@ const CotizacionesModule = {
   },
 
   _abrirBuscador() {
-    // Quick product add via alert
-    const prods=DB.productos.map((p,i)=>`${i+1}. ${p.nombre} - S/${p.precio_venta}`).join('\n');
-    const idx=parseInt(prompt(`Seleccione producto (número):\n${prods}`))-1;
-    if (idx>=0&&idx<DB.productos.length) {
-      const p=DB.productos[idx];
-      const qty=parseInt(prompt(`Cantidad para "${p.nombre}":`)||1);
-      if (qty>0) {
-        this.currentItems.push({prod_id:p.id,nombre:p.nombre,precio:p.precio_venta,qty,total:p.precio_venta*qty});
-        document.getElementById('modalBody').innerHTML=this._formHTML();
-      }
-    }
-  },
+  App.showModal('Agregar Producto',
+    '<div style="margin-bottom:12px;">' +
+      '<input type="text" id="cotProdSearch" placeholder="Buscar por nombre o código..." autofocus ' +
+        'style="width:100%;padding:10px 14px;border:2px solid var(--gray-200);border-radius:8px;font-size:14px;box-sizing:border-box;" ' +
+        'oninput="CotizacionesModule._filtrarProds(this.value)"/>' +
+    '</div>' +
+    '<div id="cotProdResultados" style="max-height:380px;overflow-y:auto;">' +
+      CotizacionesModule._renderProds(DB.productos) +
+    '</div>', []
+  );
+  document.getElementById('modalBox').style.maxWidth = '600px';
+  setTimeout(function() {
+    var inp = document.getElementById('cotProdSearch');
+    if (inp) inp.focus();
+  }, 100);
+},
+
+_renderProds(prods) {
+  if (!prods.length) return '<div style="text-align:center;padding:30px;color:var(--gray-400);"><i class="fas fa-search" style="font-size:32px;display:block;margin-bottom:10px;opacity:0.3;"></i>Sin resultados</div>';
+  return '<table class="data-table"><thead><tr><th>Producto</th><th>Precio</th><th>Stock</th><th></th></tr></thead><tbody>' +
+    prods.map(function(p) {
+      var imgH = p.imagen_url
+        ? '<img src="'+p.imagen_url+'" style="width:36px;height:36px;object-fit:cover;border-radius:6px;margin-right:8px;vertical-align:middle;" alt=""/>'
+        : '<div style="width:36px;height:36px;border-radius:6px;background:var(--gray-100);display:inline-flex;align-items:center;justify-content:center;margin-right:8px;vertical-align:middle;"><i class="fas fa-image" style="color:var(--gray-300);font-size:14px;"></i></div>';
+      var sClr = p.stock === 0 ? '#dc2626' : p.stock <= 10 ? '#d97706' : '#16a34a';
+      return '<tr>' +
+        '<td><div style="display:flex;align-items:center;">' + imgH +
+          '<div><div style="font-weight:700;font-size:13px;">' + p.nombre + '</div>' +
+          '<div style="font-size:11px;color:var(--gray-400);">' + p.codigo + '</div></div>' +
+        '</div></td>' +
+        '<td><strong style="color:var(--accent);">S/ ' + p.precio_venta.toFixed(2) + '</strong></td>' +
+        '<td><span style="font-weight:700;color:' + sClr + ';">' + (p.stock === 0 ? 'Sin stock' : p.stock) + '</span></td>' +
+        '<td><button class="btn btn-primary btn-sm" onclick="CotizacionesModule._agregarProd(' + p.id + ')" ' +
+          (p.stock === 0 ? 'disabled style="opacity:0.5;"' : '') + '>' +
+          '<i class="fas fa-plus"></i> Agregar</button></td>' +
+      '</tr>';
+    }).join('') +
+  '</tbody></table>';
+},
+
+_filtrarProds(term) {
+  var found = DB.productos.filter(function(p) {
+    return p.nombre.toLowerCase().indexOf(term.toLowerCase()) >= 0 ||
+           p.codigo.toLowerCase().indexOf(term.toLowerCase()) >= 0;
+  });
+  var el = document.getElementById('cotProdResultados');
+  if (el) el.innerHTML = CotizacionesModule._renderProds(found);
+},
+
+_agregarProd(id) {
+  var p = DB.productos.find(function(x) { return x.id === id; });
+  if (!p) return;
+  var existing = CotizacionesModule.currentItems.findIndex(function(x) { return x.prod_id === id; });
+  if (existing >= 0) {
+    CotizacionesModule.currentItems[existing].qty++;
+    CotizacionesModule.currentItems[existing].total = CotizacionesModule.currentItems[existing].qty * CotizacionesModule.currentItems[existing].precio;
+  } else {
+    CotizacionesModule.currentItems.push({
+      prod_id: p.id, nombre: p.nombre,
+      precio: p.precio_venta, qty: 1,
+      total: p.precio_venta
+    });
+  }
+  App.toast(p.nombre + ' agregado ✓', 'success');
+  App.closeModal();
+  document.getElementById('modalBody').innerHTML = CotizacionesModule._formHTML();
+},
 
   _updQty(idx,val) {
     const q=parseInt(val)||1;
