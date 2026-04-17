@@ -309,6 +309,8 @@ const CotizacionesModule = {
               <span style="padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700;background:#dcfce7;color:#16a34a;">✓ Seleccionado</span>
             </div>` : ''}
           </div>
+        </div>
+      </div>
 
       <!-- Productos -->
       <div class="card">
@@ -517,10 +519,10 @@ const CotizacionesModule = {
     }, 50);
   },
 
-  _updPrecio(idx, val) {
-    const precio = Math.max(0, parseFloat(val) || 0);
-    this.currentItems[idx].precio = precio;
-    this.currentItems[idx].total  = this.currentItems[idx].qty * precio;
+  _updQty(idx, val) {
+    const q = Math.max(1, parseInt(val) || 1);
+    this.currentItems[idx].qty   = q;
+    this.currentItems[idx].total = q * this.currentItems[idx].precio;
     App.renderPage();
   },
 
@@ -537,7 +539,7 @@ const CotizacionesModule = {
       numero: 'COT-' + String(DB._cotSeq++).padStart(3,'0'),
       fecha: new Date().toISOString().split('T')[0],
       vencimiento: document.getElementById('cot_venc')?.value || '',
-      cliente_id: parseInt(document.getElementById('cot_cli')?.value),
+      cliente_id: this.clienteSeleccionado?.id || 0,
       items: [...this.currentItems],
       total,
       estado: 'PENDIENTE',
