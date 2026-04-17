@@ -526,6 +526,13 @@ const CotizacionesModule = {
     App.renderPage();
   },
 
+  _updPrecio(idx, val) {
+    const precio = Math.max(0, parseFloat(val) || 0);
+    this.currentItems[idx].precio = precio;
+    this.currentItems[idx].total  = this.currentItems[idx].qty * precio;
+    App.renderPage();
+  },
+
   _remove(idx) {
     this.currentItems.splice(idx, 1);
     App.renderPage();
