@@ -189,35 +189,51 @@ const CotizacionesModule = {
     } else if (this.currentItems.length > 0) {
       itemsArea = `<div style="padding:8px 12px;">${this._renderItemsList()}</div>`;
     } else {
-      // Mostrar productos recientes
-      itemsArea = `
-        <div style="padding:14px 16px;">
+      const prodsDisp = productosRecientes.length > 0 ? productosRecientes : DB.productos.slice(0, 8);
+      itemsArea = prodsDisp.length === 0 ?
+        `<div style="text-align:center;padding:40px;color:var(--gray-400);">
+          <i class="fas fa-box-open" style="font-size:48px;display:block;margin-bottom:12px;opacity:0.2;"></i>
+          <div style="font-size:14px;font-weight:700;">Usa el buscador de abajo para agregar productos</div>
+        </div>` :
+        `<div style="padding:14px 16px;">
           <div style="display:flex;align-items:center;gap:6px;margin-bottom:12px;">
             <i class="fas fa-star" style="color:#f59e0b;font-size:14px;"></i>
-            <span style="font-size:12px;font-weight:800;color:var(--gray-500);text-transform:uppercase;letter-spacing:1px;">Productos Recientes</span>
+            <span style="font-size:12px;font-weight:800;color:var(--gray-500);text-transform:uppercase;letter-spacing:1px;">Productos Disponibles</span>
             <span style="font-size:11px;color:var(--gray-400);margin-left:4px;">— Clic para agregar</span>
           </div>
           <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;">
-            ${productosRecientes.map(p => {
+            ${prodsDisp.map(p => {
               const sClr = p.stock===0?'#dc2626':p.stock<=10?'#d97706':'#16a34a';
               const sTxt = p.stock===0?'Sin stock':'Stock: '+p.stock;
-              return `<div onclick="CotizacionesModule._agregarProd(${p.id})"
+              return `<div onclick="${p.stock>0?'CotizacionesModule._agregarProd('+p.id+')':''}"
                 style="display:flex;flex-direction:column;align-items:center;text-align:center;
                 padding:14px 10px;border-radius:12px;border:2px solid var(--gray-200);
-                background:white;cursor:pointer;${p.stock===0?'opacity:0.5;':''}">
+                background:white;cursor:${p.stock>0?'pointer':'not-allowed'};
+                transition:all 0.15s;${p.stock===0?'opacity:0.5;':''}
+                ${p.stock>0?'box-shadow:0 2px 8px rgba(0,0,0,0.06);':''}"
+                ${p.stock>0?'onmouseover="this.style.borderColor=\'var(--accent)\';this.style.boxShadow=\'0 4px 16px rgba(37,99,235,0.2)\'"':''} 
+                ${p.stock>0?'onmouseout="this.style.borderColor=\'var(--gray-200)\';this.style.boxShadow=\'0 2px 8px rgba(0,0,0,0.06)\'"':''}>
                 <div style="width:70px;height:70px;border-radius:10px;background:var(--gray-100);
                   display:flex;align-items:center;justify-content:center;margin-bottom:8px;
                   border:2px dashed var(--gray-300);">
-                  <i class="fas fa-image" style="font-size:22px;color:var(--gray-300);"></i>
+                  ${p.imagen_url ? `<img src="${p.imagen_url}" style="width:100%;height:100%;object-fit:cover;border-radius:9px;" alt=""/>` :
+                  `<i class="fas fa-image" style="font-size:22px;color:var(--gray-300);"></i>`}
                 </div>
                 <div style="font-size:13px;font-weight:800;color:var(--gray-900);margin-bottom:4px;
                   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;width:100%;">${p.nombre}</div>
                 <div style="font-size:15px;font-weight:900;color:var(--accent);margin-bottom:3px;">S/ ${p.precio_venta.toFixed(2)}</div>
                 <div style="font-size:11px;font-weight:700;color:${sClr};">${sTxt}</div>
-                ${p.stock>0 ? `<div style="margin-top:8px;padding:5px 14px;background:var(--accent);color:white;border-radius:6px;font-size:12px;font-weight:700;">
+                ${p.stock>0 ? `<div style="margin-top:8px;padding:5px 14px;background:var(--accent);color:white;
+                  border-radius:6px;font-size:12px;font-weight:700;">
                   <i class="fas fa-plus" style="margin-right:4px;"></i>Agregar</div>` : ''}
               </div>`;
             }).join('')}
+          </div>
+          <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--gray-100);text-align:center;">
+            <p style="font-size:12px;color:var(--gray-400);">
+              <i class="fas fa-barcode" style="margin-right:5px;"></i>
+              También puedes buscar por nombre o código abajo
+            </p>
           </div>
         </div>`;
     }
@@ -346,28 +362,44 @@ const CotizacionesModule = {
 
   _renderItemsList() {
     return this.currentItems.map((item, i) => `
-      <div style="display:flex;align-items:center;gap:12px;background:white;border:1.5px solid var(--gray-200);
-        border-radius:12px;padding:12px 14px;margin-bottom:8px;box-shadow:0 2px 6px rgba(0,0,0,0.05);">
+      <div style="display:flex;align-items:center;gap:12px;background:white;
+        border:1.5px solid var(--gray-200);border-radius:12px;
+        padding:12px 14px;margin-bottom:8px;box-shadow:0 2px 6px rgba(0,0,0,0.05);">
         <div style="width:28px;height:28px;border-radius:50%;background:var(--accent);
           display:flex;align-items:center;justify-content:center;color:white;font-weight:900;font-size:13px;flex-shrink:0;">${i+1}</div>
         <div style="flex:1;min-width:0;">
-          <div style="font-size:15px;font-weight:800;color:var(--gray-900);">${item.nombre}</div>
-          <div style="font-size:11px;color:var(--gray-400);">S/ ${item.precio.toFixed(2)} c/u</div>
+          <div style="font-size:15px;font-weight:800;color:var(--gray-900);margin-bottom:2px;">${item.nombre}</div>
+          <div style="font-size:11px;color:var(--gray-400);">Precio unitario: S/ ${item.precio.toFixed(2)}</div>
         </div>
-        <div style="display:flex;align-items:center;gap:4px;">
-          <button onclick="CotizacionesModule._updQty(${i},${item.qty-1})"
-            style="width:30px;height:30px;border:1.5px solid var(--gray-200);border-radius:6px;background:var(--gray-50);font-weight:900;cursor:pointer;">−</button>
-          <input type="number" min="1" value="${item.qty}" onchange="CotizacionesModule._updQty(${i},this.value)"
-            style="width:48px;height:30px;border:1.5px solid var(--accent);border-radius:6px;text-align:center;font-weight:900;font-size:15px;color:var(--accent);"/>
-          <button onclick="CotizacionesModule._updQty(${i},${item.qty+1})"
-            style="width:30px;height:30px;border:1.5px solid var(--gray-200);border-radius:6px;background:var(--gray-50);font-weight:900;cursor:pointer;">+</button>
+        <div style="width:1px;height:50px;background:var(--gray-200);flex-shrink:0;"></div>
+        <div style="text-align:center;flex-shrink:0;">
+          <div style="font-size:9px;font-weight:700;color:var(--gray-400);text-transform:uppercase;margin-bottom:5px;">CANTIDAD</div>
+          <div style="display:flex;align-items:center;gap:4px;">
+            <button onclick="CotizacionesModule._updQty(${i},${item.qty-1})"
+              style="width:30px;height:30px;border:1.5px solid var(--gray-200);border-radius:6px;background:var(--gray-50);font-weight:900;cursor:pointer;color:var(--gray-600);">−</button>
+            <input type="number" min="1" value="${item.qty}" onchange="CotizacionesModule._updQty(${i},this.value)"
+              style="width:48px;height:30px;border:1.5px solid var(--accent);border-radius:6px;text-align:center;font-weight:900;font-size:15px;color:var(--accent);"/>
+            <button onclick="CotizacionesModule._updQty(${i},${item.qty+1})"
+              style="width:30px;height:30px;border:1.5px solid var(--gray-200);border-radius:6px;background:var(--gray-50);font-weight:900;cursor:pointer;color:var(--gray-600);">+</button>
+          </div>
         </div>
-        <div style="text-align:center;min-width:100px;background:linear-gradient(135deg,#eff6ff,#dbeafe);border-radius:10px;padding:8px 10px;">
-          <div style="font-size:9px;font-weight:700;color:#1d4ed8;text-transform:uppercase;">Total</div>
+        <div style="width:1px;height:50px;background:var(--gray-200);flex-shrink:0;"></div>
+        <div style="text-align:center;flex-shrink:0;min-width:90px;">
+          <div style="font-size:9px;font-weight:700;color:var(--gray-400);text-transform:uppercase;margin-bottom:5px;">P. UNITARIO</div>
+          <div style="display:flex;align-items:center;gap:3px;">
+            <span style="font-size:12px;font-weight:700;color:var(--gray-400);">S/</span>
+            <input type="number" min="0" step="0.01" value="${item.precio.toFixed(2)}"
+              onchange="CotizacionesModule._updPrecio(${i},this.value)"
+              style="width:70px;height:30px;border:1.5px solid var(--gray-200);border-radius:6px;padding:0 6px;font-size:14px;font-weight:800;color:var(--gray-800);text-align:center;"/>
+          </div>
+        </div>
+        <div style="width:1px;height:50px;background:var(--gray-200);flex-shrink:0;"></div>
+        <div style="text-align:center;flex-shrink:0;min-width:100px;background:linear-gradient(135deg,#eff6ff,#dbeafe);border-radius:10px;padding:8px 10px;">
+          <div style="font-size:9px;font-weight:700;color:#1d4ed8;text-transform:uppercase;">TOTAL</div>
           <div style="font-size:18px;font-weight:900;color:var(--accent);">S/ ${item.total.toFixed(2)}</div>
         </div>
         <button onclick="CotizacionesModule._remove(${i})"
-          style="width:32px;height:32px;background:#fef2f2;color:#dc2626;border:1.5px solid #fecaca;border-radius:7px;cursor:pointer;">
+          style="width:32px;height:32px;background:#fef2f2;color:#dc2626;border:1.5px solid #fecaca;border-radius:7px;cursor:pointer;flex-shrink:0;">
           <i class="fas fa-trash"></i>
         </button>
       </div>`).join('');
@@ -413,10 +445,10 @@ const CotizacionesModule = {
     }, 50);
   },
 
-  _updQty(idx, val) {
-    const q = Math.max(1, parseInt(val) || 1);
-    this.currentItems[idx].qty   = q;
-    this.currentItems[idx].total = q * this.currentItems[idx].precio;
+  _updPrecio(idx, val) {
+    const precio = Math.max(0, parseFloat(val) || 0);
+    this.currentItems[idx].precio = precio;
+    this.currentItems[idx].total  = this.currentItems[idx].qty * precio;
     App.renderPage();
   },
 
