@@ -1003,7 +1003,9 @@ Storage.guardarSequences();
 SupabaseDB.guardarVenta(venta);
 
     App.toast('✅ ' + serie + '-' + numero + ' procesado — Vuelto: S/ ' + venta.vuelto.toFixed(2), 'success');
-    this.imprimirComprobante(venta);
+    if (venta.tipo === 'BOL' || venta.tipo === 'FAC') {
+      this.imprimirComprobante(venta);
+    }
 
     // Reset
     this.currentItems    = [];
