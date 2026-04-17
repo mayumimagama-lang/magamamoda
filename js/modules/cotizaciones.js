@@ -285,18 +285,30 @@ const CotizacionesModule = {
               <input class="form-control" id="cot_notas" placeholder="Condiciones..." style="font-size:13px;"/>
             </div>
           </div>
-          <div style="margin-top:12px;">
+         <div style="margin-top:12px;">
             <div style="font-size:11px;font-weight:700;color:var(--gray-500);text-transform:uppercase;margin-bottom:6px;">CLIENTE *</div>
             <div style="display:flex;gap:8px;">
-              <select class="form-control" id="cot_cli" style="font-size:14px;flex:1;">
-                ${DB.clientes.filter(c => c.tipo_cliente==='cliente' || c.doc==='00000000').map(c =>
-                  `<option value="${c.id}" ${this.clienteSeleccionado?.id===c.id?'selected':''}>${c.nombre}</option>`
-                ).join('')}
-              </select>
+              <input class="form-control" id="cot_cli_search" type="text"
+                placeholder="Ingresa DNI/RUC y presiona Enter para buscar..."
+                value="${this.clienteSeleccionado ? this.clienteSeleccionado.doc+' — '+this.clienteSeleccionado.nombre : ''}"
+                onkeydown="CotizacionesModule._buscarCliente(event)"
+                style="flex:1;font-size:14px;padding:10px 12px;"/>
+              <button class="btn btn-outline" onclick="CotizacionesModule._abrirModalCliente()" style="padding:10px 14px;" title="Buscar cliente">
+                <i class="fas fa-search"></i>
+              </button>
+              <button class="btn btn-success" onclick="CotizacionesModule._nuevoCliente()" style="padding:10px 14px;" title="Nuevo cliente">
+                <i class="fas fa-user-plus"></i>
+              </button>
             </div>
+            ${this.clienteSeleccionado ? `
+            <div style="margin-top:8px;padding:10px 14px;background:var(--gray-50);border-radius:8px;border:1.5px solid var(--gray-200);display:flex;justify-content:space-between;align-items:center;">
+              <div>
+                <div style="font-weight:700;font-size:14px;">${this.clienteSeleccionado.nombre}</div>
+                <div style="font-size:12px;color:var(--gray-500);">${this.clienteSeleccionado.tipo}: ${this.clienteSeleccionado.doc}</div>
+              </div>
+              <span style="padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700;background:#dcfce7;color:#16a34a;">✓ Seleccionado</span>
+            </div>` : ''}
           </div>
-        </div>
-      </div>
 
       <!-- Productos -->
       <div class="card">
@@ -405,6 +417,66 @@ const CotizacionesModule = {
       </div>`).join('');
   },
 
+  _buscarCliente(event) {
+    if (event.key !== 'Enter') return;
+    const val   = event.target.value.trim();
+    const found = DB.clientes.find(c => c.doc === val);
+    if (found) {
+      this.clienteSeleccionado = found;
+      event.target.value = found.doc + ' — ' + found.nombre;
+      App.toast('Cliente: ' + found.nombre, 'info');
+      App.renderPage();
+    } else {
+      App.toast('No encontrado. Usa el botón buscar.', 'warning');
+    }
+  },
+
+  _abrirModalCliente() {
+    App.showModal('Seleccionar Cliente',
+      `<div class="search-bar mb-3" style="width:100%;">
+        <i class="fas fa-search"></i>
+        <input type="text" placeholder="Buscar por nombre o documento..." autofocus
+          oninput="CotizacionesModule._filtrarClientes(this.value)"/>
+      </div>
+      <div id="cotClienteResultados" style="max-height:360px;overflow-y:auto;">
+        ${this._renderClientes(DB.clientes.filter(c => c.tipo_cliente==='cliente' || c.doc==='00000000'))}
+      </div>`, []
+    );
+    document.getElementById('modalBox').style.maxWidth = '540px';
+  },
+
+  _renderClientes(clientes) {
+    if (!clientes.length) return '<div class="empty-state"><i class="fas fa-user"></i><p>Sin resultados</p></div>';
+    return '<table class="data-table"><thead><tr><th>Documento</th><th>Nombre</th><th></th></tr></thead><tbody>' +
+      clientes.map(c => `<tr>
+        <td class="text-sm">${c.tipo}: ${c.doc}</td>
+        <td style="font-weight:700;">${c.nombre}</td>
+        <td><button class="btn btn-primary btn-sm" onclick="CotizacionesModule._setCliente(${c.id})">Seleccionar</button></td>
+      </tr>`).join('') +
+    '</tbody></table>';
+  },
+
+  _filtrarClientes(term) {
+    const found = DB.clientes.filter(c =>
+      (c.tipo_cliente==='cliente' || c.doc==='00000000') && (
+        c.nombre.toLowerCase().includes(term.toLowerCase()) || c.doc.includes(term))
+    );
+    const el = document.getElementById('cotClienteResultados');
+    if (el) el.innerHTML = this._renderClientes(found);
+  },
+
+  _setCliente(id) {
+    this.clienteSeleccionado = DB.clientes.find(x => x.id === id);
+    App.closeModal();
+    App.toast('Cliente: ' + this.clienteSeleccionado.nombre, 'info');
+    App.renderPage();
+  },
+
+  _nuevoCliente() {
+    App.navigate('clientes');
+    App.toast('Registra el cliente y vuelve a cotizaciones', 'info');
+  },
+  
   _filtrarProds(term) {
     if (!term || term.length < 1) {
       this._searchResults = null;
