@@ -57,7 +57,7 @@ const VentasModule = {
       { icon:'fa-clock',        bg:'#fffbeb', color:'#d97706', val:filtered.filter(function(v){return v.estado==='NO_ENVIADO';}).length, label:'Por Enviar' },
       { icon:'fa-ban',          bg:'#fef2f2', color:'#dc2626', val:filtered.filter(function(v){return v.estado==='ANULADO';}).length, label:'Anulados' },
       { icon:'fa-dollar-sign',  bg:'#f0fdf4', color:'#16a34a', val:'S/ '+totalVentas.toFixed(2),                        label:'Total Periodo' },
-      { icon:'fa-receipt',      bg:'#fdf4ff', color:'#7c3aed', val:'S/ '+(totalVentas/1.18).toFixed(2),                 label:'Subtotal (sin IGV)' },
+      { icon:'fa-receipt',      bg:'#fdf4ff', color:'#7c3aed', val:'S/ '+totalVentas.toFixed(2),                        label:'Total Ventas' },
     ];
 
     return '<div class="page-header">' +
