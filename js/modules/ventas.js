@@ -1100,7 +1100,7 @@ SupabaseDB.guardarVenta(venta);
   // VER DETALLE DE VENTA
   // ─────────────────────────────────────────────────────────
   verDetalle(id) {
-    var v   = DB.ventas.find(function(x){ return x.id===id; });
+    var v = DB.ventas.find(function(x){ return Number(x.id)===Number(id); });
     if (!v) return;
     var cli = DB.clientes.find(function(c){ return c.id===v.cliente_id; });
     var estBg  = v.estado==='ACEPTADO'?'#dcfce7':v.estado==='ANULADO'?'#fee2e2':'#fef3c7';
@@ -1150,7 +1150,7 @@ SupabaseDB.guardarVenta(venta);
   // ACCIONES DE LISTA
   // ─────────────────────────────────────────────────────────
   imprimir(id) {
-    var v = DB.ventas.find(function(x){ return x.id===id; });
+    var v = DB.ventas.find(function(x){ return Number(x.id)===Number(id); });
     if (v) this.imprimirComprobante(v);
   },
 
@@ -1158,7 +1158,7 @@ SupabaseDB.guardarVenta(venta);
     var self = this;
     App.toast('Enviando a SUNAT...', 'info');
     setTimeout(function() {
-      var i = DB.ventas.findIndex(function(x){ return x.id===id; });
+      var i = DB.ventas.findIndex(function(x){ return Number(x.id)===Number(id); });
       if (i >= 0) { DB.ventas[i].estado = 'ACEPTADO'; Storage.guardarVentas(); }
       App.toast('✅ Comprobante aceptado por SUNAT', 'success');
       App.renderPage();
@@ -1167,7 +1167,7 @@ SupabaseDB.guardarVenta(venta);
 
   anular(id) {
     if (confirm('¿Anular este comprobante?\nEsta acción no se puede deshacer.')) {
-      var i = DB.ventas.findIndex(function(x){ return x.id===id; });
+      var i = DB.ventas.findIndex(function(x){ return Number(x.id)===Number(id); });
       if (i >= 0) {
         DB.ventas[i].estado = 'ANULADO';
         // Devolver stock
