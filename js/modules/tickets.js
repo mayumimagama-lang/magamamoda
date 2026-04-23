@@ -5,7 +5,7 @@
 
 const TicketsModule = {
 
-  tabActiva:      'lista',
+  tabActiva:      'config',
   searchTerm:     '',
   tipoFilter:     'todos',
   estadoFilter:   'todos',
@@ -73,8 +73,7 @@ const TicketsModule = {
 
   _tabHeader() {
     var tabs = [
-      { key:'lista',  icon:'fa-list',        label:'Lista de Tickets' },
-      { key:'config', icon:'fa-paint-brush',  label:'Dise\u00f1ar Ticket'  },
+      { key:'config', icon:'fa-paint-brush', label:'Diseñar Ticket' },
     ];
     return '<div style="display:flex;gap:4px;margin-bottom:20px;background:var(--gray-100);padding:5px;border-radius:12px;width:fit-content;">' +
       tabs.map(function(t) {
