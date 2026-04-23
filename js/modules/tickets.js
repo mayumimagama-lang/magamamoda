@@ -295,8 +295,8 @@ const TicketsModule = {
     var recibido = venta ? venta.monto_pago  : 100.00;
     var vuelto   = venta ? venta.vuelto      : 22.50;
     var total    = venta ? venta.total       : 77.50;
-    var subtotal = venta ? (venta.subtotal||total/1.18) : total/1.18;
-    var igv      = venta ? (venta.igv||(total-subtotal)) : total-subtotal;
+    var subtotal = venta ? venta.total : total;
+    var igv      = 0;
     var tipoFull = venta ? (venta.tipo_comprobante||venta.tipo||'NOTA DE VENTA') : 'NOTA DE VENTA';
     var items    = venta ? venta.items : [
       { nombre:'POLO ALGODÓN', qty:2, precio:18.00, total:36.00 },
@@ -327,7 +327,7 @@ const TicketsModule = {
         // TIPO Y NÚMERO
         '<div style="text-align:center;margin-bottom:4px;">' +
           '<div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#302f2f;">'+tipoFull+'</div>' +
-'<div style="font-size:12px;font-weight:600;#302f2f;">'+numero+'</div>' +
+'<div style="font-size:12px;font-weight:600;color:#302f2f;">'+numero+'</div>' +
         '</div>' +
 
         sep +
@@ -360,7 +360,7 @@ const TicketsModule = {
         // SUBTOTAL E IGV
         (cfg.mostrarIGV
           ? '<div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:2px;"><span>Subtotal:</span><span>S/ '+subtotal.toFixed(2)+'</span></div>' +
-            '<div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px;"><span>IGV (18%):</span><span>S/ '+igv.toFixed(2)+'</span></div>'
+            '<div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px;"><span>IGV (Exonerado):</span><span>S/ 0.00</span></div>'
           : '') +
 
         // TOTAL
@@ -500,7 +500,7 @@ const TicketsModule = {
       '</div>';
     }).join('');
     var total=v.items.reduce(function(s,i){ return s+i.total; },0);
-    var subtotal=total/1.18, igv=total-subtotal;
+    var subtotal=total, igv=0;
     return (
       '<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:var(--gray-50);border-radius:10px;border:1.5px solid var(--gray-200);margin-bottom:14px;">' +
         '<div style="display:flex;align-items:center;gap:10px;">' +
@@ -548,7 +548,7 @@ const TicketsModule = {
           '<div class="card"><div style="padding:11px 14px;border-bottom:1px solid var(--gray-200);font-size:11px;font-weight:800;color:var(--gray-400);text-transform:uppercase;"><i class="fas fa-receipt" style="color:var(--accent);margin-right:4px;"></i>Resumen</div>' +
           '<div style="padding:14px;">' +
             '<div style="display:flex;justify-content:space-between;margin-bottom:7px;"><span style="font-size:13px;color:var(--gray-500);">Subtotal:</span><span style="font-size:15px;font-weight:900;">S/ '+subtotal.toFixed(2)+'</span></div>' +
-            '<div style="display:flex;justify-content:space-between;margin-bottom:12px;padding-bottom:12px;border-bottom:2px solid var(--gray-200);"><span style="font-size:13px;color:var(--gray-500);">IGV (18%):</span><span style="font-size:15px;font-weight:900;">S/ '+igv.toFixed(2)+'</span></div>' +
+            '<div style="display:flex;justify-content:space-between;margin-bottom:12px;padding-bottom:12px;border-bottom:2px solid var(--gray-200);"><span style="font-size:13px;color:var(--gray-500);">IGV (Exonerado):</span><span style="font-size:15px;font-weight:900;">S/ 0.00</span></div>' +
             '<div style="display:flex;justify-content:space-between;padding:12px 14px;background:linear-gradient(135deg,#1e3a5f,#2563eb);border-radius:9px;color:white;margin-bottom:10px;">' +
               '<span style="font-size:16px;font-weight:900;">TOTAL</span><span style="font-size:24px;font-weight:900;">S/ '+total.toFixed(2)+'</span>' +
             '</div>' +
@@ -568,7 +568,7 @@ const TicketsModule = {
     v.items[idx][campo]=valor;
     v.items[idx].total=v.items[idx].qty*v.items[idx].precio;
     var total=v.items.reduce(function(s,i){return s+i.total;},0);
-    v.total=total; v.subtotal=total/1.18; v.igv=total-v.subtotal;
+    v.total=total; v.subtotal=total; v.igv=0;
     App.renderPage();
   },
 
@@ -579,7 +579,7 @@ const TicketsModule = {
     if(!confirm('\u00bfEliminar este producto del ticket?')) return;
     v.items.splice(idx,1);
     var total=v.items.reduce(function(s,i){return s+i.total;},0);
-    v.total=total; v.subtotal=total/1.18; v.igv=total-v.subtotal;
+    v.total=total; v.subtotal=total; v.igv=0;
     App.renderPage();
   },
 
@@ -610,8 +610,8 @@ const TicketsModule = {
       v.items.map(function(i){return '<tr><td>'+i.nombre+'</td><td>'+i.qty+'</td><td>S/ '+i.precio.toFixed(2)+'</td><td><strong>S/ '+i.total.toFixed(2)+'</strong></td></tr>';}).join('') +
       '</tbody></table>' +
       '<div style="margin-top:11px;border-top:1px solid var(--gray-200);padding-top:11px;">' +
-        '<div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;"><span>Subtotal:</span><span>S/ '+v.subtotal.toFixed(2)+'</span></div>' +
-        '<div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:8px;"><span>IGV 18%:</span><span>S/ '+v.igv.toFixed(2)+'</span></div>' +
+        '<div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;"><span>Subtotal:</span><span>S/ '+v.total.toFixed(2)+'</span></div>' +
+        '<div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:8px;"><span>IGV (Exonerado):</span><span>S/ 0.00</span></div>' +
         '<div style="display:flex;justify-content:space-between;font-size:19px;font-weight:900;background:linear-gradient(135deg,#1e3a5f,#2563eb);color:white;padding:9px 13px;border-radius:8px;">' +
           '<span>TOTAL</span><span>S/ '+v.total.toFixed(2)+'</span></div>' +
         '<div style="margin-top:6px;font-size:11px;color:var(--gray-500);">M\u00e9todo: <strong>'+v.metodo_pago+'</strong> &middot; Pag\u00f3: <strong>S/ '+v.monto_pago.toFixed(2)+'</strong> &middot; Vuelto: <strong>S/ '+v.vuelto.toFixed(2)+'</strong></div>' +
