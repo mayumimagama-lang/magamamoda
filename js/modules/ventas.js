@@ -305,30 +305,33 @@ const VentasModule = {
               'padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;">'+
               '<i class="fas fa-times"></i> Cerrar búsqueda</button>'+
           '</div>'+
-          '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;">'+
-          self._searchResults.map(function(p) {
+          '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">'+
+          self._searchResults.slice(0,6).map(function(p) {
             var imgH = p.imagen
-              ? '<img src="'+p.imagen+'" style="width:56px;height:56px;object-fit:cover;border-radius:8px;flex-shrink:0;border:2px solid var(--gray-200);" alt=""/>'
-              : '<div style="width:56px;height:56px;border-radius:8px;background:var(--gray-100);display:flex;align-items:center;justify-content:center;flex-shrink:0;border:2px dashed var(--gray-300);"><i class="fas fa-image" style="font-size:18px;color:var(--gray-300);"></i></div>';
+              ? '<img src="'+p.imagen+'" style="width:70px;height:70px;object-fit:cover;border-radius:10px;margin-bottom:8px;border:2px solid var(--gray-200);display:block;" alt=""/>'
+              : '<div style="width:70px;height:70px;border-radius:10px;background:var(--gray-100);display:flex;align-items:center;justify-content:center;margin-bottom:8px;border:2px dashed var(--gray-300);"><i class="fas fa-image" style="font-size:22px;color:var(--gray-300);"></i></div>';
             var sClr = p.stock===0?'#dc2626':p.stock<=10?'#d97706':'#16a34a';
+            var sTxt = p.stock===0?'Sin stock':'Stock: '+p.stock;
             return '<div onclick="VentasModule.agregarDesdeResultados('+p.id+')" '+
-              'style="display:flex;gap:10px;align-items:center;padding:10px;border-radius:10px;'+
-              'border:1.5px solid var(--gray-200);background:white;cursor:pointer;transition:all 0.15s;'+
-              'box-shadow:0 1px 4px rgba(0,0,0,0.06);">' +
+              'style="display:flex;flex-direction:column;align-items:center;text-align:center;'+
+              'padding:14px 10px;border-radius:12px;border:2px solid var(--gray-200);'+
+              'background:white;cursor:pointer;transition:all 0.15s;'+
+              (p.stock===0?'opacity:0.5;':'')+'">'+
               imgH+
-              '<div style="flex:1;min-width:0;">'+
-                '<div style="font-size:13px;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+p.nombre+'</div>'+
-                '<div style="font-size:11px;color:var(--gray-400);margin-bottom:4px;">'+p.codigo+' · '+p.unidad+'</div>'+
-                '<div style="display:flex;justify-content:space-between;">'+
-                  '<span style="font-size:15px;font-weight:900;color:var(--accent);">S/ '+p.precio_venta.toFixed(2)+'</span>'+
-                  '<span style="font-size:11px;font-weight:700;color:'+sClr+';">'+
-                    (p.stock===0?'Sin stock':'✓ '+p.stock)+
-                  '</span>'+
-                '</div>'+
-              '</div>'+
+              '<div style="font-size:13px;font-weight:800;color:var(--gray-900);margin-bottom:4px;'+
+                'overflow:hidden;text-overflow:ellipsis;white-space:nowrap;width:100%;">'+p.nombre+'</div>'+
+              '<div style="font-size:15px;font-weight:900;color:var(--accent);margin-bottom:3px;">S/ '+p.precio_venta.toFixed(2)+'</div>'+
+              '<div style="font-size:11px;font-weight:700;color:'+sClr+';">'+sTxt+'</div>'+
+              (p.stock>0
+                ? '<div style="margin-top:8px;padding:5px 14px;background:var(--accent);color:white;border-radius:6px;font-size:12px;font-weight:700;"><i class="fas fa-plus" style="margin-right:4px;"></i>Agregar</div>'
+                : '')+
             '</div>';
           }).join('')+
           '</div>'+
+          (self._searchResults.length > 6 ?
+            '<div style="margin-top:10px;text-align:center;font-size:12px;color:var(--gray-400);font-weight:600;">'+
+              'Mostrando 6 de '+self._searchResults.length+' resultados — refina tu búsqueda para ver más'+
+            '</div>' : '')+
           (self.currentItems.length > 0 ?
             '<div style="border-top:1px solid var(--gray-200);margin-top:12px;padding-top:12px;">'+
               '<div style="font-size:11px;font-weight:800;color:var(--gray-500);text-transform:uppercase;margin-bottom:8px;">EN EL TICKET</div>'+
