@@ -332,13 +332,7 @@ const VentasModule = {
             '<div style="margin-top:10px;text-align:center;font-size:12px;color:var(--gray-400);font-weight:600;">'+
               'Mostrando 6 de '+self._searchResults.length+' resultados — refina tu búsqueda para ver más'+
             '</div>' : '')+
-          (self.currentItems.length > 0 ?
-            '<div style="border-top:1px solid var(--gray-200);margin-top:12px;padding-top:12px;">'+
-              '<div style="font-size:11px;font-weight:800;color:var(--gray-500);text-transform:uppercase;margin-bottom:8px;">EN EL TICKET</div>'+
-              self._renderItemsList()+
-            '</div>' : ''
-          )+
-        '</div>';
+          '</div>';
     } else if (this._searchResults && this._searchResults.length === 0) {
       itemsArea =
         '<div style="text-align:center;padding:40px 20px;color:var(--gray-400);">'+
@@ -475,7 +469,14 @@ const VentasModule = {
               '<span style="background:var(--accent);color:white;font-size:10px;padding:1px 8px;border-radius:10px;margin-left:4px;">'+self.currentItems.length+'</span>'+
             '</div>'+
           '</div>'+
-          '<div style="min-height:420px;" id="itemsAreaWrapper">'+itemsArea+'</div>'+
+          '<div id="searchResultsWrapper">'+itemsArea+'</div>'+
+'<div id="ticketItemsWrapper">'+
+  (self.currentItems.length > 0 && self._searchResults ?
+    '<div style="padding:8px 14px;border-top:1px solid var(--gray-200);">'+
+      '<div style="font-size:11px;font-weight:800;color:var(--gray-500);text-transform:uppercase;margin-bottom:8px;">EN EL TICKET</div>'+
+      self._renderItemsList()+
+    '</div>' : '')+
+'</div>'+
           // Buscador de productos
           '<div style="padding:14px 20px;border-top:2px solid var(--gray-200);background:var(--gray-50);">'+
             '<div style="font-size:11px;font-weight:800;color:var(--gray-500);text-transform:uppercase;margin-bottom:8px;">'+
@@ -756,11 +757,19 @@ const VentasModule = {
              (p.barcode && p.barcode.indexOf(term) >= 0);
     });
     this._searchResults = found;
-    // ✅ Solo actualiza el área sin redibujar toda la página
-    var wrapper = document.getElementById('itemsAreaWrapper');
+    // ✅ Solo actualiza resultados, NO toca el ticket
+    var wrapper = document.getElementById('searchResultsWrapper');
     if (wrapper) {
       wrapper.innerHTML = self._buildSearchHTML(found);
-      // Mantener el foco en el buscador
+      var ticketWrapper = document.getElementById('ticketItemsWrapper');
+      if (ticketWrapper) {
+        ticketWrapper.innerHTML = self.currentItems.length > 0
+          ? '<div style="padding:8px 14px;border-top:1px solid var(--gray-200);">'+
+              '<div style="font-size:11px;font-weight:800;color:var(--gray-500);text-transform:uppercase;margin-bottom:8px;">EN EL TICKET</div>'+
+              self._renderItemsList()+
+            '</div>'
+          : '';
+      }
       setTimeout(function() {
         var inp = document.getElementById('prodBuscadorComp');
         if (inp) { inp.focus(); try { inp.setSelectionRange(term.length, term.length); } catch(e){} }
@@ -817,12 +826,7 @@ const VentasModule = {
       html += '<div style="margin-top:10px;text-align:center;font-size:12px;color:var(--gray-400);font-weight:600;">'+
         'Mostrando 6 de '+results.length+' resultados — refina tu búsqueda para ver más</div>';
     }
-    if (self.currentItems.length > 0) {
-      html += '<div style="border-top:1px solid var(--gray-200);margin-top:12px;padding-top:12px;">'+
-        '<div style="font-size:11px;font-weight:800;color:var(--gray-500);text-transform:uppercase;margin-bottom:8px;">EN EL TICKET</div>'+
-        self._renderItemsList()+
-      '</div>';
-    }
+    
     html += '</div>';
     return html;
   },
