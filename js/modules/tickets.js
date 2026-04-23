@@ -448,12 +448,13 @@ const TicketsModule = {
     if(!w){ App.toast('Activa las ventanas emergentes','warning'); return; }
     w.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Ticket MAGAMA</title>' +
       '<style>' +
-      'body{margin:0;padding:0;background:white;}' +
+      'body{margin:0;padding:0;background:white;color:#000 !important;}' +
+      '*{color:#000 !important;-webkit-print-color-adjust:exact;print-color-adjust:exact;}' +
       '@media screen{body{padding:16px;background:#e5e5e5;display:flex;justify-content:center;}}' +
       '@media print{' +
         'body{margin:0;padding:0;background:white;}' +
         '@page{margin:0;size:80mm auto;}' +
-        'div{-webkit-print-color-adjust:exact;print-color-adjust:exact;}' +
+        '*{color:#000 !important;font-weight:bolder !important;-webkit-print-color-adjust:exact;print-color-adjust:exact;}' +
       '}' +
       '</style>' +
       '</head><body>'+html+'</body></html>');
