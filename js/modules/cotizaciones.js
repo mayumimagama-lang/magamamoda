@@ -115,8 +115,8 @@ const CotizacionesModule = {
 
     _renderForm() {
     const total    = this.currentItems.reduce((s, i) => s + i.total, 0);
-    const subtotal = total / 1.18;
-    const igv      = total - subtotal;
+    const subtotal = total;
+    const igv      = 0;
     const self     = this;
     const hoy      = new Date().toISOString().split('T')[0];
     const venc     = new Date(Date.now() + 30*24*60*60*1000).toISOString().split('T')[0];
@@ -349,12 +349,12 @@ const CotizacionesModule = {
           <div style="background:var(--gray-50);border:2px solid var(--gray-200);border-radius:14px;padding:22px;width:350px;">
             <div style="font-size:12px;font-weight:800;color:var(--gray-400);text-transform:uppercase;margin-bottom:18px;">RESUMEN</div>
             <div style="display:flex;justify-content:space-between;margin-bottom:14px;">
-              <span style="font-size:15px;color:var(--gray-500);font-weight:600;">Subtotal (sin IGV):</span>
+              <span style="font-size:15px;color:var(--gray-500);font-weight:600;">Subtotal:</span>
               <span style="font-size:18px;font-weight:900;color:var(--gray-800);">S/ ${subtotal.toFixed(2)}</span>
             </div>
             <div style="display:flex;justify-content:space-between;margin-bottom:18px;padding-bottom:18px;border-bottom:2px solid var(--gray-200);">
-              <span style="font-size:15px;color:var(--gray-500);font-weight:600;">IGV (18%):</span>
-              <span style="font-size:18px;font-weight:900;color:var(--gray-800);">S/ ${igv.toFixed(2)}</span>
+              <span style="font-size:15px;color:var(--gray-500);font-weight:600;">IGV (Exonerado):</span>
+              <span style="font-size:18px;font-weight:900;color:var(--gray-800);">S/ 0.00</span>
             </div>
             <div style="display:flex;justify-content:space-between;align-items:center;
               padding:16px 18px;background:linear-gradient(135deg,#1e3a5f,#2563eb);border-radius:12px;color:white;">
