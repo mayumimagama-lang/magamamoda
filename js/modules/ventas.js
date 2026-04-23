@@ -1121,47 +1121,10 @@ SupabaseDB.guardarVenta(venta);
   // IMPRIMIR TICKET
   // ─────────────────────────────────────────────────────────
   imprimirComprobante(venta) {
-    var cli = DB.clientes.find(function(c){ return c.id === venta.cliente_id; });
-    var w   = window.open('','_blank','width=380,height=650');
-    if (!w) { App.toast('Activa ventanas emergentes para imprimir', 'warning'); return; }
-    w.document.write(
-      '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>'+venta.serie+'-'+venta.numero+'</title>' +
-      '<style>body{font-family:"Courier New",monospace;font-size:12px;max-width:300px;margin:0 auto;padding:12px;}' +
-      '.c{text-align:center;}.b{font-weight:bold;}.big{font-size:16px;}.xl{font-size:22px;}' +
-      'hr{border:none;border-top:1px dashed #000;margin:8px 0;}' +
-      'table{width:100%;border-collapse:collapse;}th{border-bottom:1px solid #000;padding:3px 0;font-size:11px;}' +
-      'td{font-size:11px;padding:2px 0;}.r{text-align:right;}' +
-      '.total-box{border:2px solid #000;padding:8px;text-align:center;margin:8px 0;border-radius:4px;}</style>' +
-      '</head><body>' +
-      '<div class="c b" style="font-size:14px;">'+DB.empresa.nombre+'</div>' +
-      '<div class="c">RUC: '+DB.empresa.ruc+'</div>' +
-      '<div class="c" style="font-size:10px;">'+DB.empresa.direccion+'</div>' +
-      '<hr/>' +
-      '<div class="c b big">'+venta.tipo_comprobante+'</div>' +
-      '<div class="c b">'+venta.serie+' - '+venta.numero+'</div>' +
-      '<hr/>' +
-      '<div>Fecha: <b>'+venta.fecha+' '+venta.hora+'</b></div>' +
-      '<div>Cliente: <b>'+(cli?cli.nombre:'PÚBLICO EN GENERAL')+'</b></div>' +
-      (cli && cli.doc !== '00000000' ? '<div>'+cli.tipo+': '+cli.doc+'</div>' : '') +
-      '<hr/>' +
-      '<table><thead><tr><th style="text-align:left;">Producto</th><th>Cant</th><th class="r">P.Unit</th><th class="r">Total</th></tr></thead><tbody>' +
-      venta.items.map(function(i) {
-        return '<tr><td>'+i.nombre+'</td><td style="text-align:center;">'+i.qty+'</td>' +
-          '<td class="r">S/'+i.precio.toFixed(2)+'</td><td class="r">S/'+i.total.toFixed(2)+'</td></tr>';
-      }).join('') +
-      '</tbody></table><hr/>' +
-      '<div style="display:flex;justify-content:space-between;"><span>Subtotal:</span><span>S/ '+venta.subtotal.toFixed(2)+'</span></div>' +
-      '<div style="display:flex;justify-content:space-between;"><span>IGV (18%):</span><span>S/ '+venta.igv.toFixed(2)+'</span></div>' +
-      '<div class="total-box"><div class="b">TOTAL A PAGAR</div><div class="xl b">S/ '+venta.total.toFixed(2)+'</div></div>' +
-      '<hr/>' +
-      '<div style="display:flex;justify-content:space-between;"><span>Método:</span><span><b>'+venta.metodo_pago+'</b></span></div>' +
-      '<div style="display:flex;justify-content:space-between;"><span>Recibido:</span><span>S/ '+venta.monto_pago.toFixed(2)+'</span></div>' +
-      '<div style="display:flex;justify-content:space-between;font-weight:bold;"><span>VUELTO:</span><span>S/ '+venta.vuelto.toFixed(2)+'</span></div>' +
-      '<hr/><div class="c b" style="font-size:14px;">¡GRACIAS POR SU COMPRA!</div>' +
-      '</body></html>'
+    TicketsModule._getCfg();
+    TicketsModule._abrirVentanaImpresion(
+      TicketsModule._generarTicketHTML(TicketsModule.cfg, venta)
     );
-    w.document.close();
-    setTimeout(function(){ w.print(); }, 250);
   },
 
   // ─────────────────────────────────────────────────────────
