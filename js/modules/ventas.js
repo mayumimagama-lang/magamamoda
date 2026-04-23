@@ -206,8 +206,8 @@ const VentasModule = {
   renderComprobante() {
     var self     = this;
     var total    = this.getTotal();
-    var subtotal = total / 1.18;
-    var igv      = total - subtotal;
+    var subtotal = total;
+    var igv      = 0;
     var vuelto   = Math.max(0, this.montoPago - total);
     var hoy      = this._fechaLocal();
     var serie    = this.serieActual;
@@ -1046,8 +1046,8 @@ const VentasModule = {
       items:            this.currentItems.map(function(i) {
         return { prod_id:i.prod_id, nombre:i.nombre, qty:i.qty, precio:i.precio, total:i.total };
       }),
-      subtotal:         total / 1.18,
-      igv:              total - (total/1.18),
+      subtotal:         total,
+      igv:              0,
       total:            total,
       tc:               DB.empresa.tipoCambio || 3.467,
       moneda:           'SOLES',
@@ -1107,8 +1107,8 @@ SupabaseDB.guardarVenta(venta);
               '<span>'+i.nombre+' ×'+i.qty+'</span><span>S/'+i.total.toFixed(2)+'</span></div>';
           }).join('')) +
         '<hr style="border:1px dashed var(--gray-300);"/>' +
-        '<div style="display:flex;justify-content:space-between;"><span>Subtotal:</span><span>S/'+(total/1.18).toFixed(2)+'</span></div>' +
-        '<div style="display:flex;justify-content:space-between;"><span>IGV 18%:</span><span>S/'+(total-total/1.18).toFixed(2)+'</span></div>' +
+        '<div style="display:flex;justify-content:space-between;"><span>Subtotal:</span><span>S/'+total.toFixed(2)+'</span></div>' +
+        '<div style="display:flex;justify-content:space-between;"><span>IGV (Exonerado):</span><span>S/ 0.00</span></div>' +
         '<div style="display:flex;justify-content:space-between;font-size:16px;font-weight:800;border-top:1px solid #000;padding-top:4px;margin-top:4px;">' +
           '<span>TOTAL:</span><span>S/'+total.toFixed(2)+'</span></div>' +
       '</div>',
