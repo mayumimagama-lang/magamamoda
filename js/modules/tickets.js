@@ -307,7 +307,7 @@ const TicketsModule = {
     var qrUrl  = 'https://api.qrserver.com/v1/create-qr-code/?size=90x90&bgcolor=ffffff&color=000000&data='+qrData;
 
     return (
-      '<div style="width:270px;margin:0 auto;font-family:\'Courier New\',monospace;font-size:12px;background:white;padding:14px 12px;box-sizing:border-box;box-shadow:0 4px 16px rgba(0,0,0,0.18);">' +
+      '<div style="width:270px;margin:0 auto;font-family:\'Courier New\',monospace;font-size:12px;background:white;padding:14px 12px;box-sizing:border-box;box-shadow:0 4px 16px rgba(0,0,0,0.18);color:#111;">' +
 
         // ENCABEZADO
         '<div style="text-align:center;margin-bottom:6px;">' +
@@ -326,8 +326,8 @@ const TicketsModule = {
 
         // TIPO Y NÚMERO
         '<div style="text-align:center;margin-bottom:4px;">' +
-          '<div style="font-size:13px;font-weight:900;text-transform:uppercase;letter-spacing:1px;">'+tipoFull+'</div>' +
-          '<div style="font-size:12px;font-weight:700;">'+numero+'</div>' +
+          '<div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#888;">'+tipoFull+'</div>' +
+          '<div style="font-size:12px;font-weight:600;color:#888;">'+numero+'</div>' +
         '</div>' +
 
         sep +
