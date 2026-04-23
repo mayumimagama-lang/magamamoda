@@ -258,8 +258,8 @@ const POSModule = {
         (dctoTotal > 0 ?
           '<div class="pos-total-row" style="color:var(--success);"><span><i class="fas fa-tag"></i> Descuento:</span>' +
           '<span>− S/ ' + dctoTotal.toFixed(2) + '</span></div>' : '') +
-        '<div class="pos-total-row"><span>Subtotal (sin IGV):</span><span>S/ ' + (total/1.18).toFixed(2) + '</span></div>' +
-        '<div class="pos-total-row"><span>IGV (18%):</span><span>S/ ' + (total - total/1.18).toFixed(2) + '</span></div>' +
+        '<div class="pos-total-row"><span>Subtotal:</span><span>S/ ' + total.toFixed(2) + '</span></div>' +
+'<div class="pos-total-row"><span>IGV (Exonerado):</span><span>S/ 0.00</span></div>' +
         '<div class="pos-total-row main"><span>TOTAL:</span><span style="color:var(--accent);">S/ ' + total.toFixed(2) + '</span></div>' +
       '</div>';
 
@@ -816,8 +816,8 @@ const POSModule = {
         return { prod_id:i.prod_id, nombre:i.nombre, qty:i.qty,
                  precio:i.precioCustom||i.precio, total:i.total };
       }),
-      subtotal:     total / 1.18,
-      igv:          total - total / 1.18,
+      subtotal:     total,
+      igv:          0,
       total:        total,
       tc:           DB.empresa.tipoCambio,
       moneda:       'SOLES',
@@ -895,7 +895,7 @@ const POSModule = {
       '<tbody>' + itemsHtml + '</tbody></table>' +
       '<hr/>' +
       '<div style="display:flex;justify-content:space-between;"><span>Subtotal:</span><span>S/ ' + venta.subtotal.toFixed(2) + '</span></div>' +
-      '<div style="display:flex;justify-content:space-between;"><span>IGV (18%):</span><span>S/ ' + venta.igv.toFixed(2) + '</span></div>' +
+'<div style="display:flex;justify-content:space-between;"><span>IGV (Exonerado):</span><span>S/ 0.00</span></div>' +
       '<div class="total-box"><div class="bold">TOTAL A PAGAR</div><div class="xl bold">S/ ' + venta.total.toFixed(2) + '</div></div>' +
       '<hr/>' +
       '<div style="display:flex;justify-content:space-between;"><span>Método de pago:</span><span><b>' + metodoPagoFmt + '</b></span></div>' +
