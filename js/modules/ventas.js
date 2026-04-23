@@ -543,12 +543,12 @@ const VentasModule = {
               '<div style="background:var(--gray-50);border:2px solid var(--gray-200);border-radius:14px;padding:22px;flex:1;">'+
                 '<div style="font-size:12px;font-weight:800;color:var(--gray-400);text-transform:uppercase;letter-spacing:1px;margin-bottom:18px;">RESUMEN DEL COMPROBANTE</div>'+
                 '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">'+
-                  '<span style="font-size:17px;color:var(--gray-500);font-weight:600;">Subtotal (sin IGV):</span>'+
+                  '<span style="font-size:17px;color:var(--gray-500);font-weight:600;">Subtotal:</span>'+
                   '<span style="font-size:22px;font-weight:900;color:var(--gray-800);">S/ '+subtotal.toFixed(2)+'</span>'+
                 '</div>'+
                 '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;padding-bottom:18px;border-bottom:2px solid var(--gray-200);">'+
-                  '<span style="font-size:17px;color:var(--gray-500);font-weight:600;">IGV (18%):</span>'+
-                  '<span style="font-size:22px;font-weight:900;color:var(--gray-800);">S/ '+igv.toFixed(2)+'</span>'+
+                  '<span style="font-size:17px;color:var(--gray-500);font-weight:600;">IGV (Exonerado):</span>'+
+                  '<span style="font-size:22px;font-weight:900;color:var(--gray-800);">S/ 0.00</span>'+
                 '</div>'+
                 '<div style="display:flex;justify-content:space-between;align-items:center;'+
                   'padding:20px 22px;background:linear-gradient(135deg,#1e3a5f,#2563eb);'+
@@ -1157,9 +1157,9 @@ SupabaseDB.guardarVenta(venta);
       '</tbody></table>' +
       '<div style="margin-top:14px;border-top:1px solid var(--gray-200);padding-top:14px;">' +
         '<div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px;">' +
-          '<span>Subtotal (sin IGV):</span><span>S/ '+v.subtotal.toFixed(2)+'</span></div>' +
-        '<div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:10px;">' +
-          '<span>IGV 18%:</span><span>S/ '+v.igv.toFixed(2)+'</span></div>' +
+          '<span>Subtotal:</span><span>S/ '+v.total.toFixed(2)+'</span></div>' +
+          '<div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:10px;">' +
+          '<span>IGV (Exonerado):</span><span>S/ 0.00</span></div>' +
         '<div style="display:flex;justify-content:space-between;font-size:20px;font-weight:900;' +
           'background:linear-gradient(135deg,#1e3a5f,#2563eb);color:white;padding:12px;border-radius:10px;">' +
           '<span>TOTAL:</span><span>S/ '+v.total.toFixed(2)+'</span></div>' +
