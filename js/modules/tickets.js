@@ -326,8 +326,8 @@ const TicketsModule = {
 
         // TIPO Y NÚMERO
         '<div style="text-align:center;margin-bottom:4px;">' +
-          '<div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#888;">'+tipoFull+'</div>' +
-'<div style="font-size:12px;font-weight:600;color:#888;">'+numero+'</div>' +
+          '<div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:1px;opacity:0.45;">'+tipoFull+'</div>' +
+'<div style="font-size:12px;font-weight:600;opacity:0.45;">'+numero+'</div>' +
         '</div>' +
 
         sep +
