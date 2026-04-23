@@ -475,7 +475,7 @@ const VentasModule = {
               '<span style="background:var(--accent);color:white;font-size:10px;padding:1px 8px;border-radius:10px;margin-left:4px;">'+self.currentItems.length+'</span>'+
             '</div>'+
           '</div>'+
-          '<div style="min-height:420px;">'+itemsArea+'</div>'+
+          '<div style="min-height:420px;" id="itemsAreaWrapper">'+itemsArea+'</div>'+
           // Buscador de productos
           '<div style="padding:14px 20px;border-top:2px solid var(--gray-200);background:var(--gray-50);">'+
             '<div style="font-size:11px;font-weight:800;color:var(--gray-500);text-transform:uppercase;margin-bottom:8px;">'+
@@ -741,29 +741,63 @@ const VentasModule = {
   // ─────────────────────────────────────────────────────────
   // BUSCADOR LIVE DE PRODUCTOS (en el comprobante)
   // ─────────────────────────────────────────────────────────
-  filtroBuscadorLive(term) {
-    if (!term || term.length < 2) {
-      if (this._searchResults !== null) {
-        this._searchResults = null;
-        App.renderPage();
-        setTimeout(function(){
-          var inp = document.getElementById('prodBuscadorComp');
-          if (inp) { inp.focus(); }
-        }, 30);
-      }
-      return;
+  _buildSearchHTML(results) {
+    var self = this;
+    if (results.length === 0) {
+      return '<div style="text-align:center;padding:40px 20px;color:var(--gray-400);">'+
+        '<i class="fas fa-search" style="font-size:40px;display:block;margin-bottom:12px;opacity:0.3;"></i>'+
+        '<p style="font-size:14px;font-weight:700;">Sin resultados</p>'+
+        '<p style="font-size:12px;opacity:0.6;">Intenta con otro nombre o código</p>'+
+        '<button onclick="VentasModule._searchResults=null;App.renderPage();" style="margin-top:10px;background:var(--gray-100);color:var(--gray-600);border:none;border-radius:6px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;">Limpiar búsqueda</button>'+
+      '</div>';
     }
-    var found = DB.productos.filter(function(p) {
-      return p.nombre.toLowerCase().indexOf(term.toLowerCase()) >= 0 ||
-             p.codigo.toLowerCase().indexOf(term.toLowerCase()) >= 0 ||
-             (p.barcode && p.barcode.indexOf(term) >= 0);
+    var html =
+      '<div style="padding:10px 14px;">'+
+        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">'+
+          '<span style="font-size:12px;font-weight:800;color:var(--gray-500);">'+
+            '<i class="fas fa-search" style="margin-right:5px;color:var(--accent);"></i>'+
+            results.length+' resultados encontrados'+
+          '</span>'+
+          '<button onclick="VentasModule._searchResults=null;App.renderPage();" '+
+            'style="background:var(--gray-100);color:var(--gray-600);border:none;border-radius:6px;'+
+            'padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;">'+
+            '<i class="fas fa-times"></i> Cerrar búsqueda</button>'+
+        '</div>'+
+        '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">';
+    results.slice(0,6).forEach(function(p) {
+      var imgH = p.imagen
+        ? '<img src="'+p.imagen+'" style="width:70px;height:70px;object-fit:cover;border-radius:10px;margin-bottom:8px;border:2px solid var(--gray-200);display:block;" alt=""/>'
+        : '<div style="width:70px;height:70px;border-radius:10px;background:var(--gray-100);display:flex;align-items:center;justify-content:center;margin-bottom:8px;border:2px dashed var(--gray-300);"><i class="fas fa-image" style="font-size:22px;color:var(--gray-300);"></i></div>';
+      var sClr = p.stock===0?'#dc2626':p.stock<=10?'#d97706':'#16a34a';
+      var sTxt = p.stock===0?'Sin stock':'Stock: '+p.stock;
+      html += '<div onclick="VentasModule.agregarDesdeResultados('+p.id+')" '+
+        'style="display:flex;flex-direction:column;align-items:center;text-align:center;'+
+        'padding:14px 10px;border-radius:12px;border:2px solid var(--gray-200);'+
+        'background:white;cursor:pointer;'+
+        (p.stock===0?'opacity:0.5;':'')+'">'+
+        imgH+
+        '<div style="font-size:13px;font-weight:800;color:var(--gray-900);margin-bottom:4px;'+
+          'overflow:hidden;text-overflow:ellipsis;white-space:nowrap;width:100%;">'+p.nombre+'</div>'+
+        '<div style="font-size:15px;font-weight:900;color:var(--accent);margin-bottom:3px;">S/ '+p.precio_venta.toFixed(2)+'</div>'+
+        '<div style="font-size:11px;font-weight:700;color:'+sClr+';">'+sTxt+'</div>'+
+        (p.stock>0
+          ? '<div style="margin-top:8px;padding:5px 14px;background:var(--accent);color:white;border-radius:6px;font-size:12px;font-weight:700;"><i class="fas fa-plus" style="margin-right:4px;"></i>Agregar</div>'
+          : '')+
+      '</div>';
     });
-    this._searchResults = found;
-    App.renderPage();
-    setTimeout(function() {
-      var inp = document.getElementById('prodBuscadorComp');
-      if (inp) { inp.value = term; inp.focus(); try { inp.setSelectionRange(term.length, term.length); } catch(e) {} }
-    }, 30);
+    html += '</div>';
+    if (results.length > 6) {
+      html += '<div style="margin-top:10px;text-align:center;font-size:12px;color:var(--gray-400);font-weight:600;">'+
+        'Mostrando 6 de '+results.length+' resultados — refina tu búsqueda para ver más</div>';
+    }
+    if (self.currentItems.length > 0) {
+      html += '<div style="border-top:1px solid var(--gray-200);margin-top:12px;padding-top:12px;">'+
+        '<div style="font-size:11px;font-weight:800;color:var(--gray-500);text-transform:uppercase;margin-bottom:8px;">EN EL TICKET</div>'+
+        self._renderItemsList()+
+      '</div>';
+    }
+    html += '</div>';
+    return html;
   },
 
   agregarDesdeResultados(id) {
