@@ -741,6 +741,33 @@ const VentasModule = {
   // ─────────────────────────────────────────────────────────
   // BUSCADOR LIVE DE PRODUCTOS (en el comprobante)
   // ─────────────────────────────────────────────────────────
+  filtroBuscadorLive(term) {
+    var self = this;
+    if (!term || term.length < 2) {
+      if (this._searchResults !== null) {
+        this._searchResults = null;
+        App.renderPage();
+      }
+      return;
+    }
+    var found = DB.productos.filter(function(p) {
+      return p.nombre.toLowerCase().indexOf(term.toLowerCase()) >= 0 ||
+             p.codigo.toLowerCase().indexOf(term.toLowerCase()) >= 0 ||
+             (p.barcode && p.barcode.indexOf(term) >= 0);
+    });
+    this._searchResults = found;
+    // ✅ Solo actualiza el área sin redibujar toda la página
+    var wrapper = document.getElementById('itemsAreaWrapper');
+    if (wrapper) {
+      wrapper.innerHTML = self._buildSearchHTML(found);
+      // Mantener el foco en el buscador
+      setTimeout(function() {
+        var inp = document.getElementById('prodBuscadorComp');
+        if (inp) { inp.focus(); try { inp.setSelectionRange(term.length, term.length); } catch(e){} }
+      }, 10);
+    }
+  },
+  
   _buildSearchHTML(results) {
     var self = this;
     if (results.length === 0) {
