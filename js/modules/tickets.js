@@ -307,7 +307,7 @@ const TicketsModule = {
     var qrUrl  = 'https://api.qrserver.com/v1/create-qr-code/?size=90x90&bgcolor=ffffff&color=000000&data='+qrData;
 
     return (
-      '<div style="width:270px;margin:0 auto;font-family:\'Courier New\',monospace;font-size:12px;background:white;padding:14px 12px;box-sizing:border-box;box-shadow:0 4px 16px rgba(0,0,0,0.18);color:#111;">' +
+      '<div style="width:270px;margin:0 auto;font-family:\'Courier New\',monospace;font-size:12px;background:white;padding:14px 12px;box-sizing:border-box;box-shadow:0 4px 16px rgba(0,0,0,0.18);color:#000;">' +
 
         // ENCABEZADO
         '<div style="text-align:center;margin-bottom:6px;">' +
@@ -326,8 +326,8 @@ const TicketsModule = {
 
         // TIPO Y NÚMERO
         '<div style="text-align:center;margin-bottom:4px;">' +
-          '<div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#888;">'+tipoFull+'</div>' +
-          '<div style="font-size:12px;font-weight:600;color:#888;">'+numero+'</div>' +
+          '<div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#000;">'+tipoFull+'</div>' +
+'<div style="font-size:12px;font-weight:600;color:#000;">'+numero+'</div>' +
         '</div>' +
 
         sep +
@@ -382,7 +382,7 @@ const TicketsModule = {
         (cfg.mostrarQR
           ? '<div style="text-align:center;margin:6px 0;">' +
               '<img src="'+qrUrl+'" style="width:75px;height:75px;" alt="QR" onerror="this.style.display=\'none\'"/>' +
-              '<div style="font-size:9px;color:#666;margin-top:2px;">'+numero+'</div>' +
+              '<div style="font-size:9px;color:#000;margin-top:2px;">'+numero+'</div>' +
             '</div>' + sep
           : '') +
 
@@ -390,7 +390,7 @@ const TicketsModule = {
         '<div style="text-align:center;margin-top:4px;">' +
           (cfg.mensaje1 ? '<div style="font-size:13px;font-weight:900;">'+cfg.mensaje1+'</div>'          : '') +
           (cfg.mensaje2 ? '<div style="font-size:11px;margin-top:2px;">'+cfg.mensaje2+'</div>'           : '') +
-          (cfg.mensaje3 ? '<div style="font-size:10px;color:#555;margin-top:2px;">'+cfg.mensaje3+'</div>': '') +
+          (cfg.mensaje3 ? '<div style="font-size:10px;color:#000;margin-top:2px;">'+cfg.mensaje3+'</div>': '') +
         '</div>' +
 
         // FIRMA
@@ -399,7 +399,7 @@ const TicketsModule = {
           : '') +
 
         sep +
-        '<div style="text-align:center;font-size:9px;color:#666;">'+cfg.nombre+' &mdash; '+fecha+'</div>' +
+        '<div style="text-align:center;font-size:9px;color:#000;">'+cfg.nombre+' &mdash; '+fecha+'</div>' +
 
       '</div>'
     );
