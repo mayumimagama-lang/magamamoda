@@ -287,13 +287,10 @@ const TicketsModule = {
   },
 
   _generarTicketHTML(cfg, venta) {
-    var hClr  = cfg.colorHeader || '#1a1a2e';
-    var aClr  = cfg.colorAcento || '#e94560';
-    var tClr  = cfg.colorTotal  || '#0f3460';
     var numero   = venta ? (venta.serie+'-'+venta.numero) : 'NV03-00000001';
     var fecha    = venta ? venta.fecha     : this._fechaLocal();
     var hora     = venta ? venta.hora      : '10:30:00';
-    var cliente  = venta ? (DB.clientes.find(function(c){ return c.id===venta.cliente_id; })||{nombre:'P\u00daBLICO EN GENERAL'}).nombre : 'P\u00daBLICO EN GENERAL';
+    var cliente  = venta ? (DB.clientes.find(function(c){ return c.id===venta.cliente_id; })||{nombre:'PÚBLICO EN GENERAL'}).nombre : 'PÚBLICO EN GENERAL';
     var metodo   = venta ? venta.metodo_pago : 'EFECTIVO';
     var recibido = venta ? venta.monto_pago  : 100.00;
     var vuelto   = venta ? venta.vuelto      : 22.50;
@@ -302,101 +299,108 @@ const TicketsModule = {
     var igv      = venta ? (venta.igv||(total-subtotal)) : total-subtotal;
     var tipoFull = venta ? (venta.tipo_comprobante||venta.tipo||'NOTA DE VENTA') : 'NOTA DE VENTA';
     var items    = venta ? venta.items : [
-      { nombre:'POLO ALGOD\u00d3N', qty:2, precio:18.00, total:36.00 },
-      { nombre:'JEAN SLIM',         qty:1, precio:45.00, total:45.00 },
+      { nombre:'POLO ALGODÓN', qty:2, precio:18.00, total:36.00 },
+      { nombre:'JEAN SLIM',    qty:1, precio:45.00, total:45.00 },
     ];
-    var qrData = encodeURIComponent(numero+' MAGAMA S/'+total.toFixed(2));
+    var sep = '<div style="border-top:1px dashed #000;margin:7px 0;"></div>';
+    var qrData = encodeURIComponent(numero+' '+cfg.nombre+' S/'+total.toFixed(2));
     var qrUrl  = 'https://api.qrserver.com/v1/create-qr-code/?size=90x90&bgcolor=ffffff&color=000000&data='+qrData;
-    var ini    = hClr.replace('#','');
 
     return (
-      '<div style="width:260px;margin:0 auto;font-family:Arial,sans-serif;font-size:12px;background:white;border-radius:6px;overflow:hidden;box-shadow:0 6px 24px rgba(0,0,0,0.25);">' +
+      '<div style="width:270px;margin:0 auto;font-family:\'Courier New\',monospace;font-size:12px;background:white;padding:14px 12px;box-sizing:border-box;box-shadow:0 4px 16px rgba(0,0,0,0.18);">' +
 
-        '<div style="background:linear-gradient(150deg,'+hClr+' 0%,'+tClr+' 100%);padding:18px 14px 14px;text-align:center;color:white;">' +
+        // ENCABEZADO
+        '<div style="text-align:center;margin-bottom:6px;">' +
           (cfg.mostrarLogo && cfg.logo
-            ? '<img src="'+cfg.logo+'" style="max-width:65px;max-height:55px;object-fit:contain;display:block;margin:0 auto 8px;" alt="logo"/>'
-            : '<div style="width:56px;height:56px;border-radius:50%;background:'+aClr+';display:flex;align-items:center;justify-content:center;margin:0 auto 10px;font-size:24px;font-weight:900;">M</div>'
-          ) +
-          '<div style="font-size:24px;font-weight:900;letter-spacing:3px;text-transform:uppercase;">'+cfg.nombre+'</div>' +
-          (cfg.mostrarSlogan && cfg.slogan ? '<div style="font-size:10px;opacity:0.8;margin-top:3px;font-style:italic;">'+cfg.slogan+'</div>' : '') +
-          '<div style="width:36px;height:2px;background:'+aClr+';margin:8px auto 6px;border-radius:2px;"></div>' +
-          (cfg.mostrarRuc   ? '<div style="font-size:10px;opacity:0.75;">RUC: '+cfg.ruc+'</div>' : '') +
-          (cfg.mostrarDir   ? '<div style="font-size:10px;opacity:0.75;margin-top:1px;">'+cfg.direccion+'</div>' : '') +
-          (cfg.mostrarTel   && cfg.telefono ? '<div style="font-size:10px;opacity:0.75;margin-top:1px;">\ud83d\udcde '+cfg.telefono+'</div>' : '') +
-          (cfg.mostrarEmail && cfg.email    ? '<div style="font-size:10px;opacity:0.75;margin-top:1px;">\u2709\ufe0f '+cfg.email+'</div>' : '') +
-          (cfg.mostrarWeb   && cfg.web      ? '<div style="font-size:10px;opacity:0.75;margin-top:1px;">\ud83c\udf10 '+cfg.web+'</div>' : '') +
+            ? '<img src="'+cfg.logo+'" style="max-width:70px;max-height:60px;object-fit:contain;display:block;margin:0 auto 6px;" alt="logo"/>'
+            : '') +
+          '<div style="font-size:15px;font-weight:900;text-transform:uppercase;letter-spacing:1px;">'+cfg.nombre+'</div>' +
+          (cfg.mostrarRuc    ? '<div style="font-size:11px;">RUC: '+cfg.ruc+'</div>'            : '') +
+          (cfg.mostrarDir    ? '<div style="font-size:11px;">'+cfg.direccion+'</div>'            : '') +
+          (cfg.mostrarTel && cfg.telefono  ? '<div style="font-size:11px;">'+cfg.telefono+'</div>'  : '') +
+          (cfg.mostrarEmail && cfg.email   ? '<div style="font-size:11px;">'+cfg.email+'</div>'     : '') +
+          (cfg.mostrarWeb && cfg.web       ? '<div style="font-size:11px;">'+cfg.web+'</div>'       : '') +
         '</div>' +
 
-        '<div style="background:'+aClr+';padding:7px 14px;text-align:center;">' +
-          '<div style="font-size:12px;font-weight:900;color:white;letter-spacing:1px;">'+tipoFull.toUpperCase()+'</div>' +
-          '<div style="font-size:10px;color:rgba(255,255,255,0.9);">'+numero+'</div>' +
+        sep +
+
+        // TIPO Y NÚMERO
+        '<div style="text-align:center;margin-bottom:4px;">' +
+          '<div style="font-size:13px;font-weight:900;text-transform:uppercase;letter-spacing:1px;">'+tipoFull+'</div>' +
+          '<div style="font-size:12px;font-weight:700;">'+numero+'</div>' +
         '</div>' +
 
-        '<div style="padding:9px 12px;background:#f8f9fa;border-bottom:1px solid #e9ecef;">' +
-          '<div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:2px;"><span style="color:#666;">\ud83d\udcc5 Fecha:</span><span style="font-weight:700;">'+fecha+' '+hora+'</span></div>' +
-          '<div style="display:flex;justify-content:space-between;font-size:10px;"><span style="color:#666;">\ud83d\udc64 Cliente:</span><span style="font-weight:700;max-width:155px;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+cliente+'</span></div>' +
+        sep +
+
+        // FECHA Y CLIENTE
+        '<div style="margin-bottom:4px;">' +
+          '<div style="font-size:11px;">Fecha: <strong>'+fecha+' '+hora+'</strong></div>' +
+          '<div style="font-size:11px;">Cliente: <strong>'+cliente+'</strong></div>' +
         '</div>' +
 
-        '<div style="padding:8px 12px;">' +
-          '<div style="display:grid;grid-template-columns:1fr 28px 45px 45px;gap:2px;font-size:9px;font-weight:700;color:white;background:'+hClr+';padding:5px 7px;border-radius:4px;margin-bottom:3px;">' +
-            '<span>PRODUCTO</span><span style="text-align:center;">UND</span><span style="text-align:right;">P/U</span><span style="text-align:right;">TOTAL</span>' +
-          '</div>' +
-          items.map(function(item, i) {
-            return '<div style="display:grid;grid-template-columns:1fr 28px 45px 45px;gap:2px;font-size:10px;padding:4px 7px;background:'+(i%2===0?'white':'#f8f9fa')+';border-radius:3px;margin-bottom:1px;">' +
-              '<span style="font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+item.nombre+'</span>' +
-              '<span style="text-align:center;color:#666;">'+item.qty+'</span>' +
-              '<span style="text-align:right;color:#666;">'+item.precio.toFixed(2)+'</span>' +
-              '<span style="text-align:right;font-weight:700;">'+item.total.toFixed(2)+'</span>' +
-            '</div>';
-          }).join('') +
+        sep +
+
+        // CABECERA TABLA
+        '<div style="display:grid;grid-template-columns:1fr 36px 54px 54px;font-size:10px;font-weight:700;border-bottom:1px solid #000;padding-bottom:3px;margin-bottom:3px;">' +
+          '<span>Producto</span><span style="text-align:center;">Cant</span><span style="text-align:right;">P.Unit</span><span style="text-align:right;">Total</span>' +
         '</div>' +
 
+        // ITEMS
+        items.map(function(item) {
+          return '<div style="display:grid;grid-template-columns:1fr 36px 54px 54px;font-size:11px;margin-bottom:2px;align-items:start;">' +
+            '<span style="overflow:hidden;word-break:break-word;">'+item.nombre+'</span>' +
+            '<span style="text-align:center;">'+item.qty+'</span>' +
+            '<span style="text-align:right;">S/'+item.precio.toFixed(2)+'</span>' +
+            '<span style="text-align:right;font-weight:700;">S/'+item.total.toFixed(2)+'</span>' +
+          '</div>';
+        }).join('') +
+
+        sep +
+
+        // SUBTOTAL E IGV
         (cfg.mostrarIGV
-          ? '<div style="padding:5px 12px;background:#f8f9fa;border-top:1px solid #e9ecef;">' +
-              '<div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:1px;"><span style="color:#666;">Subtotal:</span><span>S/ '+subtotal.toFixed(2)+'</span></div>' +
-              '<div style="display:flex;justify-content:space-between;font-size:10px;"><span style="color:#666;">IGV (18%):</span><span>S/ '+igv.toFixed(2)+'</span></div>' +
-            '</div>'
-          : ''
-        ) +
+          ? '<div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:2px;"><span>Subtotal:</span><span>S/ '+subtotal.toFixed(2)+'</span></div>' +
+            '<div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px;"><span>IGV (18%):</span><span>S/ '+igv.toFixed(2)+'</span></div>'
+          : '') +
 
-        '<div style="margin:8px 10px;padding:10px;background:linear-gradient(135deg,'+tClr+','+hClr+');border-radius:8px;text-align:center;color:white;">' +
-          '<div style="font-size:10px;font-weight:700;opacity:0.9;letter-spacing:1px;margin-bottom:1px;">TOTAL A PAGAR</div>' +
+        // TOTAL
+        '<div style="border:2px solid #000;padding:7px;text-align:center;margin:6px 0;border-radius:3px;">' +
+          '<div style="font-size:11px;font-weight:700;">TOTAL A PAGAR</div>' +
           '<div style="font-size:26px;font-weight:900;letter-spacing:1px;">S/ '+total.toFixed(2)+'</div>' +
         '</div>' +
 
-        '<div style="padding:7px 12px;background:#f8f9fa;">' +
-          '<div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:2px;"><span style="color:#666;">\ud83d\udcb3 M\u00e9todo:</span><span style="font-weight:800;color:'+aClr+';">'+metodo+'</span></div>' +
-          '<div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:3px;"><span style="color:#666;">Recibido:</span><span style="font-weight:700;">S/ '+recibido.toFixed(2)+'</span></div>' +
-          '<div style="display:flex;justify-content:space-between;font-size:11px;padding:5px 7px;background:'+aClr+'22;border-radius:5px;">' +
-            '<span style="font-weight:800;color:'+aClr+';">VUELTO:</span><span style="font-weight:900;color:'+aClr+';">S/ '+vuelto.toFixed(2)+'</span>' +
-          '</div>' +
-        '</div>' +
+        sep +
 
+        // PAGO
+        '<div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:2px;"><span>Método:</span><span style="font-weight:800;">'+metodo+'</span></div>' +
+        '<div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:2px;"><span>Recibido:</span><span>S/ '+recibido.toFixed(2)+'</span></div>' +
+        '<div style="display:flex;justify-content:space-between;font-size:12px;font-weight:900;"><span>VUELTO:</span><span>S/ '+vuelto.toFixed(2)+'</span></div>' +
+
+        sep +
+
+        // QR
         (cfg.mostrarQR
-          ? '<div style="padding:10px 12px;text-align:center;border-top:1px dashed #ccc;">' +
-              '<div style="font-size:9px;color:#999;margin-bottom:5px;">Escanea para verificar tu compra</div>' +
-              '<img src="'+qrUrl+'" style="width:75px;height:75px;border:2px solid '+hClr+';border-radius:6px;padding:3px;" alt="QR" onerror="this.style.display=\'none\'"/>' +
-              '<div style="font-size:9px;color:#999;margin-top:3px;font-weight:700;">'+numero+'</div>' +
-            '</div>'
-          : ''
-        ) +
+          ? '<div style="text-align:center;margin:6px 0;">' +
+              '<img src="'+qrUrl+'" style="width:75px;height:75px;" alt="QR" onerror="this.style.display=\'none\'"/>' +
+              '<div style="font-size:9px;color:#666;margin-top:2px;">'+numero+'</div>' +
+            '</div>' + sep
+          : '') +
 
-        '<div style="padding:10px 12px;text-align:center;background:linear-gradient(135deg,'+hClr+'18,'+aClr+'18);border-top:2px solid '+aClr+';">' +
-          (cfg.mensaje1 ? '<div style="font-size:13px;font-weight:900;color:'+hClr+';">'+cfg.mensaje1+'</div>' : '') +
-          (cfg.mensaje2 ? '<div style="font-size:11px;color:'+aClr+';margin-top:3px;font-weight:700;">'+cfg.mensaje2+'</div>' : '') +
-          (cfg.mensaje3 ? '<div style="font-size:9px;color:#888;margin-top:3px;">'+cfg.mensaje3+'</div>' : '') +
+        // MENSAJES
+        '<div style="text-align:center;margin-top:4px;">' +
+          (cfg.mensaje1 ? '<div style="font-size:13px;font-weight:900;">'+cfg.mensaje1+'</div>'          : '') +
+          (cfg.mensaje2 ? '<div style="font-size:11px;margin-top:2px;">'+cfg.mensaje2+'</div>'           : '') +
+          (cfg.mensaje3 ? '<div style="font-size:10px;color:#555;margin-top:2px;">'+cfg.mensaje3+'</div>': '') +
         '</div>' +
 
+        // FIRMA
         (cfg.mostrarFirma
-          ? '<div style="padding:14px 20px;border-top:1px dashed #ccc;text-align:center;">' +
-              '<div style="border-top:1px solid #333;width:120px;margin:0 auto;padding-top:4px;font-size:9px;color:#666;">Firma del cliente</div>' +
-            '</div>'
-          : ''
-        ) +
+          ? sep + '<div style="text-align:center;padding-top:18px;"><div style="border-top:1px solid #333;width:120px;margin:0 auto;font-size:9px;padding-top:3px;">Firma del cliente</div></div>'
+          : '') +
 
-        '<div style="padding:6px;text-align:center;background:'+hClr+';color:rgba(255,255,255,0.5);font-size:8px;">' +
-          cfg.nombre+' &mdash; '+fecha +
-        '</div>' +
+        sep +
+        '<div style="text-align:center;font-size:9px;color:#666;">'+cfg.nombre+' &mdash; '+fecha+'</div>' +
+
       '</div>'
     );
   },
