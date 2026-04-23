@@ -447,18 +447,18 @@ const TicketsModule = {
     var w=window.open('','_blank','width=380,height=700');
     if(!w){ App.toast('Activa las ventanas emergentes','warning'); return; }
     w.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Ticket MAGAMA</title>' +
-      '<style>body{margin:0;padding:16px;background:#e5e5e5;display:flex;justify-content:center;}' +
-      '@media print{body{background:white;padding:0;}@page{margin:0;size:80mm auto;}}</style>' +
+      '<style>' +
+      'body{margin:0;padding:0;background:white;}' +
+      '@media screen{body{padding:16px;background:#e5e5e5;display:flex;justify-content:center;}}' +
+      '@media print{' +
+        'body{margin:0;padding:0;background:white;}' +
+        '@page{margin:0;size:80mm auto;}' +
+        'div{-webkit-print-color-adjust:exact;print-color-adjust:exact;}' +
+      '}' +
+      '</style>' +
       '</head><body>'+html+'</body></html>');
     w.document.close();
     setTimeout(function(){ w.focus(); w.print(); }, 600);
-  },
-
-  imprimirTicket(id) {
-    var v=DB.ventas.find(function(x){ return x.id===id; });
-    if(!v) return;
-    this._getCfg();
-    this._abrirVentanaImpresion(this._generarTicketHTML(this.cfg, v));
   },
 
   editarTicket(id){ this.ticketEditando=id; App.renderPage(); },
