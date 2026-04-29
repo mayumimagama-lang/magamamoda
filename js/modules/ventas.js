@@ -1208,9 +1208,10 @@ this.verDetalle(venta.id);
           if (pi >= 0) DB.productos[pi].stock += item.qty;
         });
         Storage.guardarVentas();
-        Storage.guardarProductos();
-      }
-      App.toast('Comprobante anulado', 'warning');
+Storage.guardarProductos();
+SupabaseDB.guardarVenta(DB.ventas[i]);
+}
+App.toast('Comprobante anulado', 'warning');
       App.renderPage();
     }
   },
