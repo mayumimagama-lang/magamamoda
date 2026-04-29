@@ -14,7 +14,9 @@ const POSModule = {
   _pagosDiv: [],            // pagos divididos
   _pagosDivActivo: false,
   _barcodeBuffer: '',
-  _barcodeTimer: null,
+  _subMetodoCombinado: 'YAPE+EFECTIVO',
+  _montoCombinadoA: 0,
+  _montoCombinadoB: 0,
 
   // ──────────────────────────────────────────────────────
   // UTILIDADES
@@ -571,7 +573,7 @@ const POSModule = {
       {val:'EFECTIVO',  icon:'fas fa-money-bill-wave', color:'#16a34a', label:'Efectivo'},
       {val:'TARJETA',   icon:'fas fa-credit-card',     color:'#2563eb', label:'Tarjeta'},
       {val:'YAPE',      icon:'fas fa-mobile-alt',       color:'#7c3aed', label:'Yape/Plin'},
-      {val:'TRANSFER',  icon:'fas fa-university',       color:'#0ea5e9', label:'Transfer.'}
+      {val:'COMBINADO', icon:'fas fa-layer-group',       color:'#0891b2', label:'Combinado'}
     ];
 
     var metodosBtns = '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px;">';
@@ -643,6 +645,35 @@ const POSModule = {
             'color:var(--gray-500);cursor:pointer;font-size:13px;font-weight:600;margin:8px 0;">' +
           '<i class="fas fa-plus"></i> Agregar método de pago</button>' +
         '<div id="resumenPagoDiv" style="margin-top:8px;"></div>' +
+      '</div>' +
+
+      '<div id="seccionCombinado" style="display:none;">' +
+        '<div style="font-size:12px;font-weight:700;color:var(--gray-500);text-transform:uppercase;margin-bottom:8px;">Tipo de Combinación</div>' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;">' +
+          '<button id="comb_YAPE" onclick="POSModule._selSubCombinado(\'YAPE+EFECTIVO\',' + total + ')" ' +
+            'style="padding:12px;border-radius:10px;border:2px solid #7c3aed;background:#f5f3ff;cursor:pointer;font-weight:800;font-size:13px;color:#7c3aed;">' +
+            '<i class="fas fa-mobile-alt" style="margin-right:6px;"></i>Yape + Efectivo</button>' +
+          '<button id="comb_TARJETA" onclick="POSModule._selSubCombinado(\'TARJETA+EFECTIVO\',' + total + ')" ' +
+            'style="padding:12px;border-radius:10px;border:2px solid var(--gray-200);background:white;cursor:pointer;font-weight:800;font-size:13px;color:var(--gray-600);">' +
+            '<i class="fas fa-credit-card" style="color:#2563eb;margin-right:6px;"></i>Tarjeta + Efectivo</button>' +
+        '</div>' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">' +
+          '<div>' +
+            '<div id="labelCombA" style="font-size:12px;font-weight:700;color:var(--gray-500);text-transform:uppercase;margin-bottom:6px;">Yape/Plin</div>' +
+            '<input id="montoCombinadoA" type="number" step="0.01" value="" placeholder="0.00" ' +
+              'style="width:100%;padding:12px;font-size:24px;font-weight:900;text-align:center;border:2px solid #7c3aed;border-radius:10px;outline:none;box-sizing:border-box;" ' +
+              'oninput="POSModule._calcCombinado(' + total + ')"/>' +
+          '</div>' +
+          '<div>' +
+            '<div style="font-size:12px;font-weight:700;color:var(--gray-500);text-transform:uppercase;margin-bottom:6px;">Efectivo</div>' +
+            '<input id="montoCombinadoB" type="number" step="0.01" value="" placeholder="0.00" ' +
+              'style="width:100%;padding:12px;font-size:24px;font-weight:900;text-align:center;border:2px solid #16a34a;border-radius:10px;outline:none;box-sizing:border-box;" ' +
+              'oninput="POSModule._calcCombinado(' + total + ')"/>' +
+          '</div>' +
+        '</div>' +
+        '<div id="vueltoBoxComb" style="padding:14px;border-radius:10px;text-align:center;font-weight:800;font-size:16px;background:#fef3c7;color:#d97706;border:2px solid #fde68a;">' +
+          '<i class="fas fa-info-circle"></i> Ingresa los montos' +
+        '</div>' +
       '</div>';
 
     App.showModal('💳 Cobrar Venta', modalHtml, [
@@ -657,7 +688,7 @@ const POSModule = {
   },
 
   _selMetodo: function(val) {
-    ['EFECTIVO','TARJETA','YAPE','TRANSFER'].forEach(function(m) {
+    ['EFECTIVO','TARJETA','YAPE','COMBINADO'].forEach(function(m) {
       var btn = document.getElementById('mpb_' + m);
       if (!btn) return;
       if (m === val) {
@@ -669,14 +700,22 @@ const POSModule = {
         btn.style.borderColor = 'var(--gray-200)';
         btn.querySelectorAll('span').forEach(function(el){ el.style.color='var(--gray-600)'; });
         // Restore icon color
-        var iconColors = {EFECTIVO:'#16a34a',TARJETA:'#2563eb',YAPE:'#7c3aed',TRANSFER:'#0ea5e9'};
+        var iconColors = {EFECTIVO:'#16a34a',TARJETA:'#2563eb',YAPE:'#7c3aed',COMBINADO:'#0891b2'};
         var icon = btn.querySelector('i');
         if (icon) icon.style.color = iconColors[m];
       }
     });
     this._metodoCobro = val;
-    var secEf = document.getElementById('seccionEfectivo');
-    if (secEf) secEf.style.display = val === 'EFECTIVO' ? 'block' : 'none';
+    var secEf   = document.getElementById('seccionEfectivo');
+    var secComb = document.getElementById('seccionCombinado');
+    if (secEf)   secEf.style.display   = val === 'EFECTIVO'  ? 'block' : 'none';
+    if (secComb) secComb.style.display = val === 'COMBINADO' ? 'block' : 'none';
+    if (val === 'COMBINADO') {
+      setTimeout(function() {
+        POSModule._selSubCombinado(POSModule._subMetodoCombinado, POSModule.getTotal());
+      }, 30);
+    }
+
     if (val !== 'EFECTIVO') {
       var vb = document.getElementById('vueltoBox');
       if (vb) { vb.textContent = 'Pago exacto con ' + val; vb.className = 'cobro-vuelto'; }
@@ -692,6 +731,8 @@ const POSModule = {
     if (!secEf || !secDiv) return;
     secEf.style.display  = activo ? 'none' : 'block';
     secDiv.style.display = activo ? 'block' : 'none';
+    var secCombDiv = document.getElementById('seccionCombinado');
+    if (secCombDiv) secCombDiv.style.display = 'none';
     if (activo) {
       this._pagosDiv = [
         { metodo: 'EFECTIVO', monto: parseFloat((total/2).toFixed(2)) },
@@ -786,6 +827,17 @@ const POSModule = {
       metodo     = this._pagosDiv.map(function(p){ return p.metodo+'('+p.monto.toFixed(2)+')'; }).join(' + ');
       montoPagado = pagado;
       vuelto      = Math.max(0, pagado - total);
+    } else if (this._metodoCobro === 'COMBINADO') {
+      var montoA = parseFloat(document.getElementById('montoCombinadoA')?.value) || 0;
+      var montoB = parseFloat(document.getElementById('montoCombinadoB')?.value) || 0;
+      if (montoA <= 0 && montoB <= 0) { App.toast('Ingresa los montos del pago combinado', 'error'); return; }
+      montoPagado = montoA + montoB;
+      if (montoPagado < total - 0.005) {
+        App.toast('Monto insuficiente. Faltan S/ ' + (total - montoPagado).toFixed(2), 'error'); return;
+      }
+      var tipoA = this._subMetodoCombinado === 'YAPE+EFECTIVO' ? 'YAPE' : 'TARJETA';
+      metodo  = tipoA + '(S/' + montoA.toFixed(2) + ') + EFECTIVO(S/' + montoB.toFixed(2) + ')';
+      vuelto  = Math.max(0, montoPagado - total);
     } else {
       metodo = this._metodoCobro || 'EFECTIVO';
       montoPagado = (metodo === 'EFECTIVO') ? (parseFloat(document.getElementById('montoPOS')?.value) || total) : total;
@@ -1044,6 +1096,48 @@ const POSModule = {
     );
     w.document.close();
     setTimeout(function(){ w.print(); }, 250);
+  },
+
+  _selSubCombinado: function(tipo, total) {
+    this._subMetodoCombinado = tipo;
+    var labelA      = document.getElementById('labelCombA');
+    var inputA      = document.getElementById('montoCombinadoA');
+    var btnYape     = document.getElementById('comb_YAPE');
+    var btnTarjeta  = document.getElementById('comb_TARJETA');
+    if (!labelA) return;
+    if (tipo === 'YAPE+EFECTIVO') {
+      if (labelA)     labelA.textContent = 'Yape/Plin';
+      if (inputA)     inputA.style.borderColor = '#7c3aed';
+      if (btnYape)    { btnYape.style.background = '#f5f3ff'; btnYape.style.borderColor = '#7c3aed'; btnYape.style.color = '#7c3aed'; }
+      if (btnTarjeta) { btnTarjeta.style.background = 'white'; btnTarjeta.style.borderColor = 'var(--gray-200)'; btnTarjeta.style.color = 'var(--gray-600)'; }
+    } else {
+      if (labelA)     labelA.textContent = 'Tarjeta';
+      if (inputA)     inputA.style.borderColor = '#2563eb';
+      if (btnTarjeta) { btnTarjeta.style.background = '#eff6ff'; btnTarjeta.style.borderColor = '#2563eb'; btnTarjeta.style.color = '#2563eb'; }
+      if (btnYape)    { btnYape.style.background = 'white'; btnYape.style.borderColor = 'var(--gray-200)'; btnYape.style.color = 'var(--gray-600)'; }
+    }
+    this._calcCombinado(total || this.getTotal());
+  },
+
+  _calcCombinado: function(total) {
+    var montoA = parseFloat(document.getElementById('montoCombinadoA')?.value) || 0;
+    var montoB = parseFloat(document.getElementById('montoCombinadoB')?.value) || 0;
+    var suma   = montoA + montoB;
+    var diff   = suma - total;
+    var vb     = document.getElementById('vueltoBoxComb');
+    if (!vb) return;
+    if (montoA <= 0 && montoB <= 0) {
+      vb.style.background = '#fef3c7'; vb.style.color = '#d97706'; vb.style.borderColor = '#fde68a';
+      vb.innerHTML = '<i class="fas fa-info-circle"></i> Ingresa los montos';
+    } else if (diff < -0.005) {
+      vb.style.background = '#fef2f2'; vb.style.color = '#dc2626'; vb.style.borderColor = '#fca5a5';
+      vb.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Falta: S/ ' + Math.abs(diff).toFixed(2);
+    } else {
+      vb.style.background = '#f0fdf4'; vb.style.color = '#16a34a'; vb.style.borderColor = '#86efac';
+      vb.innerHTML = '<i class="fas fa-check-circle"></i> Vuelto: S/ ' + Math.max(0, diff).toFixed(2);
+    }
+    this._montoCombinadoA = montoA;
+    this._montoCombinadoB = montoB;
   },
 
   // ──────────────────────────────────────────────────────
