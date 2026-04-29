@@ -162,5 +162,21 @@ const SupabaseDB = {
       console.warn('⚠️ Error guardando venta:', e);
       return { ok: false };
     }
+  },
+
+  // Actualizar estado de venta (anular, aceptar, etc.)
+  async actualizarVenta(venta) {
+    try {
+      const { error } = await db.from('ventas').update({
+        estado:      venta.estado,
+        items:       venta.items || []
+      }).eq('id', String(venta.id));
+      if (error) throw error;
+      console.log('✅ Venta actualizada en Supabase id=' + venta.id);
+      return { ok: true };
+    } catch(e) {
+      console.warn('⚠️ Error actualizando venta:', e);
+      return { ok: false };
+    }
   }
 };
