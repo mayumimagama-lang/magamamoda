@@ -842,12 +842,147 @@ const POSModule = {
 
     App.closeModal();
     App.toast('✅ ' + serie + '-' + numero + ' procesado — Vuelto: S/ ' + vuelto.toFixed(2), 'success');
-    this._imprimirTicket(venta);
+    this._mostrarDetalleVenta(venta);
 
     // Reset
     this.items = [];
     this.notaVenta = '';
     App.renderPage();
+  },
+
+  // ============================================================
+// PATCH PARA pos.js — Mostrar detalle antes de imprimir
+// INSTRUCCIONES:
+//   1. Abre pos.js en VS Code
+//   2. Aplica los 2 cambios indicados abajo
+// ============================================================
+
+// ════════════════════════════════════════════════════════════
+// CAMBIO 1: En la función _confirmarCobro
+// Busca esta línea (cerca del final de _confirmarCobro):
+//
+//     this._imprimirTicket(venta);
+//
+// Reemplázala por:
+//
+//     this._mostrarDetalleVenta(venta);
+// ════════════════════════════════════════════════════════════
+
+// ════════════════════════════════════════════════════════════
+// CAMBIO 2: Agrega esta función NUEVA justo ANTES de
+// la función _imprimirTicket (o al final del objeto POSModule,
+// antes del último });  )
+// ════════════════════════════════════════════════════════════
+
+  _mostrarDetalleVenta: function(venta) {
+    var self = this;
+    var cli  = DB.clientes.find(function(c){ return c.id === venta.cliente_id; });
+    var tipoLabel = {
+      'N. VENTA' : 'NOTA DE VENTA',
+      'BOL'      : 'BOLETA DE VENTA',
+      'FAC'      : 'FACTURA ELECTRÓNICA'
+    };
+
+    // Tabla de productos
+    var itemsHtml = venta.items.map(function(i) {
+      return '<tr style="border-bottom:1px solid var(--gray-100);">' +
+        '<td style="padding:8px 4px;font-size:13px;">' + i.nombre + '</td>' +
+        '<td style="text-align:center;padding:8px 4px;font-size:13px;font-weight:700;">' + i.qty + '</td>' +
+        '<td style="text-align:right;padding:8px 4px;font-size:13px;">S/ ' + i.precio.toFixed(2) + '</td>' +
+        '<td style="text-align:right;padding:8px 4px;font-size:13px;font-weight:800;color:var(--accent);">S/ ' + i.total.toFixed(2) + '</td>' +
+      '</tr>';
+    }).join('');
+
+    // Estado badge
+    var estadoColor = { NO_ENVIADO:'#d97706', ENVIADO:'#16a34a', ACEPTADO:'#2563eb' };
+    var estadoBg    = { NO_ENVIADO:'#fffbeb', ENVIADO:'#f0fdf4', ACEPTADO:'#eff6ff' };
+    var estado      = venta.estado || 'NO_ENVIADO';
+
+    var html =
+      // Header comprobante
+      '<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px;">' +
+        '<div>' +
+          '<div style="font-size:17px;font-weight:900;color:var(--gray-900);">' +
+            (tipoLabel[venta.tipo] || venta.tipo_comprobante || venta.tipo) +
+          '</div>' +
+          '<div style="font-size:13px;color:var(--accent);font-weight:700;margin:2px 0;">' +
+            venta.serie + ' — ' + venta.numero +
+          '</div>' +
+          '<div style="font-size:12px;color:var(--gray-400);">' + venta.fecha + ' ' + venta.hora + '</div>' +
+        '</div>' +
+        '<span style="padding:6px 14px;border-radius:20px;font-size:12px;font-weight:800;' +
+          'background:' + (estadoBg[estado]||'#fffbeb') + ';' +
+          'color:' + (estadoColor[estado]||'#d97706') + ';border:1.5px solid ' + (estadoColor[estado]||'#d97706') + ';">' +
+          estado +
+        '</span>' +
+      '</div>' +
+
+      // Cliente
+      '<div style="background:var(--gray-50);border-radius:8px;padding:10px 14px;margin-bottom:14px;' +
+        'font-size:13px;font-weight:700;color:var(--gray-700);">' +
+        (cli ? cli.nombre : 'PÚBLICO EN GENERAL') +
+      '</div>' +
+
+      // Tabla productos
+      '<div style="border:1px solid var(--gray-200);border-radius:10px;overflow:hidden;margin-bottom:14px;">' +
+        '<table style="width:100%;border-collapse:collapse;">' +
+          '<thead>' +
+            '<tr style="background:var(--gray-50);">' +
+              '<th style="text-align:left;padding:9px 4px;font-size:11px;text-transform:uppercase;color:var(--gray-500);">Producto</th>' +
+              '<th style="text-align:center;padding:9px 4px;font-size:11px;text-transform:uppercase;color:var(--gray-500);">Cant</th>' +
+              '<th style="text-align:right;padding:9px 4px;font-size:11px;text-transform:uppercase;color:var(--gray-500);">Precio</th>' +
+              '<th style="text-align:right;padding:9px 4px;font-size:11px;text-transform:uppercase;color:var(--gray-500);">Total</th>' +
+            '</tr>' +
+          '</thead>' +
+          '<tbody>' + itemsHtml + '</tbody>' +
+        '</table>' +
+      '</div>' +
+
+      // Subtotales
+      '<div style="margin-bottom:14px;">' +
+        '<div style="display:flex;justify-content:space-between;padding:5px 0;font-size:13px;color:var(--gray-600);">' +
+          '<span>Subtotal:</span><span>S/ ' + venta.subtotal.toFixed(2) + '</span>' +
+        '</div>' +
+        '<div style="display:flex;justify-content:space-between;padding:5px 0;font-size:13px;color:var(--gray-600);">' +
+          '<span>IGV (Exonerado):</span><span>S/ 0.00</span>' +
+        '</div>' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;' +
+          'padding:14px 18px;background:var(--accent);border-radius:10px;color:white;">' +
+          '<span style="font-size:18px;font-weight:900;">TOTAL:</span>' +
+          '<span style="font-size:22px;font-weight:900;">S/ ' + venta.total.toFixed(2) + '</span>' +
+        '</div>' +
+      '</div>' +
+
+      // Pago
+      '<div style="font-size:12px;color:var(--gray-600);line-height:1.9;">' +
+        '<div><b>Método de pago:</b> ' + venta.metodo_pago + '</div>' +
+        '<div><b>Monto recibido:</b> S/ ' + (venta.monto_pago||venta.total).toFixed(2) + '</div>' +
+        '<div style="color:#16a34a;font-weight:700;"><b>Vuelto:</b> S/ ' + (venta.vuelto||0).toFixed(2) + '</div>' +
+      '</div>';
+
+    App.showModal('Detalle: ' + venta.serie + '-' + venta.numero, html, [
+      {
+        text: '<i class="fas fa-print"></i> Imprimir',
+        cls:  'btn-primary',
+        cb:   function() {
+          App.closeModal();
+          POSModule._imprimirTicket(venta);
+        }
+      },
+      {
+        text: '<i class="fas fa-paper-plane"></i> Enviar SUNAT',
+        cls:  'btn-outline',
+        cb:   function() {
+          App.toast('Función SUNAT no implementada aún', 'info');
+        }
+      }
+    ]);
+
+    // Ancho del modal un poco más amplio
+    setTimeout(function() {
+      var box = document.getElementById('modalBox');
+      if (box) box.style.maxWidth = '520px';
+    }, 30);
   },
 
   // ──────────────────────────────────────────────────────
