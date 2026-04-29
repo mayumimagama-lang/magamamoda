@@ -1071,16 +1071,16 @@ Storage.guardarSequences();
 SupabaseDB.guardarVenta(venta);
 
     App.toast('✅ ' + serie + '-' + numero + ' procesado — Vuelto: S/ ' + venta.vuelto.toFixed(2), 'success');
-    if (venta.tipo === 'BOL' || venta.tipo === 'FAC') {
-      this.imprimirComprobante(venta);
-    }
 
-    // Reset
-    this.currentItems    = [];
-    this.montoPago       = 0;
-    this.descGlobal      = 0;
-    this.modoVista       = 'lista';
-    App.renderPage();
+// Reset
+this.currentItems    = [];
+this.montoPago       = 0;
+this.descGlobal      = 0;
+this.modoVista       = 'lista';
+App.renderPage();
+
+// Mostrar detalle para imprimir
+this.verDetalle(venta.id);
   },
 
   // ─────────────────────────────────────────────────────────
