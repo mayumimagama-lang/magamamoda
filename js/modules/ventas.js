@@ -1209,7 +1209,7 @@ this.verDetalle(venta.id);
         });
         Storage.guardarVentas();
 Storage.guardarProductos();
-SupabaseDB.guardarVenta(DB.ventas[i]);
+SupabaseDB.actualizarVenta(DB.ventas[i]);
 }
 App.toast('Comprobante anulado', 'warning');
       App.renderPage();
