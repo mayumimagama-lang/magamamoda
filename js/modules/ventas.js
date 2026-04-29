@@ -21,7 +21,9 @@ const VentasModule = {
   montoPago:       0,
   descGlobal:      0,
   modoVista:       'comprobante',
-  _searchResults:  null, // 'lista' | 'comprobante'
+  _subMetodoCombinado: 'YAPE+EFECTIVO',
+_montoCombinadoA: 0,
+_montoCombinadoB: 0,
 
   // ─────────────────────────────────────────────────────────
   // RENDER PRINCIPAL
@@ -350,7 +352,7 @@ const VentasModule = {
       {val:'EFECTIVO',     icon:'fa-money-bill-wave', color:'#16a34a', label:'Efectivo'},
       {val:'TARJETA',      icon:'fa-credit-card',     color:'#2563eb', label:'Tarjeta'},
       {val:'YAPE',         icon:'fa-mobile-alt',      color:'#7c3aed', label:'Yape/Plin'},
-      {val:'TRANSFERENCIA',icon:'fa-university',      color:'#0ea5e9', label:'Transferencia'},
+      {val:'COMBINADO',    icon:'fa-layer-group',     color:'#0891b2', label:'Combinado'},
     ];
     var metodoBtnsBar = '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px;">';
     metodos.forEach(function(m) {
@@ -369,6 +371,45 @@ const VentasModule = {
         '</button>';
     });
     metodoBtnsBar += '</div>';
+
+    var combinadoSection = self.metodoPago === 'COMBINADO' ?
+      '<div style="margin-bottom:14px;background:var(--gray-50);border:2px solid var(--gray-200);border-radius:12px;padding:16px;">' +
+        '<div style="font-size:11px;font-weight:800;color:var(--gray-400);text-transform:uppercase;margin-bottom:10px;">Tipo de Combinación</div>' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;">' +
+          '<button onclick="VentasModule._subMetodoCombinado=\'YAPE+EFECTIVO\';VentasModule._montoCombinadoA=0;VentasModule._montoCombinadoB=0;App.renderPage();" ' +
+            'style="padding:11px;border-radius:8px;cursor:pointer;font-weight:800;font-size:13px;' +
+            'border:2px solid '+(self._subMetodoCombinado==='YAPE+EFECTIVO'?'#7c3aed':'var(--gray-200)')+';' +
+            'background:'+(self._subMetodoCombinado==='YAPE+EFECTIVO'?'#f5f3ff':'white')+';' +
+            'color:'+(self._subMetodoCombinado==='YAPE+EFECTIVO'?'#7c3aed':'var(--gray-600)')+'">' +
+            '<i class="fas fa-mobile-alt" style="margin-right:6px;color:#7c3aed;"></i>Yape + Efectivo</button>' +
+          '<button onclick="VentasModule._subMetodoCombinado=\'TARJETA+EFECTIVO\';VentasModule._montoCombinadoA=0;VentasModule._montoCombinadoB=0;App.renderPage();" ' +
+            'style="padding:11px;border-radius:8px;cursor:pointer;font-weight:800;font-size:13px;' +
+            'border:2px solid '+(self._subMetodoCombinado==='TARJETA+EFECTIVO'?'#2563eb':'var(--gray-200)')+';' +
+            'background:'+(self._subMetodoCombinado==='TARJETA+EFECTIVO'?'#eff6ff':'white')+';' +
+            'color:'+(self._subMetodoCombinado==='TARJETA+EFECTIVO'?'#2563eb':'var(--gray-600)')+'">' +
+            '<i class="fas fa-credit-card" style="margin-right:6px;color:#2563eb;"></i>Tarjeta + Efectivo</button>' +
+        '</div>' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">' +
+          '<div>' +
+            '<div style="font-size:11px;font-weight:700;color:var(--gray-500);text-transform:uppercase;margin-bottom:6px;">' +
+              (self._subMetodoCombinado==='YAPE+EFECTIVO'?'Yape/Plin':'Tarjeta') +
+            '</div>' +
+            '<input class="form-control" type="number" step="0.01" id="montoCompA" ' +
+              'value="'+(self._montoCombinadoA>0?self._montoCombinadoA.toFixed(2):'')+'" placeholder="0.00" ' +
+              'style="font-size:26px;text-align:center;font-weight:900;padding:14px;' +
+              'border:2px solid '+(self._subMetodoCombinado==='YAPE+EFECTIVO'?'#7c3aed':'#2563eb')+';border-radius:10px;" ' +
+              'oninput="VentasModule._montoCombinadoA=parseFloat(this.value)||0;VentasModule.updateVuelto();"/>' +
+          '</div>' +
+          '<div>' +
+            '<div style="font-size:11px;font-weight:700;color:var(--gray-500);text-transform:uppercase;margin-bottom:6px;">Efectivo</div>' +
+            '<input class="form-control" type="number" step="0.01" id="montoCompB" ' +
+              'value="'+(self._montoCombinadoB>0?self._montoCombinadoB.toFixed(2):'')+'" placeholder="0.00" ' +
+              'style="font-size:26px;text-align:center;font-weight:900;padding:14px;' +
+              'border:2px solid #16a34a;border-radius:10px;" ' +
+              'oninput="VentasModule._montoCombinadoB=parseFloat(this.value)||0;VentasModule.updateVuelto();"/>' +
+          '</div>' +
+        '</div>' +
+      '</div>' : '';
 
     // Billetes rápidos
     var vueltoClr = vuelto >= 0 ? '#16a34a' : '#dc2626';
@@ -510,7 +551,8 @@ const VentasModule = {
             // IZQUIERDA: métodos + monto + billetes + vuelto
             '<div>'+
               metodoBtnsBar+
-              '<div style="margin-bottom:14px;">'+
+              combinadoSection+
+              '<div style="margin-bottom:14px;">' +
                 '<div style="font-size:12px;font-weight:700;color:var(--gray-500);text-transform:uppercase;margin-bottom:8px;">MONTO RECIBIDO (S/)</div>'+
                 '<input class="form-control" type="number" step="0.01" id="montoPagoComp" '+
                   'value="'+(self.montoPago>0?self.montoPago.toFixed(2):'')+'" placeholder="0.00" '+
@@ -679,16 +721,30 @@ const VentasModule = {
   },
 
   updateVuelto() {
-    var total  = this.getTotal();
-    var vuelto = Math.max(0, this.montoPago - total);
-    var el     = document.getElementById('vueltoDisplay');
-    if (el) {
-      if (this.montoPago > 0 && this.montoPago < total) {
+    var total = this.getTotal();
+    var el    = document.getElementById('vueltoDisplay');
+    if (!el) return;
+    if (this.metodoPago === 'COMBINADO') {
+      var suma = (this._montoCombinadoA || 0) + (this._montoCombinadoB || 0);
+      var diff = suma - total;
+      if (suma <= 0) {
+        el.style.background = '#fef3c7'; el.style.color = '#d97706';
+        el.innerHTML = '<i class="fas fa-info-circle"></i> Ingresa los montos';
+      } else if (diff < -0.005) {
         el.style.background = '#fef2f2'; el.style.color = '#dc2626';
-        el.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Falta: S/ '+Math.abs(vuelto-(this.montoPago-total)).toFixed(2);
+        el.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Falta: S/ ' + Math.abs(diff).toFixed(2);
       } else {
         el.style.background = '#f0fdf4'; el.style.color = '#16a34a';
-        el.innerHTML = '<i class="fas fa-check-circle"></i> Vuelto: S/ '+vuelto.toFixed(2);
+        el.innerHTML = '<i class="fas fa-check-circle"></i> Vuelto: S/ ' + Math.max(0, diff).toFixed(2);
+      }
+    } else {
+      var vuelto = Math.max(0, this.montoPago - total);
+      if (this.montoPago > 0 && this.montoPago < total) {
+        el.style.background = '#fef2f2'; el.style.color = '#dc2626';
+        el.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Falta: S/ ' + (total - this.montoPago).toFixed(2);
+      } else {
+        el.style.background = '#f0fdf4'; el.style.color = '#16a34a';
+        el.innerHTML = '<i class="fas fa-check-circle"></i> Vuelto: S/ ' + vuelto.toFixed(2);
       }
     }
   },
@@ -1028,7 +1084,19 @@ const VentasModule = {
     if (this.metodoPago === 'EFECTIVO' && this.montoPago > 0 && this.montoPago < total) {
       App.toast('Monto insuficiente — faltan S/ ' + (total-this.montoPago).toFixed(2), 'error'); return;
     }
-    var monto = this.montoPago > 0 ? this.montoPago : total;
+    var monto, metodoFinal;
+    if (this.metodoPago === 'COMBINADO') {
+      var mA = this._montoCombinadoA || 0;
+      var mB = this._montoCombinadoB || 0;
+      if (mA <= 0 && mB <= 0) { App.toast('Ingresa los montos del pago combinado', 'error'); return; }
+      monto = mA + mB;
+      if (monto < total - 0.005) { App.toast('Monto insuficiente. Faltan S/ ' + (total-monto).toFixed(2), 'error'); return; }
+      var tipoA = this._subMetodoCombinado === 'YAPE+EFECTIVO' ? 'YAPE' : 'TARJETA';
+      metodoFinal = tipoA + '(S/' + mA.toFixed(2) + ') + EFECTIVO(S/' + mB.toFixed(2) + ')';
+    } else {
+      monto = this.montoPago > 0 ? this.montoPago : total;
+      metodoFinal = this.metodoPago;
+    }
 
     var ahora  = new Date();
     var fecha  = ahora.getFullYear()+'-'+String(ahora.getMonth()+1).padStart(2,'0')+'-'+String(ahora.getDate()).padStart(2,'0');
@@ -1053,7 +1121,7 @@ const VentasModule = {
       moneda:           'SOLES',
       estado:           'NO_ENVIADO',
       tipo_comprobante: this.tipoComprobante,
-      metodo_pago:      this.metodoPago,
+      metodo_pago:      metodoFinal,
       monto_pago:       monto,
       vuelto:           Math.max(0, monto - total)
     };
@@ -1073,9 +1141,8 @@ SupabaseDB.guardarVenta(venta);
     App.toast('✅ ' + serie + '-' + numero + ' procesado — Vuelto: S/ ' + venta.vuelto.toFixed(2), 'success');
 
 // Reset
-this.currentItems    = [];
-this.montoPago       = 0;
-this.descGlobal      = 0;
+this._montoCombinadoA = 0;
+this._montoCombinadoB = 0;
 this.modoVista       = 'lista';
 App.renderPage();
 
