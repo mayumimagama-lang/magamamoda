@@ -10,11 +10,24 @@ const PreciosModule = {
     { id:4, nombre:'PRECIO DISTRIBUIDOR', descripcion:'Distribuidores y revendedores autorizados', descuento:30, color:'#d97706', activa:false },
   ],
 
-  selectedLista: 1,
+searchProducto: '',
+searchCategoria: 'todas',
+currentPage: 1,
 
   render() {
     App.setTabs2('Lista de Precios', 'CATÁLOGO');
     const lista = this.listas.find(l=>l.id===this.selectedLista) || this.listas[0];
+    const categorias = ['todas', ...new Set(DB.productos.map(p=>p.categoria))];
+    const productosFiltrados = DB.productos.filter(p => {
+      const matchCat  = this.searchCategoria === 'todas' || p.categoria === this.searchCategoria;
+      const matchProd = !this.searchProducto ||
+        p.nombre.toLowerCase().includes(this.searchProducto.toLowerCase()) ||
+        p.codigo.toLowerCase().includes(this.searchProducto.toLowerCase());
+      return matchCat && matchProd;
+    });
+    const totalPages  = Math.max(1, Math.ceil(productosFiltrados.length / 10));
+    const currentPage = Math.min(this.currentPage, totalPages);
+    const paginados   = productosFiltrados.slice((currentPage-1)*10, currentPage*10);
 
     return `
       <div class="page-header">
@@ -55,7 +68,32 @@ const PreciosModule = {
             ${lista.descuento>0?`<span class="badge badge-success" style="font-size:13px;">Descuento: ${lista.descuento}%</span>`:'<span class="badge badge-info">Precio Base</span>'}
           </div>
         </div>
-        <div class="table-wrapper">
+        <div style="padding:14px 20px;border-bottom:1px solid var(--gray-200);display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:end;">
+            <div>
+              <div style="font-size:11px;font-weight:700;color:var(--gray-500);text-transform:uppercase;margin-bottom:6px;">Buscar Producto</div>
+              <div style="position:relative;">
+                <i class="fas fa-search" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--gray-400);"></i>
+                <input type="text" placeholder="Nombre o código..." value="${this.searchProducto}"
+                  style="width:100%;padding:9px 9px 9px 32px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:13px;box-sizing:border-box;"
+                  oninput="PreciosModule.searchProducto=this.value;PreciosModule.currentPage=1;App.renderPage()"/>
+              </div>
+            </div>
+            <div>
+              <div style="font-size:11px;font-weight:700;color:var(--gray-500);text-transform:uppercase;margin-bottom:6px;">Categoría</div>
+              <select style="width:100%;padding:9px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:13px;"
+                onchange="PreciosModule.searchCategoria=this.value;PreciosModule.currentPage=1;App.renderPage()">
+                ${categorias.map(c=>`<option value="${c}" ${this.searchCategoria===c?'selected':''}>${c==='todas'?'Todas las categorías':c}</option>`).join('')}
+              </select>
+            </div>
+            <button onclick="PreciosModule.searchProducto='';PreciosModule.searchCategoria='todas';PreciosModule.currentPage=1;App.renderPage();"
+              style="padding:9px 16px;border:1.5px solid var(--gray-200);border-radius:8px;background:white;cursor:pointer;font-size:13px;font-weight:700;color:var(--gray-600);">
+              <i class="fas fa-times"></i> Limpiar
+            </button>
+          </div>
+          <div style="padding:8px 20px;font-size:12px;color:var(--gray-500);">
+            Mostrando ${paginados.length} de ${productosFiltrados.length} productos
+          </div>
+          <div class="table-wrapper">
           <table class="data-table">
             <thead>
               <tr>
@@ -65,7 +103,7 @@ const PreciosModule = {
               </tr>
             </thead>
             <tbody>
-              ${DB.productos.map(p => {
+              ${paginados.map(p => {
                 const pFinal = p.precio_venta * (1 - lista.descuento/100);
                 const custom = DB.preciosCustom?.[lista.id]?.[p.id];
                 return `
@@ -87,7 +125,19 @@ const PreciosModule = {
                 </tr>`;
               }).join('')}
             </tbody>
-          </table>
+        </table>
+      </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 20px;border-top:1px solid var(--gray-200);">
+            <span style="font-size:13px;color:var(--gray-500);">
+              Página ${currentPage} de ${totalPages}
+            </span>
+            <div style="display:flex;gap:6px;">
+              <button onclick="PreciosModule.currentPage=1;App.renderPage()" ${currentPage===1?'disabled':''} style="padding:6px 10px;border:1.5px solid var(--gray-200);border-radius:6px;background:white;cursor:pointer;"><i class="fas fa-angle-double-left"></i></button>
+              <button onclick="PreciosModule.currentPage--;App.renderPage()" ${currentPage===1?'disabled':''} style="padding:6px 10px;border:1.5px solid var(--gray-200);border-radius:6px;background:white;cursor:pointer;"><i class="fas fa-chevron-left"></i></button>
+              <button onclick="PreciosModule.currentPage++;App.renderPage()" ${currentPage===totalPages?'disabled':''} style="padding:6px 10px;border:1.5px solid var(--gray-200);border-radius:6px;background:white;cursor:pointer;"><i class="fas fa-chevron-right"></i></button>
+              <button onclick="PreciosModule.currentPage=${totalPages};App.renderPage()" ${currentPage===totalPages?'disabled':''} style="padding:6px 10px;border:1.5px solid var(--gray-200);border-radius:6px;background:white;cursor:pointer;"><i class="fas fa-angle-double-right"></i></button>
+            </div>
+          </div>
         </div>
       </div>
     `;
