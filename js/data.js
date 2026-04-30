@@ -10,15 +10,15 @@ const DB = {
   // ---- USUARIOS ----
   usuarios: [
     {
-      id: 1, usuario: 'MAGAMA', password: '983396116',
+      id: 1, usuario: 'MayumiMagama', password: '$mayumi=gael&marlon$',
       nombre: 'MAGAMA Administrador', rol: 'admin',
       activo: true, sucursal: 'JUMILA IMPORTACIONES',
       cargo: 'ADMINISTRADOR', fechaCreacion: '2026-01-01',
       permisos: 'todos'
     },
     {
-      id: 2, usuario: 'CAJERO1', password: '123456789',
-      nombre: 'Astrid', rol: 'cajero',
+      id: 2, usuario: 'AstridVara', password: '#Astrid&Lusio$',
+      nombre: 'Astrid Vara', rol: 'cajero',
       activo: true, sucursal: 'JUMILA IMPORTACIONES',
       cargo: 'CAJERO', fechaCreacion: '2026-03-01',
       permisos: {
