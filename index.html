@@ -14,31 +14,145 @@
 <body>
 
 <!-- LOGIN PAGE -->
-<div id="loginPage" class="login-page">
-  <div class="login-card">
-    <div class="login-logo">
-      <div class="logo-circle">J</div>
-      <h1>JUMILA <span>ERP</span></h1>
-      <p>Sistema de Gestión Empresarial</p>
+<div id="loginPage" style="min-height:100vh;background:#0d0d0d;display:flex;align-items:center;justify-content:center;padding:24px;box-sizing:border-box;">
+  <div style="width:100%;max-width:860px;display:flex;border-radius:16px;overflow:hidden;box-shadow:0 25px 60px rgba(0,0,0,0.5);">
+
+    <!-- Panel izquierdo -->
+    <div style="width:42%;background:linear-gradient(160deg,#1a0a00 0%,#2d1500 40%,#1a0a00 100%);padding:40px 32px;display:flex;flex-direction:column;justify-content:space-between;position:relative;overflow:hidden;">
+      <div style="position:absolute;top:-60px;right:-60px;width:200px;height:200px;border-radius:50%;border:1px solid rgba(212,175,55,0.08);"></div>
+      <div style="position:absolute;top:-30px;right:-30px;width:140px;height:140px;border-radius:50%;border:1px solid rgba(212,175,55,0.12);"></div>
+      <div style="position:absolute;bottom:-80px;left:-40px;width:220px;height:220px;border-radius:50%;border:1px solid rgba(212,175,55,0.06);"></div>
+
+      <div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:48px;">
+          <div style="width:36px;height:36px;border-radius:8px;border:1.5px solid rgba(212,175,55,0.5);display:flex;align-items:center;justify-content:center;">
+            <span style="font-size:16px;font-weight:700;color:#d4af37;">M</span>
+          </div>
+          <div>
+            <div style="font-size:13px;font-weight:700;letter-spacing:4px;color:#d4af37;">MAGAMA</div>
+            <div style="font-size:9px;letter-spacing:2px;color:rgba(212,175,55,0.45);text-transform:uppercase;">Fashion Store</div>
+          </div>
+        </div>
+        <div style="margin-bottom:24px;">
+          <div style="width:32px;height:2px;background:#d4af37;margin-bottom:16px;"></div>
+          <div style="font-size:22px;font-weight:700;color:#fff;line-height:1.4;margin-bottom:10px;">Tu tienda de<br/>moda favorita</div>
+          <div style="font-size:12px;color:rgba(255,255,255,0.35);line-height:1.7;">Ropa variada para toda<br/>ocasión en Huánuco, Perú</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:12px;margin-top:32px;">
+          <div style="display:flex;align-items:center;gap:12px;padding:10px 12px;background:rgba(212,175,55,0.06);border:1px solid rgba(212,175,55,0.12);border-radius:8px;">
+            <i class="fas fa-shopping-bag" style="color:#d4af37;font-size:14px;width:14px;"></i>
+            <div>
+              <div style="font-size:10px;color:rgba(212,175,55,0.5);letter-spacing:1px;">CATÁLOGO</div>
+              <div style="font-size:12px;color:rgba(255,255,255,0.75);font-weight:600;">Prendas exclusivas</div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;padding:10px 12px;background:rgba(212,175,55,0.06);border:1px solid rgba(212,175,55,0.12);border-radius:8px;">
+            <i class="fas fa-chart-line" style="color:#d4af37;font-size:14px;width:14px;"></i>
+            <div>
+              <div style="font-size:10px;color:rgba(212,175,55,0.5);letter-spacing:1px;">VENTAS</div>
+              <div style="font-size:12px;color:rgba(255,255,255,0.75);font-weight:600;">Control en tiempo real</div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;padding:10px 12px;background:rgba(212,175,55,0.06);border:1px solid rgba(212,175,55,0.12);border-radius:8px;">
+            <i class="fas fa-lock" style="color:#d4af37;font-size:14px;width:14px;"></i>
+            <div>
+              <div style="font-size:10px;color:rgba(212,175,55,0.5);letter-spacing:1px;">SEGURIDAD</div>
+              <div style="font-size:12px;color:rgba(255,255,255,0.75);font-weight:600;">Acceso protegido</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Industry Yara -->
+      <div style="border-top:1px solid rgba(212,175,55,0.1);padding-top:16px;">
+        <div style="font-size:9px;color:rgba(255,255,255,0.2);letter-spacing:1px;margin-bottom:8px;text-transform:uppercase;">Desarrollado por</div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div style="width:26px;height:26px;border-radius:6px;border:1px solid rgba(99,179,237,0.4);display:flex;align-items:center;justify-content:center;background:rgba(99,179,237,0.08);">
+            <span style="font-size:11px;font-weight:700;color:#63b3ed;">IY</span>
+          </div>
+          <div>
+            <div style="font-size:11px;font-weight:700;color:rgba(99,179,237,0.8);letter-spacing:1.5px;">INDUSTRY YARA</div>
+            <div style="font-size:9px;color:rgba(255,255,255,0.2);letter-spacing:0.5px;">Soluciones digitales · 2026</div>
+          </div>
+        </div>
+      </div>
     </div>
-    <div class="login-form">
-      <div class="form-group">
-        <label><i class="fas fa-user"></i> Usuario</label>
-        <input type="text" id="loginUser" placeholder="Ingrese su usuario" value="MAGAMA"/>
+
+    <!-- Panel derecho -->
+    <div style="flex:1;background:#111;padding:40px 36px;display:flex;flex-direction:column;justify-content:center;position:relative;">
+      <div style="position:absolute;top:24px;right:24px;display:flex;align-items:center;gap:6px;padding:5px 10px;background:rgba(22,163,74,0.1);border:1px solid rgba(22,163,74,0.2);border-radius:20px;">
+        <div style="width:6px;height:6px;border-radius:50%;background:#22c55e;"></div>
+        <span style="font-size:10px;color:#22c55e;letter-spacing:1px;">SISTEMA ACTIVO</span>
       </div>
-      <div class="form-group">
-        <label><i class="fas fa-lock"></i> Contraseña</label>
-        <input type="password" id="loginPass" placeholder="Ingrese su contraseña" value="1234"/>
+      <div style="position:absolute;bottom:20px;right:24px;display:flex;align-items:center;gap:5px;opacity:0.35;">
+        <i class="fas fa-star" style="font-size:10px;color:#63b3ed;"></i>
+        <span style="font-size:10px;color:#63b3ed;letter-spacing:1px;">Industry Yara</span>
       </div>
-      <button class="btn-login" onclick="App.login()">
-        <i class="fas fa-sign-in-alt"></i> INGRESAR
+
+      <div style="margin-bottom:32px;">
+        <div style="font-size:22px;font-weight:700;color:#fff;margin-bottom:6px;">Iniciar Sesión</div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div style="height:1px;width:24px;background:#d4af37;"></div>
+          <div style="font-size:12px;color:rgba(255,255,255,0.35);letter-spacing:0.5px;">Ingresa tus credenciales</div>
+        </div>
+      </div>
+
+      <div style="margin-bottom:16px;">
+        <label style="font-size:10px;font-weight:700;letter-spacing:2px;color:rgba(212,175,55,0.6);display:block;margin-bottom:8px;">USUARIO</label>
+        <div style="position:relative;">
+          <i class="fas fa-user" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:rgba(212,175,55,0.5);font-size:14px;"></i>
+          <input type="text" id="loginUser" placeholder="Ingresa tu usuario"
+            style="width:100%;padding:13px 14px 13px 42px;background:#1a1a1a;border:1px solid rgba(212,175,55,0.2);border-radius:10px;color:rgba(255,255,255,0.85);font-size:13px;box-sizing:border-box;outline:none;"
+            onfocus="this.style.borderColor='rgba(212,175,55,0.6)';this.style.background='#1f1f1f'"
+            onblur="this.style.borderColor='rgba(212,175,55,0.2)';this.style.background='#1a1a1a'"/>
+        </div>
+      </div>
+
+      <div style="margin-bottom:24px;">
+        <label style="font-size:10px;font-weight:700;letter-spacing:2px;color:rgba(212,175,55,0.6);display:block;margin-bottom:8px;">CONTRASEÑA</label>
+        <div style="position:relative;">
+          <i class="fas fa-lock" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:rgba(212,175,55,0.5);font-size:14px;"></i>
+          <input type="password" id="loginPass" placeholder="••••••••••"
+            style="width:100%;padding:13px 42px 13px 42px;background:#1a1a1a;border:1px solid rgba(212,175,55,0.2);border-radius:10px;color:rgba(255,255,255,0.85);font-size:13px;box-sizing:border-box;outline:none;letter-spacing:2px;"
+            onfocus="this.style.borderColor='rgba(212,175,55,0.6)';this.style.background='#1f1f1f'"
+            onblur="this.style.borderColor='rgba(212,175,55,0.2)';this.style.background='#1a1a1a'"/>
+          <button onclick="var i=document.getElementById('loginPass');i.type=i.type==='password'?'text':'password'"
+            style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;padding:4px;">
+            <i class="fas fa-eye" style="color:rgba(212,175,55,0.4);font-size:14px;"></i>
+          </button>
+        </div>
+      </div>
+
+      <button onclick="App.login()"
+        style="width:100%;padding:14px;background:linear-gradient(135deg,#c9a227,#d4af37,#c9a227);border:none;border-radius:10px;color:#0d0d0d;font-size:12px;font-weight:700;letter-spacing:3px;text-transform:uppercase;cursor:pointer;margin-bottom:14px;display:flex;align-items:center;justify-content:center;gap:10px;">
+        <i class="fas fa-sign-in-alt" style="font-size:14px;"></i>
+        Ingresar al Sistema
       </button>
-      <div style="margin-top:12px;background:#f8fafc;border-radius:8px;padding:10px;text-align:center;font-size:12px;color:#64748b;">
-        <div style="font-weight:700;margin-bottom:4px;"><i class="fas fa-users"></i> Usuarios de Prueba</div>
-        <div><strong>MAGAMA</strong> (Admin) — pass: <code>983396116</code></div>
-        <div style="margin-top:2px;"><strong>CAJERO1</strong> (Cajero) — pass: <code>123456789</code></div>
+
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+        <div style="flex:1;height:1px;background:rgba(255,255,255,0.07);"></div>
+        <span style="font-size:10px;color:rgba(255,255,255,0.2);letter-spacing:1px;">ACCESO SEGURO</span>
+        <div style="flex:1;height:1px;background:rgba(255,255,255,0.07);"></div>
+      </div>
+
+      <div style="display:flex;align-items:center;justify-content:center;gap:20px;">
+        <div style="display:flex;align-items:center;gap:6px;">
+          <i class="fas fa-shield-alt" style="font-size:10px;color:rgba(212,175,55,0.4);"></i>
+          <span style="font-size:10px;color:rgba(255,255,255,0.2);letter-spacing:0.5px;">SSL Seguro</span>
+        </div>
+        <div style="width:3px;height:3px;border-radius:50%;background:rgba(255,255,255,0.15);"></div>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <i class="fas fa-lock" style="font-size:10px;color:rgba(212,175,55,0.4);"></i>
+          <span style="font-size:10px;color:rgba(255,255,255,0.2);letter-spacing:0.5px;">Datos cifrados</span>
+        </div>
+        <div style="width:3px;height:3px;border-radius:50%;background:rgba(255,255,255,0.15);"></div>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <i class="fas fa-user-shield" style="font-size:10px;color:rgba(212,175,55,0.4);"></i>
+          <span style="font-size:10px;color:rgba(255,255,255,0.2);letter-spacing:0.5px;">Solo autorizado</span>
+        </div>
       </div>
     </div>
+
   </div>
 </div>
 
