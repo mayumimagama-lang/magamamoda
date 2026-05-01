@@ -22,6 +22,7 @@ const VentasModule = {
   descGlobal:      0,
   modoVista:       'comprobante',
   _subMetodoCombinado: 'YAPE+EFECTIVO',
+  mayoristaModo: false,
 _montoCombinadoA: 0,
 _montoCombinadoB: 0,
 
@@ -201,6 +202,7 @@ _montoCombinadoB: 0,
     this.metodoPago      = 'EFECTIVO';
     this.montoPago       = 0;
     this.descGlobal      = 0;
+    this.mayoristaModo   = false;
     this.modoVista       = 'comprobante';
     App.renderPage();
   },
@@ -700,6 +702,27 @@ _montoCombinadoB: 0,
     }).join('');
   },
 
+  _getTotalQty() {
+    return this.currentItems.reduce(function(s, i) { return s + i.qty; }, 0);
+  },
+
+  _checkMayorista() {
+    var totalQty = this._getTotalQty();
+    var debeSerMayorista = totalQty >= 3;
+    var cambio = debeSerMayorista !== this.mayoristaModo;
+    this.mayoristaModo = debeSerMayorista;
+    this.currentItems.forEach(function(item) {
+      var p = DB.productos.find(function(x) { return x.id === item.prod_id; });
+      if (!p) return;
+      item.precio = debeSerMayorista ? (p.precio_mayorista || p.precio_venta) : p.precio_venta;
+      item.total  = item.qty * item.precio * (1 - (item.dcto || 0) / 100);
+    });
+    if (cambio) {
+      if (debeSerMayorista) App.toast('🏷️ Precio mayorista aplicado automáticamente', 'info');
+      else App.toast('↩️ Precio unitario restaurado', 'info');
+    }
+  },
+
   // ─────────────────────────────────────────────────────────
   // HELPERS DEL COMPROBANTE
   // ─────────────────────────────────────────────────────────
@@ -753,6 +776,7 @@ _montoCombinadoB: 0,
     var qty = Math.max(1, parseInt(val)||1);
     this.currentItems[idx].qty   = qty;
     this.currentItems[idx].total = qty * this.currentItems[idx].precio * (1-(this.currentItems[idx].dcto||0)/100);
+    this._checkMayorista();
     App.renderPage();
   },
 
@@ -779,6 +803,7 @@ _montoCombinadoB: 0,
 
   removeItem(idx) {
     this.currentItems.splice(idx,1);
+    this._checkMayorista();
     App.renderPage();
   },
 
@@ -786,6 +811,7 @@ _montoCombinadoB: 0,
     if (!this.currentItems.length || confirm('¿Limpiar todos los productos del ticket?')) {
       this.currentItems = [];
       this.descGlobal   = 0;
+      this.mayoristaModo = false;
       App.renderPage();
     }
   },
@@ -998,6 +1024,7 @@ _montoCombinadoB: 0,
       });
     }
     this._searchResults = null;
+    this._checkMayorista();
     App.toast(p.nombre + ' agregado ✓', 'success');
     App.closeModal();
     App.renderPage();
@@ -1143,6 +1170,7 @@ SupabaseDB.guardarVenta(venta);
 // Reset
 this._montoCombinadoA = 0;
 this._montoCombinadoB = 0;
+this.mayoristaModo   = false;
 this.modoVista       = 'lista';
 App.renderPage();
 
