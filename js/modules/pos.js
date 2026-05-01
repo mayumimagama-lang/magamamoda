@@ -15,6 +15,7 @@ const POSModule = {
   _pagosDivActivo: false,
   _barcodeBuffer: '',
   _subMetodoCombinado: 'YAPE+EFECTIVO',
+  mayoristaModo: false,
   _montoCombinadoA: 0,
   _montoCombinadoB: 0,
 
@@ -318,6 +319,28 @@ const POSModule = {
     '</div>';
   },
 
+  _getTotalQty: function() {
+    return this.items.reduce(function(s, i) { return s + i.qty; }, 0);
+  },
+
+  _checkMayorista: function() {
+    var totalQty = this._getTotalQty();
+    var debeSerMayorista = totalQty >= 3;
+    var cambio = debeSerMayorista !== this.mayoristaModo;
+    this.mayoristaModo = debeSerMayorista;
+    this.items.forEach(function(item, i) {
+      if (item.precioCustom) return;
+      var p = DB.productos.find(function(x) { return x.id === item.prod_id; });
+      if (!p) return;
+      item.precio = debeSerMayorista ? (p.precio_mayorista || p.precio_venta) : p.precio_venta;
+      POSModule._recalcItem(i);
+    });
+    if (cambio) {
+      if (debeSerMayorista) App.toast('🏷️ Precio mayorista aplicado automáticamente', 'info');
+      else App.toast('↩️ Precio unitario restaurado', 'info');
+    }
+  },
+
   _btnEstiloAccion: function(color) {
     return 'padding:7px 4px;border-radius:8px;border:1.5px solid var(--gray-200);background:white;' +
       'font-size:10px;font-weight:700;color:var(--gray-600);cursor:pointer;' +
@@ -344,6 +367,7 @@ const POSModule = {
       this.items.push({ prod_id:id, nombre:p.nombre, precio:p.precio_venta,
         precioCustom:null, descuento:0, qty:qty, total:p.precio_venta * qty });
     }
+    this._checkMayorista();
     App.renderPage();
     App.toast(p.nombre + ' ×' + qty + ' ✓', 'success');
   },
@@ -355,6 +379,7 @@ const POSModule = {
     if (p && newQty > p.stock) { App.toast('Stock insuficiente (máx: '+p.stock+')', 'warning'); return; }
     this.items[idx].qty = newQty;
     this._recalcItem(idx);
+    this._checkMayorista();
     App.renderPage();
   },
 
@@ -368,6 +393,7 @@ const POSModule = {
     if (p && qty > p.stock) { App.toast('Stock insuficiente (máx: '+p.stock+')', 'warning'); return; }
     this.items[idx].qty = qty;
     this._recalcItem(idx);
+    this._checkMayorista();
     App.renderPage();
   },
 
@@ -397,6 +423,7 @@ const POSModule = {
 
   quitar: function(idx) {
     this.items.splice(idx, 1);
+    this._checkMayorista();
     App.renderPage();
   },
 
@@ -405,6 +432,7 @@ const POSModule = {
     if (confirm('¿Limpiar todo el ticket?')) {
       this.items = [];
       this.notaVenta = '';
+      this.mayoristaModo = false;
       App.renderPage();
     }
   },
@@ -465,6 +493,7 @@ const POSModule = {
     });
     this.items = [];
     this.notaVenta = '';
+    this.mayoristaModo = false;
     App.toast('Venta guardada en espera: ' + nombre, 'info');
     App.renderPage();
   },
@@ -498,6 +527,7 @@ const POSModule = {
     this.tipoComp = venta.tipoComp;
     this.notaVenta = venta.nota;
     this.ventasEnEspera.splice(idx, 1);
+    this._checkMayorista();
     App.closeModal();
     App.renderPage();
     App.toast('Venta retomada', 'success');
@@ -899,32 +929,9 @@ const POSModule = {
     // Reset
     this.items = [];
     this.notaVenta = '';
+    this.mayoristaModo = false;
     App.renderPage();
   },
-
-  // ============================================================
-// PATCH PARA pos.js — Mostrar detalle antes de imprimir
-// INSTRUCCIONES:
-//   1. Abre pos.js en VS Code
-//   2. Aplica los 2 cambios indicados abajo
-// ============================================================
-
-// ════════════════════════════════════════════════════════════
-// CAMBIO 1: En la función _confirmarCobro
-// Busca esta línea (cerca del final de _confirmarCobro):
-//
-//     this._imprimirTicket(venta);
-//
-// Reemplázala por:
-//
-//     this._mostrarDetalleVenta(venta);
-// ════════════════════════════════════════════════════════════
-
-// ════════════════════════════════════════════════════════════
-// CAMBIO 2: Agrega esta función NUEVA justo ANTES de
-// la función _imprimirTicket (o al final del objeto POSModule,
-// antes del último });  )
-// ════════════════════════════════════════════════════════════
 
   _mostrarDetalleVenta: function(venta) {
     var self = this;
