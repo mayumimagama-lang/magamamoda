@@ -2,8 +2,8 @@
 // SUPABASE — Conexión con la base de datos en la nube
 // ============================================================
 
-const SUPABASE_URL = 'https://eandhzmzotmundjsbpng.supabase.co'; // ← tu URL real
-const SUPABASE_KEY = 'sb_publishable_c53ZhfK5P2nGYlP5JP8Mow_IGciQWui'; // ← tu clave real
+const SUPABASE_URL = 'https://eandhzmzotmundjsbpng.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_c53ZhfK5P2nGYlP5JP8Mow_IGciQWui';
 
 const { createClient } = supabase;
 const db = createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -168,8 +168,8 @@ const SupabaseDB = {
   async actualizarVenta(venta) {
     try {
       const { error } = await db.from('ventas').update({
-        estado:      venta.estado,
-        items:       venta.items || []
+        estado: venta.estado,
+        items:  venta.items || []
       }).eq('id', String(venta.id));
       if (error) throw error;
       console.log('✅ Venta actualizada en Supabase id=' + venta.id);
@@ -178,5 +178,62 @@ const SupabaseDB = {
       console.warn('⚠️ Error actualizando venta:', e);
       return { ok: false };
     }
+  },
+
+  // ============================================================
+  // AUTH — Autenticación con Supabase
+  // ============================================================
+
+  _uuidMap: {
+    '0010635d-4557-4a73-8a2e-5eb0a656bdb6': 'MayumiMagama',
+    'bf399d25-053a-4154-9d5e-203de63c0045': 'AstridVara'
+  },
+
+  async loginConSupabase(email, password) {
+    try {
+      const { data, error } = await db.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+      const uid     = data.user.id;
+      const usuario = this._uuidMap[uid];
+      if (!usuario) throw new Error('Usuario no autorizado en el sistema');
+      const found = DB.usuarios.find(function(u) {
+        return u.usuario === usuario && u.activo;
+      });
+      if (!found) throw new Error('Usuario inactivo o no encontrado');
+      console.log('✅ Login Supabase OK:', found.usuario);
+      return { ok: true, usuario: found };
+    } catch(e) {
+      console.warn('⚠️ Login error:', e.message);
+      return { ok: false, msg: e.message };
+    }
+  },
+
+  async cerrarSesion() {
+    try {
+      await db.auth.signOut();
+      console.log('✅ Sesión cerrada en Supabase');
+      return { ok: true };
+    } catch(e) {
+      console.warn('⚠️ Error cerrando sesión:', e);
+      return { ok: false };
+    }
+  },
+
+  async obtenerSesionActual() {
+    try {
+      const { data } = await db.auth.getSession();
+      if (!data.session) return { ok: false };
+      const uid     = data.session.user.id;
+      const usuario = this._uuidMap[uid];
+      if (!usuario) return { ok: false };
+      const found = DB.usuarios.find(function(u) {
+        return u.usuario === usuario && u.activo;
+      });
+      if (!found) return { ok: false };
+      return { ok: true, usuario: found };
+    } catch(e) {
+      return { ok: false };
+    }
   }
+
 };
