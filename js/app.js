@@ -16,13 +16,29 @@ const App = {
   },
 
   // ---- AUTH ----
-  login() {
-    const user = document.getElementById('loginUser')?.value?.trim().toUpperCase();
+  async login() {
+    const user = document.getElementById('loginUser')?.value?.trim();
     const pass = document.getElementById('loginPass')?.value;
-    const found = DB.usuarios.find(u => u.usuario.toUpperCase() === user && u.password === pass && u.activo);
-    if (found) {
+    if (!user || !pass) { this.toast('Ingresa usuario y contraseña', 'error'); return; }
+
+    // Mapa usuario → email de Supabase
+    var emailMap = {
+      'MayumiMagama': 'mayutoledoh@gmail.com',
+      'AstridVara':   'kevincito_123_123@hotmail.com'
+    };
+
+    var email = emailMap[user];
+    if (!email) {
+      this.toast('Usuario o contraseña incorrectos', 'error');
+      return;
+    }
+
+    this.toast('Verificando credenciales...', 'info');
+    var result = await SupabaseDB.loginConSupabase(email, pass);
+
+    if (result.ok) {
+      var found = result.usuario;
       DB.usuarioActual = found;
-      // Guardar sesión en localStorage para sobrevivir recargas
       try { localStorage.setItem('erp_jumila_session', JSON.stringify({ id: found.id })); } catch(e) {}
       document.getElementById('loginPage').classList.add('hidden');
       document.getElementById('mainApp').classList.remove('hidden');
@@ -31,8 +47,7 @@ const App = {
       this.buildSidebar();
       this.navigate('inicio');
     } else {
-      const existe = DB.usuarios.find(u => u.usuario.toUpperCase() === user);
-      if (existe && !existe.activo) {
+      if (result.msg && result.msg.includes('inactivo')) {
         this.toast('Usuario desactivado. Contacte al administrador.', 'error');
       } else {
         this.toast('Usuario o contraseña incorrectos', 'error');
@@ -45,6 +60,7 @@ const App = {
       DB.usuarioActual = null;
       // Limpiar sesión y datos guardados
       try { localStorage.removeItem('erp_jumila_session'); } catch(e) {}
+      SupabaseDB.cerrarSesion();
       document.getElementById('mainApp').classList.add('hidden');
       document.getElementById('loginPage').classList.remove('hidden');
       document.getElementById('loginUser').value = '';
@@ -806,7 +822,17 @@ document.addEventListener('DOMContentLoaded', function() {
   SheetsSync.cargarProductos();
 
   // 3. Intentar restaurar sesión activa (evita cerrar sesión al recargar)
-  var sessionRestored = App._restoreSession();
+  var sessionRestored = false;
+SupabaseDB.obtenerSesionActual().then(function(result) {
+  if (result.ok) {
+    DB.usuarioActual = result.usuario;
+    document.getElementById('loginPage').classList.add('hidden');
+    document.getElementById('mainApp').classList.remove('hidden');
+    document.getElementById('welcomeName').textContent = result.usuario.nombre;
+    App.buildSidebar();
+    App.navigate('inicio');
+  }
+});
 
   // 4. Si no hay sesión guardada, mostrar login normalmente
   if (!sessionRestored) {
