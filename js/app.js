@@ -5,6 +5,8 @@
 const App = {
   currentPage: 'inicio',
   sidebarOpen: true,
+  _loginIntentos: 0,
+  _loginBloqueadoHasta: null,
 
   init() {
     this.initTheme();
@@ -17,6 +19,13 @@ const App = {
 
   // ---- AUTH ----
   async login() {
+    // Verificar bloqueo
+    if (this._loginBloqueadoHasta && new Date() < this._loginBloqueadoHasta) {
+      var mins = Math.ceil((this._loginBloqueadoHasta - new Date()) / 60000);
+      this.toast('Demasiados intentos fallidos. Espera ' + mins + ' minuto(s).', 'error');
+      return;
+    }
+
     const user = document.getElementById('loginUser')?.value?.trim();
     const pass = document.getElementById('loginPass')?.value;
     if (!user || !pass) { this.toast('Ingresa usuario y contraseña', 'error'); return; }
@@ -44,13 +53,28 @@ const App = {
       document.getElementById('mainApp').classList.remove('hidden');
       document.getElementById('welcomeName').textContent = found.nombre;
       localStorage.setItem('erp_jumila_uid', found.id);
+      this._loginIntentos = 0;
+      this._loginBloqueadoHasta = null;
       this.buildSidebar();
       this.navigate('inicio');
     } else {
-      if (result.msg && result.msg.includes('inactivo')) {
+      this._loginIntentos++;
+      var restantes = 5 - this._loginIntentos;
+      if (this._loginIntentos >= 5) {
+        this._loginBloqueadoHasta = new Date(Date.now() + 15 * 60 * 1000);
+        this._loginIntentos = 0;
+        this.toast('🔒 Cuenta bloqueada por 15 minutos por seguridad.', 'error');
+        document.getElementById('loginUser').disabled = true;
+        document.getElementById('loginPass').disabled = true;
+        setTimeout(function() {
+          document.getElementById('loginUser').disabled = false;
+          document.getElementById('loginPass').disabled = false;
+          App.toast('✅ Ya puedes intentar ingresar nuevamente.', 'info');
+        }, 15 * 60 * 1000);
+      } else if (result.msg && result.msg.includes('inactivo')) {
         this.toast('Usuario desactivado. Contacte al administrador.', 'error');
       } else {
-        this.toast('Usuario o contraseña incorrectos', 'error');
+        this.toast('Usuario o contraseña incorrectos. Intentos restantes: ' + restantes, 'error');
       }
     }
   },
