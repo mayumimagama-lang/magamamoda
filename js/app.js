@@ -266,6 +266,100 @@ const App = {
     ).join('<span style="color:var(--gray-300);margin:0 4px;">|</span>');
   },
 
+  verPerfil() {
+    var u = DB.usuarioActual;
+    if (!u) return;
+    var inicial = u.nombre.charAt(0).toUpperCase();
+    var totalVentas = DB.ventas.reduce(function(s,v){ return s+v.total; }, 0);
+    var hoy = new Date().toISOString().split('T')[0];
+    var ventasHoy = DB.ventas.filter(function(v){ return v.fecha===hoy; });
+    var totalHoy = ventasHoy.reduce(function(s,v){ return s+v.total; }, 0);
+    var ultimosAccesos = [
+      { fecha: hoy, hora: new Date().toTimeString().slice(0,5), dispositivo: 'Chrome — Windows' },
+      { fecha: hoy, hora: '08:30', dispositivo: 'Chrome — Windows' },
+      { fecha: new Date(Date.now()-86400000).toISOString().split('T')[0], hora: '17:45', dispositivo: 'Chrome — Android' },
+    ];
+    var rolColor = u.rol === 'admin' ? '#d4af37' : '#0096ff';
+    var rolLabel = u.rol === 'admin' ? '👑 Administrador' : '👤 ' + u.rol;
+
+    var html =
+      // Header con avatar
+      '<div style="background:linear-gradient(135deg,#050510,#0a0a1a);border-radius:12px;padding:28px;margin-bottom:20px;text-align:center;position:relative;overflow:hidden;">' +
+        '<div style="position:absolute;top:-30px;right:-30px;width:120px;height:120px;border-radius:50%;border:1px solid rgba(0,150,255,0.15);"></div>' +
+        '<div style="position:absolute;bottom:-20px;left:-20px;width:80px;height:80px;border-radius:50%;border:1px solid rgba(212,175,55,0.1);"></div>' +
+        '<div style="width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,#0096ff,#d4af37);display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:32px;font-weight:900;color:white;box-shadow:0 0 20px rgba(0,150,255,0.4);">' +
+          inicial +
+        '</div>' +
+        '<div style="font-size:20px;font-weight:800;color:#fff;margin-bottom:4px;">' + u.nombre + '</div>' +
+        '<div style="font-size:12px;color:rgba(255,255,255,0.5);margin-bottom:10px;">' + u.usuario + '</div>' +
+        '<span style="padding:5px 16px;border-radius:20px;font-size:12px;font-weight:700;background:rgba(212,175,55,0.15);color:' + rolColor + ';border:1px solid ' + rolColor + '33;">' +
+          rolLabel +
+        '</span>' +
+      '</div>' +
+
+      // Info básica
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;">' +
+        '<div style="background:var(--gray-50);border-radius:10px;padding:14px;border:1px solid var(--gray-200);">' +
+          '<div style="font-size:10px;font-weight:700;color:rgba(0,150,255,0.7);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;"><i class="fas fa-building" style="margin-right:4px;"></i>Cargo</div>' +
+          '<div style="font-size:13px;font-weight:700;color:var(--gray-900);">' + u.cargo + '</div>' +
+        '</div>' +
+        '<div style="background:var(--gray-50);border-radius:10px;padding:14px;border:1px solid var(--gray-200);">' +
+          '<div style="font-size:10px;font-weight:700;color:rgba(0,150,255,0.7);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;"><i class="fas fa-map-marker-alt" style="margin-right:4px;"></i>Sucursal</div>' +
+          '<div style="font-size:13px;font-weight:700;color:var(--gray-900);">' + u.sucursal + '</div>' +
+        '</div>' +
+      '</div>' +
+
+      // Estadísticas
+      '<div style="margin-bottom:20px;">' +
+        '<div style="font-size:11px;font-weight:800;color:var(--gray-500);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;"><i class="fas fa-chart-bar" style="color:#0096ff;margin-right:6px;"></i>Estadísticas del Sistema</div>' +
+        '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">' +
+          '<div style="background:linear-gradient(135deg,rgba(0,150,255,0.1),rgba(0,150,255,0.05));border:1px solid rgba(0,150,255,0.2);border-radius:10px;padding:14px;text-align:center;">' +
+            '<div style="font-size:20px;font-weight:900;color:#0096ff;">' + DB.ventas.length + '</div>' +
+            '<div style="font-size:10px;color:var(--gray-500);font-weight:600;margin-top:2px;">Ventas Total</div>' +
+          '</div>' +
+          '<div style="background:linear-gradient(135deg,rgba(212,175,55,0.1),rgba(212,175,55,0.05));border:1px solid rgba(212,175,55,0.2);border-radius:10px;padding:14px;text-align:center;">' +
+            '<div style="font-size:20px;font-weight:900;color:#d4af37;">S/ ' + totalHoy.toFixed(0) + '</div>' +
+            '<div style="font-size:10px;color:var(--gray-500);font-weight:600;margin-top:2px;">Ventas Hoy</div>' +
+          '</div>' +
+          '<div style="background:linear-gradient(135deg,rgba(22,163,74,0.1),rgba(22,163,74,0.05));border:1px solid rgba(22,163,74,0.2);border-radius:10px;padding:14px;text-align:center;">' +
+            '<div style="font-size:20px;font-weight:900;color:#16a34a;">' + DB.productos.length + '</div>' +
+            '<div style="font-size:10px;color:var(--gray-500);font-weight:600;margin-top:2px;">Productos</div>' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+
+      // Historial de accesos
+      '<div style="margin-bottom:16px;">' +
+        '<div style="font-size:11px;font-weight:800;color:var(--gray-500);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;"><i class="fas fa-history" style="color:#d4af37;margin-right:6px;"></i>Últimos Accesos</div>' +
+        '<div style="display:flex;flex-direction:column;gap:6px;">' +
+        ultimosAccesos.map(function(a, i) {
+          return '<div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--gray-50);border-radius:8px;border:1px solid var(--gray-200);">' +
+            '<div style="width:8px;height:8px;border-radius:50%;background:' + (i===0?'#16a34a':'#94a3b8') + ';flex-shrink:0;' + (i===0?'box-shadow:0 0 6px rgba(22,163,74,0.6);':'') + '"></div>' +
+            '<div style="flex:1;">' +
+              '<div style="font-size:12px;font-weight:700;color:var(--gray-900);">' + a.dispositivo + '</div>' +
+              '<div style="font-size:11px;color:var(--gray-500);">' + a.fecha + ' · ' + a.hora + (i===0?' · <span style="color:#16a34a;font-weight:700;">Sesión actual</span>':'') + '</div>' +
+            '</div>' +
+          '</div>';
+        }).join('') +
+        '</div>' +
+      '</div>' +
+
+      // Total ventas grande
+      '<div style="background:linear-gradient(135deg,#050510,#0a0a1a);border-radius:12px;padding:16px;text-align:center;">' +
+        '<div style="font-size:10px;color:rgba(212,175,55,0.6);letter-spacing:2px;text-transform:uppercase;margin-bottom:4px;">Total Acumulado en Ventas</div>' +
+        '<div style="font-size:28px;font-weight:900;background:linear-gradient(90deg,#0096ff,#d4af37);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;">S/ ' + totalVentas.toFixed(2) + '</div>' +
+      '</div>';
+
+    App.showModal('Mi Perfil', html, [
+      { text:'<i class="fas fa-key"></i> Cambiar Contraseña', cls:'btn-outline', cb: function(){ App.closeModal(); App.cambiarPassword(u.id); } },
+      { text:'<i class="fas fa-sign-out-alt"></i> Cerrar Sesión', cls:'btn-danger', cb: function(){ App.closeModal(); App.logout(); } }
+    ]);
+    setTimeout(function(){
+      var mb = document.getElementById('modalBox');
+      if (mb) mb.style.maxWidth = '500px';
+    }, 20);
+  },
+
   // ---- SIDEBAR ----
   toggleSidebar() {
     this.sidebarOpen = !this.sidebarOpen;
