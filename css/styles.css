@@ -1024,3 +1024,70 @@ body.dark-mode .theme-icon-moon { display: none; }
 /* Asegura que las filas de productos tengan altura suficiente */
 #pageContent .data-table td { padding: 10px 14px; vertical-align: middle; }
 #pageContent .data-table th { padding: 12px 14px; }
+
+/* ========== LOGIN — MODO CLARO ========== */
+body:not(.dark-mode) #loginPage {
+  background: #f0f4ff !important;
+}
+body:not(.dark-mode) #loginPage > div {
+  box-shadow: 0 25px 60px rgba(0,0,0,0.15) !important;
+}
+/* Panel izquierdo en claro */
+body:not(.dark-mode) #loginPage > div > div:first-child {
+  background: linear-gradient(160deg,#1a2744 0%,#2563eb 40%,#1a2744 100%) !important;
+}
+/* Panel derecho en claro */
+body:not(.dark-mode) #loginPage > div > div:last-child {
+  background: #ffffff !important;
+}
+/* Inputs en claro */
+body:not(.dark-mode) #loginUser,
+body:not(.dark-mode) #loginPass {
+  background: #f8fafc !important;
+  border-color: rgba(37,99,235,0.3) !important;
+  color: #1e293b !important;
+}
+body:not(.dark-mode) #loginUser:focus,
+body:not(.dark-mode) #loginPass:focus {
+  border-color: rgba(0,150,255,0.7) !important;
+  background: #ffffff !important;
+}
+/* Texto "Iniciar Sesión" en claro */
+body:not(.dark-mode) #loginPage div[style*="color:#fff"],
+body:not(.dark-mode) #loginPage div[style*="color: #fff"] {
+  color: #1e293b !important;
+}
+/* Texto "Ingresa tus credenciales" en claro */
+body:not(.dark-mode) #loginPage div[style*="rgba(255,255,255,0.35)"] {
+  color: rgba(30,41,59,0.6) !important;
+}
+/* Badge sistema activo en claro */
+body:not(.dark-mode) #loginPage div[style*="background:rgba(0,150,255,0.08)"] {
+  background: rgba(37,99,235,0.08) !important;
+  border-color: rgba(37,99,235,0.3) !important;
+}
+/* Divisor ACCESO SEGURO en claro */
+body:not(.dark-mode) #loginPage div[style*="rgba(255,255,255,0.07)"] {
+  background: rgba(0,0,0,0.08) !important;
+}
+body:not(.dark-mode) #loginPage span[style*="rgba(212,175,55,0.4)"] {
+  color: rgba(180,130,0,0.7) !important;
+}
+
+/* ========== LOGIN — MODO OSCURO ========== */
+body.dark-mode #loginPage {
+  background: #050510 !important;
+}
+body.dark-mode #loginPage > div > div:last-child {
+  background: #0a0a1a !important;
+}
+body.dark-mode #loginUser,
+body.dark-mode #loginPass {
+  background: #0d0d20 !important;
+  color: rgba(255,255,255,0.85) !important;
+  border-color: rgba(212,175,55,0.2) !important;
+}
+body.dark-mode #loginUser::placeholder,
+body.dark-mode #loginPass::placeholder {
+  color: rgba(255,255,255,0.3) !important;
+}
