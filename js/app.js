@@ -7,6 +7,7 @@ const App = {
   sidebarOpen: true,
   _loginIntentos: 0,
   _loginBloqueadoHasta: null,
+  _stockNotifMostrada: false,
 
   init() {
     this.initTheme();
@@ -196,6 +197,16 @@ const App = {
       }
       label.style.display = hasVisible ? '' : 'none';
     });
+
+    // Notificación stock bajo (solo admin, una vez por sesión)
+    if (u.rol === 'admin' && !this._stockNotifMostrada) {
+      this._stockNotifMostrada = true;
+      var agotados = DB.productos.filter(function(p){ return p.stock === 0; });
+      var bajos    = DB.productos.filter(function(p){ return p.stock > 0 && p.stock <= 5; });
+      if (agotados.length > 0 || bajos.length > 0) {
+        setTimeout(function() { App._mostrarAlertaStock(agotados, bajos); }, 1200);
+      }
+    }
   },
 
   // ---- NAVIGATION ----
@@ -357,6 +368,60 @@ const App = {
     setTimeout(function(){
       var mb = document.getElementById('modalBox');
       if (mb) mb.style.maxWidth = '500px';
+    }, 20);
+  },
+
+  _stockNotifMostrada: false,
+
+  _mostrarAlertaStock(agotados, bajos) {
+    var html =
+      '<div style="background:linear-gradient(135deg,#050510,#0a0a2a);border-radius:12px;padding:20px;margin-bottom:16px;border:1px solid rgba(220,38,38,0.3);">' +
+        '<div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">' +
+          '<div style="width:10px;height:10px;border-radius:50%;background:#dc2626;box-shadow:0 0 8px rgba(220,38,38,0.8);"></div>' +
+          '<span style="font-size:11px;color:#dc2626;font-weight:800;letter-spacing:2px;">ALERTA DE INVENTARIO</span>' +
+        '</div>' +
+        '<div style="font-size:22px;font-weight:900;color:#fff;">' + (agotados.length + bajos.length) + ' productos requieren atención</div>' +
+      '</div>';
+
+    if (agotados.length) {
+      html += '<div style="margin-bottom:14px;">' +
+        '<div style="font-size:10px;font-weight:800;color:rgba(220,38,38,0.8);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;">🔴 Agotados (' + agotados.length + ')</div>';
+      agotados.slice(0,5).forEach(function(p) {
+        html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:rgba(220,38,38,0.08);border:1px solid rgba(220,38,38,0.2);border-radius:8px;margin-bottom:6px;">' +
+          '<div>' +
+            '<div style="font-size:12px;font-weight:700;color:var(--gray-900);">' + p.nombre.substring(0,35) + '</div>' +
+            '<div style="font-size:11px;color:var(--gray-500);">' + p.categoria + '</div>' +
+          '</div>' +
+          '<span style="background:#fef2f2;color:#dc2626;font-size:11px;font-weight:800;padding:3px 10px;border-radius:20px;">AGOTADO</span>' +
+        '</div>';
+      });
+      if (agotados.length > 5) html += '<div style="font-size:11px;color:var(--gray-400);text-align:center;padding:4px;">+ ' + (agotados.length-5) + ' más agotados</div>';
+      html += '</div>';
+    }
+
+    if (bajos.length) {
+      html += '<div style="margin-bottom:14px;">' +
+        '<div style="font-size:10px;font-weight:800;color:rgba(217,119,6,0.8);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;">🟡 Stock Bajo (' + bajos.length + ')</div>';
+      bajos.slice(0,5).forEach(function(p) {
+        html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:rgba(217,119,6,0.08);border:1px solid rgba(217,119,6,0.2);border-radius:8px;margin-bottom:6px;">' +
+          '<div>' +
+            '<div style="font-size:12px;font-weight:700;color:var(--gray-900);">' + p.nombre.substring(0,35) + '</div>' +
+            '<div style="font-size:11px;color:var(--gray-500);">' + p.categoria + '</div>' +
+          '</div>' +
+          '<span style="background:#fffbeb;color:#d97706;font-size:11px;font-weight:800;padding:3px 10px;border-radius:20px;">' + p.stock + ' uds</span>' +
+        '</div>';
+      });
+      if (bajos.length > 5) html += '<div style="font-size:11px;color:var(--gray-400);text-align:center;padding:4px;">+ ' + (bajos.length-5) + ' más con stock bajo</div>';
+      html += '</div>';
+    }
+
+    App.showModal('⚠️ Alerta de Stock', html, [
+      { text:'<i class="fas fa-warehouse"></i> Ver Inventario', cls:'btn-danger',  cb: function(){ App.closeModal(); App.navigate('inventario'); } },
+      { text:'Cerrar',                                          cls:'btn-outline', cb: function(){ App.closeModal(); } }
+    ]);
+    setTimeout(function(){
+      var mb = document.getElementById('modalBox');
+      if (mb) mb.style.maxWidth = '520px';
     }, 20);
   },
 
