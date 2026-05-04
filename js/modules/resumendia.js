@@ -276,13 +276,44 @@ const ResumenDiaModule = {
         '<span style="background:rgba(0,150,255,0.1);color:#0096ff;font-size:11px;font-weight:800;padding:3px 10px;border-radius:20px;">' + cantHoy + '</span>' +
       '</div>' +
       // Filtros rápidos
-      '<div style="display:flex;gap:6px;flex-wrap:wrap;">' +
-        '<button onclick="ResumenDiaModule._filtrarTabla(\'TODOS\')" id="filtro_TODOS" style="padding:6px 12px;border-radius:20px;font-size:11px;font-weight:800;border:2px solid #0096ff;background:#0096ff;color:#fff;cursor:pointer;">Todos (' + cantHoy + ')</button>' +
-        '<button onclick="ResumenDiaModule._filtrarTabla(\'EFECTIVO\')" id="filtro_EFECTIVO" style="padding:6px 12px;border-radius:20px;font-size:11px;font-weight:800;border:2px solid #16a34a;background:transparent;color:#16a34a;cursor:pointer;">💵 Efectivo (' + cantMetodo.EFECTIVO + ')</button>' +
-        '<button onclick="ResumenDiaModule._filtrarTabla(\'YAPE\')" id="filtro_YAPE" style="padding:6px 12px;border-radius:20px;font-size:11px;font-weight:800;border:2px solid #a855f7;background:transparent;color:#a855f7;cursor:pointer;">📱 Yape (' + cantMetodo.YAPE + ')</button>' +
-        '<button onclick="ResumenDiaModule._filtrarTabla(\'TARJETA\')" id="filtro_TARJETA" style="padding:6px 12px;border-radius:20px;font-size:11px;font-weight:800;border:2px solid #0096ff;background:transparent;color:#0096ff;cursor:pointer;">💳 Tarjeta (' + cantMetodo.TARJETA + ')</button>' +
-        '<button onclick="ResumenDiaModule._filtrarTabla(\'COMBINADO\')" id="filtro_COMBINADO" style="padding:6px 12px;border-radius:20px;font-size:11px;font-weight:800;border:2px solid #d4af37;background:transparent;color:#d4af37;cursor:pointer;">🔀 Combinado (' + cantMetodo.COMBINADO + ')</button>' +
-      '</div>' +
+      '<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">' +
+
+  // TODOS
+  '<button onclick="ResumenDiaModule._filtrarTabla(\'TODOS\')" id="filtro_TODOS" ' +
+  'style="display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:10px;font-size:11px;font-weight:800;border:2px solid #0096ff;background:#0096ff;color:#fff;cursor:pointer;box-shadow:0 0 12px rgba(0,150,255,0.4);transition:all 0.2s;">' +
+    '<i class="fas fa-list" style="font-size:10px;"></i> Todos ' +
+    '<span style="background:rgba(255,255,255,0.25);border-radius:20px;padding:1px 7px;font-size:10px;">' + cantHoy + '</span>' +
+  '</button>' +
+
+  // EFECTIVO
+  '<button onclick="ResumenDiaModule._filtrarTabla(\'EFECTIVO\')" id="filtro_EFECTIVO" ' +
+  'style="display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:10px;font-size:11px;font-weight:800;border:2px solid #16a34a;background:rgba(22,163,74,0.08);color:#16a34a;cursor:pointer;transition:all 0.2s;">' +
+    '<i class="fas fa-money-bill-wave" style="font-size:10px;"></i> Efectivo ' +
+    '<span style="background:rgba(22,163,74,0.2);border-radius:20px;padding:1px 7px;font-size:10px;">' + cantMetodo.EFECTIVO + '</span>' +
+  '</button>' +
+
+  // YAPE
+  '<button onclick="ResumenDiaModule._filtrarTabla(\'YAPE\')" id="filtro_YAPE" ' +
+  'style="display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:10px;font-size:11px;font-weight:800;border:2px solid #a855f7;background:rgba(168,85,247,0.08);color:#a855f7;cursor:pointer;transition:all 0.2s;">' +
+    '<i class="fas fa-mobile-alt" style="font-size:10px;"></i> Yape ' +
+    '<span style="background:rgba(168,85,247,0.2);border-radius:20px;padding:1px 7px;font-size:10px;">' + cantMetodo.YAPE + '</span>' +
+  '</button>' +
+
+  // TARJETA
+  '<button onclick="ResumenDiaModule._filtrarTabla(\'TARJETA\')" id="filtro_TARJETA" ' +
+  'style="display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:10px;font-size:11px;font-weight:800;border:2px solid #0096ff;background:rgba(0,150,255,0.08);color:#0096ff;cursor:pointer;transition:all 0.2s;">' +
+    '<i class="fas fa-credit-card" style="font-size:10px;"></i> Tarjeta ' +
+    '<span style="background:rgba(0,150,255,0.2);border-radius:20px;padding:1px 7px;font-size:10px;">' + cantMetodo.TARJETA + '</span>' +
+  '</button>' +
+
+  // COMBINADO
+  '<button onclick="ResumenDiaModule._filtrarTabla(\'COMBINADO\')" id="filtro_COMBINADO" ' +
+  'style="display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:10px;font-size:11px;font-weight:800;border:2px solid #d4af37;background:rgba(212,175,55,0.08);color:#d4af37;cursor:pointer;transition:all 0.2s;">' +
+    '<i class="fas fa-random" style="font-size:10px;"></i> Combinado ' +
+    '<span style="background:rgba(212,175,55,0.2);border-radius:20px;padding:1px 7px;font-size:10px;">' + cantMetodo.COMBINADO + '</span>' +
+  '</button>' +
+
+'</div>' +
       '<button onclick="App.navigate(\'pos\')" style="padding:8px 14px;background:linear-gradient(135deg,#b8860b,#d4af37);border:none;border-radius:8px;color:#050510;font-size:11px;font-weight:800;cursor:pointer;display:flex;align-items:center;gap:6px;">' +
         '<i class="fas fa-plus"></i> Nueva Venta' +
       '</button>' +
@@ -300,6 +331,32 @@ const ResumenDiaModule = {
         '</button>' +
       '</div>';
     } else {
+
+        html += '<div style="display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--gray-50);border-bottom:1px solid var(--gray-200);">' +
+  // Buscador por cliente
+  '<div style="display:flex;align-items:center;gap:8px;flex:1;background:white;border:1.5px solid var(--gray-200);border-radius:10px;padding:8px 12px;">' +
+    '<i class="fas fa-search" style="color:var(--gray-400);font-size:13px;"></i>' +
+    '<input type="text" id="buscarCliente" placeholder="Buscar por cliente o comprobante..." ' +
+      'oninput="ResumenDiaModule._buscarTabla(this.value)" ' +
+      'style="border:none;outline:none;font-size:13px;color:var(--gray-800);background:transparent;width:100%;"/>' +
+    '<button onclick="document.getElementById(\'buscarCliente\').value=\'\';ResumenDiaModule._buscarTabla(\'\')" ' +
+      'style="background:none;border:none;cursor:pointer;color:var(--gray-400);padding:0 2px;">' +
+      '<i class="fas fa-times" style="font-size:12px;"></i>' +
+    '</button>' +
+  '</div>' +
+  // Mini selector de fecha
+  '<div style="display:flex;align-items:center;gap:8px;background:white;border:1.5px solid rgba(212,175,55,0.4);border-radius:10px;padding:8px 12px;flex-shrink:0;">' +
+    '<i class="fas fa-calendar-day" style="color:#d4af37;font-size:13px;"></i>' +
+    '<input type="date" id="buscarFecha" ' +
+      'onchange="ResumenDiaModule.cambiarFecha(this.value)" ' +
+      'value="' + fechaVer + '" ' +
+      'style="border:none;outline:none;font-size:12px;font-weight:700;color:var(--gray-800);background:transparent;cursor:pointer;"/>' +
+  '</div>' +
+  // Resultado contador
+  '<div id="resultadoBusqueda" style="font-size:11px;color:var(--gray-500);flex-shrink:0;white-space:nowrap;">' +
+    cantHoy + ' resultados' +
+  '</div>' +
+'</div>';
       html += '<div class="table-wrapper"><table class="data-table" id="tablaVentasDia">' +
         '<thead><tr><th>#</th><th>Comprobante</th><th>Cliente</th><th>Hora</th><th>Método de Pago</th><th>Items</th><th style="text-align:right;">Total</th><th>Estado</th></tr></thead><tbody>';
 
@@ -350,6 +407,20 @@ const ResumenDiaModule = {
 
     html += '</div>';
     return html;
+  },
+
+  _buscarTabla(texto) {
+    var filas = document.querySelectorAll('#tablaVentasDia tbody tr');
+    var count = 0;
+    var t = texto.toLowerCase().trim();
+    filas.forEach(function(fila) {
+      var contenido = fila.textContent.toLowerCase();
+      var mostrar = !t || contenido.includes(t);
+      fila.style.display = mostrar ? '' : 'none';
+      if (mostrar) count++;
+    });
+    var res = document.getElementById('resultadoBusqueda');
+    if (res) res.textContent = count + ' resultado' + (count !== 1 ? 's' : '');
   },
 
   _filtrarTabla(metodo) {
