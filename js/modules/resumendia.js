@@ -231,10 +231,18 @@ const ResumenDiaModule = {
     html += '</div></div></div>'; // fin grid
 
     // ── TABLA VENTAS DEL DÍA ──
-    html += '<div class="card"><div class="card-header">' +
+    html += '<div class="card"><div class="card-header" style="flex-wrap:wrap;gap:10px;">' +
       '<div style="display:flex;align-items:center;gap:10px;">' +
-        '<span class="card-title"><i class="fas fa-receipt" style="color:#0096ff;margin-right:6px;"></i>Comprobantes de Hoy</span>' +
+        '<span class="card-title"><i class="fas fa-receipt" style="color:#0096ff;margin-right:6px;"></i>Comprobantes Emitidos Hoy</span>' +
         '<span style="background:rgba(0,150,255,0.1);color:#0096ff;font-size:11px;font-weight:800;padding:3px 10px;border-radius:20px;">' + cantHoy + '</span>' +
+      '</div>' +
+      // Filtros rápidos
+      '<div style="display:flex;gap:6px;flex-wrap:wrap;">' +
+        '<button onclick="ResumenDiaModule._filtrarTabla(\'TODOS\')" id="filtro_TODOS" style="padding:6px 12px;border-radius:20px;font-size:11px;font-weight:800;border:2px solid #0096ff;background:#0096ff;color:#fff;cursor:pointer;">Todos (' + cantHoy + ')</button>' +
+        '<button onclick="ResumenDiaModule._filtrarTabla(\'EFECTIVO\')" id="filtro_EFECTIVO" style="padding:6px 12px;border-radius:20px;font-size:11px;font-weight:800;border:2px solid #16a34a;background:transparent;color:#16a34a;cursor:pointer;">💵 Efectivo (' + cantMetodo.EFECTIVO + ')</button>' +
+        '<button onclick="ResumenDiaModule._filtrarTabla(\'YAPE\')" id="filtro_YAPE" style="padding:6px 12px;border-radius:20px;font-size:11px;font-weight:800;border:2px solid #a855f7;background:transparent;color:#a855f7;cursor:pointer;">📱 Yape (' + cantMetodo.YAPE + ')</button>' +
+        '<button onclick="ResumenDiaModule._filtrarTabla(\'TARJETA\')" id="filtro_TARJETA" style="padding:6px 12px;border-radius:20px;font-size:11px;font-weight:800;border:2px solid #0096ff;background:transparent;color:#0096ff;cursor:pointer;">💳 Tarjeta (' + cantMetodo.TARJETA + ')</button>' +
+        '<button onclick="ResumenDiaModule._filtrarTabla(\'COMBINADO\')" id="filtro_COMBINADO" style="padding:6px 12px;border-radius:20px;font-size:11px;font-weight:800;border:2px solid #d4af37;background:transparent;color:#d4af37;cursor:pointer;">🔀 Combinado (' + cantMetodo.COMBINADO + ')</button>' +
       '</div>' +
       '<button onclick="App.navigate(\'pos\')" style="padding:8px 14px;background:linear-gradient(135deg,#b8860b,#d4af37);border:none;border-radius:8px;color:#050510;font-size:11px;font-weight:800;cursor:pointer;display:flex;align-items:center;gap:6px;">' +
         '<i class="fas fa-plus"></i> Nueva Venta' +
@@ -253,7 +261,7 @@ const ResumenDiaModule = {
         '</button>' +
       '</div>';
     } else {
-      html += '<div class="table-wrapper"><table class="data-table">' +
+      html += '<div class="table-wrapper"><table class="data-table" id="tablaVentasDia">' +
         '<thead><tr><th>#</th><th>Comprobante</th><th>Cliente</th><th>Hora</th><th>Método de Pago</th><th>Items</th><th style="text-align:right;">Total</th><th>Estado</th></tr></thead><tbody>';
 
       var ordenadas = ventasHoy.slice().reverse();
@@ -268,7 +276,7 @@ const ResumenDiaModule = {
         else if (m2.includes('TARJETA')||m2.includes('VISA'))    { mc='#0096ff'; mg='rgba(0,150,255,0.12)'; mi2='fa-credit-card'; }
         else                                                       { mc='#16a34a'; mg='rgba(22,163,74,0.12)'; mi2='fa-money-bill-wave'; }
 
-        html += '<tr>' +
+        html += '<tr data-metodo="' + (v.metodo_pago||'EFECTIVO') + '">' +
           '<td style="color:var(--gray-400);font-size:11px;">' + (ordenadas.length - idx) + '</td>' +
           '<td><div class="td-name">' + v.serie + '-' + v.numero + '</div><div class="td-sub">' + (v.tipo||'N. VENTA') + '</div></td>' +
           '<td><div style="font-size:12px;font-weight:600;color:var(--gray-800);">' + nombre + '</div></td>' +
@@ -303,5 +311,38 @@ const ResumenDiaModule = {
 
     html += '</div>';
     return html;
-  }
+  },
+
+  _filtrarTabla(metodo) {
+    // Actualizar estilos de botones
+    var colores = { TODOS:'#0096ff', EFECTIVO:'#16a34a', YAPE:'#a855f7', TARJETA:'#0096ff', COMBINADO:'#d4af37' };
+    Object.keys(colores).forEach(function(k) {
+      var btn = document.getElementById('filtro_' + k);
+      if (!btn) return;
+      if (k === metodo) {
+        btn.style.background = colores[k];
+        btn.style.color = k === 'COMBINADO' ? '#050510' : '#fff';
+      } else {
+        btn.style.background = 'transparent';
+        btn.style.color = colores[k];
+      }
+    });
+
+    // Filtrar filas de la tabla
+    var filas = document.querySelectorAll('#tablaVentasDia tr');
+    filas.forEach(function(fila) {
+      if (metodo === 'TODOS') {
+        fila.style.display = '';
+        return;
+      }
+      var metodoCelda = (fila.dataset.metodo || '').toUpperCase();
+      var m = metodo.toUpperCase();
+      var mostrar = false;
+      if (m === 'EFECTIVO'  && metodoCelda.includes('EFECTIVO') && !metodoCelda.includes('+')) mostrar = true;
+      if (m === 'YAPE'      && (metodoCelda.includes('YAPE') || metodoCelda.includes('PLIN')) && !metodoCelda.includes('+')) mostrar = true;
+      if (m === 'TARJETA'   && (metodoCelda.includes('TARJETA') || metodoCelda.includes('VISA')) && !metodoCelda.includes('+')) mostrar = true;
+      if (m === 'COMBINADO' && metodoCelda.includes('+')) mostrar = true;
+      fila.style.display = mostrar ? '' : 'none';
+    });
+  },
 };
