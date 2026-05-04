@@ -4,6 +4,27 @@
 
 const ResumenDiaModule = {
 
+    _fechaActual: null,
+
+    cambiarFecha(fecha) {
+    this._fechaActual = fecha;
+    App.renderPage();
+    setTimeout(function() {
+      var input = document.getElementById('resumenFecha');
+      if (input) input.value = ResumenDiaModule._fechaActual;
+    }, 50);
+  },
+
+  _navDia(delta) {
+    var base = this._fechaActual || this._fechaLocal(new Date());
+    var d = new Date(base + 'T12:00:00');
+    d.setDate(d.getDate() + delta);
+    var nueva = this._fechaLocal(d);
+    var hoy = this._fechaLocal(new Date());
+    if (nueva > hoy) nueva = hoy;
+    this.cambiarFecha(nueva);
+  },
+
   _fechaLocal(d) {
     return d.getFullYear() + '-' +
       String(d.getMonth()+1).padStart(2,'0') + '-' +
@@ -32,7 +53,8 @@ const ResumenDiaModule = {
   render() {
     App.setTabs2('Resumen del Día', '');
     var hoy = this._fechaLocal(new Date());
-    var ventasHoy = DB.ventas.filter(function(v){ return v.fecha === hoy; });
+    var fechaVer = this._fechaActual || hoy;
+    var ventasHoy = DB.ventas.filter(function(v){ return v.fecha === fechaVer; });
 
     var totalHoy   = ventasHoy.reduce(function(s,v){ return s+v.total; }, 0);
     var cantHoy    = ventasHoy.length;
@@ -69,7 +91,7 @@ const ResumenDiaModule = {
       porTipo[t].cant++;
     });
 
-    var fechaFormato = new Date().toLocaleDateString('es-PE',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+    var fechaFormato = new Date(fechaVer + 'T12:00:00').toLocaleDateString('es-PE',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
     var html = '';
 
     // ── HERO BANNER ──
@@ -102,12 +124,29 @@ const ResumenDiaModule = {
           '</div>' +
         '</div>' +
         '<div style="display:flex;gap:8px;">' +
-          '<button onclick="App.navigate(\'pos\')" style="padding:10px 16px;background:linear-gradient(135deg,#b8860b,#d4af37);border:none;border-radius:10px;color:#050510;font-size:11px;font-weight:800;cursor:pointer;display:flex;align-items:center;gap:6px;">' +
-            '<i class="fas fa-cash-register"></i> POS' +
-          '</button>' +
-          '<button onclick="App.navigate(\'ventas\')" style="padding:10px 16px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.15);border-radius:10px;color:rgba(255,255,255,0.7);font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px;">' +
-            '<i class="fas fa-list"></i> VENTAS' +
-          '</button>' +
+          '<div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end;">' +
+  // Selector de fecha
+  '<div style="display:flex;align-items:center;gap:8px;background:rgba(255,255,255,0.06);border:1px solid rgba(212,175,55,0.3);border-radius:10px;padding:8px 12px;">' +
+    '<i class="fas fa-calendar-alt" style="color:#d4af37;font-size:13px;"></i>' +
+    '<input type="date" id="resumenFecha" value="' + hoy + '" ' +
+      'onchange="ResumenDiaModule.cambiarFecha(this.value)" ' +
+      'style="background:transparent;border:none;outline:none;color:#fff;font-size:12px;font-weight:700;cursor:pointer;"/>' +
+    '<button onclick="ResumenDiaModule.cambiarFecha(\'' + hoy + '\')" ' +
+      'style="background:rgba(212,175,55,0.2);border:none;border-radius:6px;color:#d4af37;font-size:10px;font-weight:800;padding:3px 8px;cursor:pointer;letter-spacing:0.5px;">HOY</button>' +
+  '</div>' +
+  // Botones navegación días
+  '<div style="display:flex;gap:6px;">' +
+    '<button onclick="ResumenDiaModule._navDia(-1)" style="padding:8px 12px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.15);border-radius:8px;color:rgba(255,255,255,0.7);font-size:11px;font-weight:700;cursor:pointer;">' +
+      '<i class="fas fa-chevron-left"></i> Ayer' +
+    '</button>' +
+    '<button onclick="App.navigate(\'pos\')" style="padding:8px 12px;background:linear-gradient(135deg,#b8860b,#d4af37);border:none;border-radius:8px;color:#050510;font-size:11px;font-weight:800;cursor:pointer;display:flex;align-items:center;gap:5px;">' +
+      '<i class="fas fa-cash-register"></i> POS' +
+    '</button>' +
+    '<button onclick="ResumenDiaModule._navDia(1)" style="padding:8px 12px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.15);border-radius:8px;color:rgba(255,255,255,0.7);font-size:11px;font-weight:700;cursor:pointer;">' +
+      'Sig. <i class="fas fa-chevron-right"></i>' +
+    '</button>' +
+  '</div>' +
+'</div>' +
         '</div>' +
       '</div>' +
     '</div>';
