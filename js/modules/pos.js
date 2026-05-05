@@ -638,9 +638,9 @@ const POSModule = {
       var url = doc.length === 11
         ? 'https://peruapi.com/api/ruc/' + doc + '?api_token=' + this._API_KEY
         : 'https://peruapi.com/api/dni/' + doc + '?api_token=' + this._API_KEY;
-      var res = await fetch('https://api.allorigins.win/get?url=' + encodeURIComponent(url));
-      var wrapper = await res.json();
-      var data = JSON.parse(wrapper.contents);
+      var PROXY = 'https://script.google.com/macros/s/AKfycbzopc9-UZI3fNvav1c1_Tar52kRy_gom7grN5-q4MdlTOQ6SSvD_BH2CSmTmgW1j_EfXg/exec';
+      var res = await fetch(PROXY + '?accion=' + (doc.length===11?'ruc':'dni') + '&tipo=' + (doc.length===11?'ruc':'dni') + '&doc=' + doc);
+      var data = await res.json();
       if (data.code === '200' || data.code === 200) {
         var nombre = doc.length === 11
           ? (data.razon_social || '')
