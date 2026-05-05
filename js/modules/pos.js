@@ -14,6 +14,7 @@ const POSModule = {
   _pagosDiv: [],            // pagos divididos
   _pagosDivActivo: false,
   _barcodeBuffer: '',
+  _API_KEY: '93d2a2c57c97b46ca1a42e85ad46fe50',
   _subMetodoCombinado: 'YAPE+EFECTIVO',
   mayoristaModo: false,
   _montoCombinadoA: 0,
@@ -196,8 +197,16 @@ const POSModule = {
           '<div style="font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' +
             (this.clienteSeleccionado ? this.clienteSeleccionado.nombre : 'PÚBLICO EN GENERAL') + '</div>' +
         '</div>' +
-        '<button class="btn btn-outline btn-sm" onclick="POSModule.cambiarCliente()" style="padding:4px 8px;font-size:11px;">' +
-          '<i class="fas fa-exchange-alt"></i></button>' +
+        '<div style="display:flex;gap:4px;flex-direction:column;align-items:stretch;">' +
+  '<div style="display:flex;gap:4px;">' +
+    '<input type="text" id="posClienteDoc" placeholder="DNI/RUC..." ' +
+      'oninput="POSModule._onDocInput(this.value)" ' +
+      'style="width:90px;padding:4px 6px;border:1.5px solid var(--gray-200);border-radius:6px;font-size:11px;outline:none;"/>' +
+    '<button class="btn btn-outline btn-sm" onclick="POSModule.cambiarCliente()" style="padding:4px 8px;font-size:11px;">' +
+      '<i class="fas fa-search"></i></button>' +
+  '</div>' +
+  '<div id="posClienteStatus" style="font-size:10px;color:var(--gray-400);min-height:14px;"></div>' +
+'</div>' +
       '</div>';
 
     // Ticket header
@@ -587,6 +596,85 @@ const POSModule = {
     App.closeModal();
     App.renderPage();
     App.toast('Cliente: ' + this.clienteSeleccionado.nombre, 'info');
+  },
+
+  _onDocInput: function(val) {
+    var digits = val.replace(/\D/g, '');
+    if (digits.length === 8 || digits.length === 11) {
+      this._buscarClientePorDoc(digits);
+    }
+  },
+
+  _buscarClientePorDoc: function(val) {
+    if (!val) return;
+    // 1° Buscar local primero — sin consumir API
+    var found = DB.clientes.find(function(c){ return c.doc === val; });
+    if (found) {
+      this.clienteSeleccionado = found;
+      var status = document.getElementById('posClienteStatus');
+      if (status) {
+        status.textContent = '✅ ' + found.nombre.substring(0,28);
+        status.style.color = '#16a34a';
+      }
+      App.renderPage();
+      App.toast('✅ ' + found.nombre, 'success');
+      return;
+    }
+    // 2° No está local → consultar peruapi.com
+    var digits = val.replace(/\D/g, '');
+    if (digits.length === 8 || digits.length === 11) {
+      this._consultarAPICliente(digits);
+    }
+  },
+
+  _consultarAPICliente: async function(doc) {
+    var tipo   = doc.length === 11 ? 'RUC' : 'DNI';
+    var status = document.getElementById('posClienteStatus');
+    if (status) {
+      status.textContent = '🔍 Buscando ' + tipo + '...';
+      status.style.color = '#0096ff';
+    }
+    try {
+      var url = doc.length === 11
+        ? 'https://peruapi.com/api/ruc/' + doc + '?api_token=' + this._API_KEY
+        : 'https://peruapi.com/api/dni/' + doc + '?api_token=' + this._API_KEY;
+      var res  = await fetch(url);
+      var data = await res.json();
+      if (data.code === '200' || data.code === 200) {
+        var nombre = doc.length === 11
+          ? (data.razon_social || '')
+          : (data.cliente || '');
+        var clienteTemp = {
+          id: Date.now(), doc: doc, tipo: tipo,
+          nombre: nombre, direccion: data.direccion || '',
+          telefono: '', email: '', tipo_cliente: 'cliente'
+        };
+        DB.clientes.push(clienteTemp);
+        this.clienteSeleccionado = clienteTemp;
+        if (status) {
+          status.textContent = '✅ ' + nombre.substring(0,28);
+          status.style.color = '#16a34a';
+        }
+        App.renderPage();
+        if (doc.length === 11 && data.estado) {
+          App.toast('✅ ' + nombre + ' · ' + data.estado, 'success');
+        } else {
+          App.toast('✅ ' + nombre, 'success');
+        }
+      } else {
+        if (status) {
+          status.textContent = '❌ No encontrado';
+          status.style.color = '#dc2626';
+        }
+        App.toast('No se encontró el ' + tipo, 'warning');
+      }
+    } catch(e) {
+      if (status) {
+        status.textContent = '⚠ Sin conexión';
+        status.style.color = '#d97706';
+      }
+      App.toast('Error de conexión', 'error');
+    }
   },
 
   // ──────────────────────────────────────────────────────
