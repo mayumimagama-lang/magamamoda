@@ -356,8 +356,9 @@ const ClientesModule = {
         ? `https://peruapi.com/api/ruc/${doc}?api_token=${this._API_KEY}`
         : `https://peruapi.com/api/dni/${doc}?api_token=${this._API_KEY}`;
 
-      const response = await fetch('https://corsproxy.io/?' + encodeURIComponent(endpoint));
-      const data     = await response.json();
+      const response = await fetch('https://api.allorigins.win/get?url=' + encodeURIComponent(endpoint));
+      const wrapper = await response.json();
+      const data = JSON.parse(wrapper.contents);
 
       if (data.code === '200' || data.code === 200) {
         // Extraer datos según tipo
