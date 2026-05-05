@@ -8,6 +8,9 @@ const ClientesModule = {
   currentPage: 1,
   itemsPerPage: 10,
 
+  // ── API KEY peruapi.com ──
+  _API_KEY: '93d2a2c57c97b46ca1a42e85ad46fe50',
+
   render() {
     const tabs = [
       { id: 'clientes', label: 'Clientes', page: 'clientes' },
@@ -200,48 +203,254 @@ const ClientesModule = {
     ]);
   },
 
+  // ============================================================
+  // FORMULARIO CON BÚSQUEDA DNI/RUC — peruapi.com
+  // ============================================================
   formHTML(c) {
     return `
       <div class="form-grid">
+
+        <!-- Tipo Documento -->
         <div class="form-group">
           <label class="form-label">Tipo Documento <span class="required">*</span></label>
-          <select class="form-control" id="f_tipo">
+          <select class="form-control" id="f_tipo" onchange="ClientesModule._onTipoChange()">
             <option value="DNI" ${c.tipo==='DNI'?'selected':''}>DNI</option>
             <option value="RUC" ${c.tipo==='RUC'?'selected':''}>RUC</option>
-            <option value="CE" ${c.tipo==='CE'?'selected':''}>CE</option>
+            <option value="CE"  ${c.tipo==='CE' ?'selected':''}>CE</option>
           </select>
         </div>
+
+        <!-- N° Documento + Botón buscar -->
         <div class="form-group">
           <label class="form-label">N° Documento <span class="required">*</span></label>
-          <input class="form-control" id="f_doc" type="text" placeholder="Ej: 12345678" value="${c.doc||''}"/>
+          <div style="display:flex;gap:6px;">
+            <input class="form-control" id="f_doc" type="text"
+              placeholder="Ej: 12345678" value="${c.doc||''}"
+              oninput="ClientesModule._onDocInput(this.value)"
+              style="flex:1;"/>
+            <button id="btn_buscar_doc" onclick="ClientesModule._consultarAPI()"
+              style="padding:0 14px;background:linear-gradient(135deg,#0096ff,#0077cc);border:none;border-radius:8px;color:white;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:6px;">
+              <i class="fas fa-search"></i> Buscar
+            </button>
+          </div>
+          <div style="font-size:10px;color:var(--gray-400);margin-top:4px;">
+            <i class="fas fa-magic" style="color:#0096ff;"></i>
+            Auto-búsqueda al escribir 8 dígitos (DNI) o 11 (RUC)
+          </div>
         </div>
+
+        <!-- Resultado de búsqueda API -->
+        <div id="resultado_api" style="grid-column:1/-1;display:none;"></div>
+
+        <!-- Nombre -->
         <div class="form-group" style="grid-column:1/-1">
           <label class="form-label">Nombre / Razón Social <span class="required">*</span></label>
-          <input class="form-control" id="f_nombre" type="text" placeholder="Nombre completo" value="${c.nombre||''}"/>
+          <input class="form-control" id="f_nombre" type="text"
+            placeholder="Se autocompleta o ingresa manualmente"
+            value="${c.nombre||''}"/>
         </div>
+
+        <!-- Dirección -->
         <div class="form-group" style="grid-column:1/-1">
           <label class="form-label">Dirección</label>
-          <input class="form-control" id="f_direccion" type="text" placeholder="Dirección" value="${c.direccion||''}"/>
+          <input class="form-control" id="f_direccion" type="text"
+            placeholder="Se autocompleta con RUC o ingresa manualmente"
+            value="${c.direccion||''}"/>
         </div>
+
+        <!-- Teléfono y Email -->
         <div class="form-group">
           <label class="form-label">Teléfono</label>
-          <input class="form-control" id="f_telefono" type="text" placeholder="062-123456" value="${c.telefono||''}"/>
+          <input class="form-control" id="f_telefono" type="text"
+            placeholder="062-123456" value="${c.telefono||''}"/>
         </div>
         <div class="form-group">
           <label class="form-label">Email</label>
-          <input class="form-control" id="f_email" type="email" placeholder="correo@email.com" value="${c.email||''}"/>
+          <input class="form-control" id="f_email" type="email"
+            placeholder="correo@email.com" value="${c.email||''}"/>
         </div>
+
+        <!-- Tipo cliente -->
         <div class="form-group">
           <label class="form-label">Tipo</label>
           <select class="form-control" id="f_tipo_cliente">
-            <option value="cliente" ${(c.tipo_cliente||'cliente')==='cliente'?'selected':''}>Cliente</option>
-            <option value="proveedor" ${c.tipo_cliente==='proveedor'?'selected':''}>Proveedor</option>
+            <option value="cliente"   ${(c.tipo_cliente||'cliente')==='cliente'  ?'selected':''}>Cliente</option>
+            <option value="proveedor" ${c.tipo_cliente==='proveedor'             ?'selected':''}>Proveedor</option>
           </select>
         </div>
+
       </div>
     `;
   },
 
+  // ── Detecta dígitos y activa auto-búsqueda ──
+  _onDocInput(val) {
+    const tipo = document.getElementById('f_tipo')?.value;
+    const len  = val.replace(/\D/g, '').length;
+    if ((tipo === 'DNI' && len === 8) || (tipo === 'RUC' && len === 11)) {
+      this._consultarAPI();
+    }
+  },
+
+  // ── Actualiza placeholder según tipo ──
+  _onTipoChange() {
+    const tipo = document.getElementById('f_tipo')?.value;
+    const docInput = document.getElementById('f_doc');
+    if (docInput) {
+      docInput.placeholder = tipo === 'RUC' ? 'Ej: 20601234567 (11 dígitos)' :
+                             tipo === 'DNI' ? 'Ej: 45678912 (8 dígitos)' : 'N° documento';
+      docInput.value = '';
+    }
+    // Limpiar resultado anterior
+    const res = document.getElementById('resultado_api');
+    if (res) { res.style.display = 'none'; res.innerHTML = ''; }
+  },
+
+  // ── Consulta a peruapi.com ──
+  async _consultarAPI() {
+    const tipo = document.getElementById('f_tipo')?.value;
+    const doc  = document.getElementById('f_doc')?.value?.trim();
+    const btn  = document.getElementById('btn_buscar_doc');
+    const res  = document.getElementById('resultado_api');
+
+    if (!doc) { App.toast('Ingresa un número de documento', 'warning'); return; }
+    if (tipo === 'DNI' && doc.length !== 8)  { App.toast('El DNI debe tener 8 dígitos', 'error'); return; }
+    if (tipo === 'RUC' && doc.length !== 11) { App.toast('El RUC debe tener 11 dígitos', 'error'); return; }
+
+    // 1° Buscar en DB local primero (sin consumir API)
+    const local = DB.clientes.find(function(c) { return c.doc === doc; });
+    if (local) {
+      document.getElementById('f_nombre')?.setAttribute('value', local.nombre);
+      document.getElementById('f_nombre').value = local.nombre;
+      document.getElementById('f_direccion').value = local.direccion || '';
+      if (res) {
+        res.style.display = 'block';
+        res.innerHTML = `
+          <div style="display:flex;align-items:center;gap:10px;padding:12px 16px;background:rgba(22,163,74,0.08);border:1px solid rgba(22,163,74,0.3);border-radius:10px;">
+            <i class="fas fa-database" style="color:#16a34a;font-size:18px;"></i>
+            <div>
+              <div style="font-size:13px;font-weight:700;color:var(--gray-900);">${local.nombre}</div>
+              <div style="font-size:11px;color:#16a34a;font-weight:600;">✅ Encontrado en tu base de datos local</div>
+            </div>
+          </div>`;
+      }
+      return;
+    }
+
+    // 2° Si no está local → consultar peruapi.com
+    if (btn) {
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Buscando...';
+      btn.disabled = true;
+    }
+    if (res) {
+      res.style.display = 'block';
+      res.innerHTML = `
+        <div style="display:flex;align-items:center;gap:10px;padding:12px 16px;background:rgba(0,150,255,0.06);border:1px solid rgba(0,150,255,0.2);border-radius:10px;">
+          <i class="fas fa-spinner fa-spin" style="color:#0096ff;"></i>
+          <span style="font-size:13px;color:var(--gray-600);">Consultando SUNAT / RENIEC...</span>
+        </div>`;
+    }
+
+    try {
+      const endpoint = tipo === 'RUC'
+        ? `https://peruapi.com/api/ruc/${doc}?api_token=${this._API_KEY}`
+        : `https://peruapi.com/api/dni/${doc}?api_token=${this._API_KEY}`;
+
+      const response = await fetch(endpoint);
+      const data     = await response.json();
+
+      if (data.code === '200' || data.code === 200) {
+        // Extraer datos según tipo
+        var nombre    = '';
+        var direccion = '';
+
+        if (tipo === 'RUC') {
+          nombre    = data.razon_social || '';
+          direccion = data.direccion    || '';
+        } else {
+          nombre = data.cliente || (data.nombres + ' ' + data.apellido_paterno + ' ' + data.apellido_materno).trim();
+        }
+
+        // Autocompletar campos
+        document.getElementById('f_nombre').value    = nombre;
+        document.getElementById('f_direccion').value = direccion;
+
+        // Mostrar resultado exitoso
+        if (res) {
+          res.innerHTML = `
+            <div style="background:linear-gradient(135deg,rgba(0,150,255,0.05),rgba(0,150,255,0.02));border:1.5px solid rgba(0,150,255,0.3);border-radius:12px;padding:14px 16px;">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+                <div style="width:8px;height:8px;border-radius:50%;background:#16a34a;box-shadow:0 0 6px rgba(22,163,74,0.6);"></div>
+                <span style="font-size:10px;font-weight:800;color:#16a34a;letter-spacing:1.5px;">DATOS ENCONTRADOS — SUNAT/RENIEC</span>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                <div>
+                  <div style="font-size:10px;color:var(--gray-500);font-weight:700;text-transform:uppercase;margin-bottom:3px;">${tipo}</div>
+                  <div style="font-size:14px;font-weight:800;color:#0096ff;">${doc}</div>
+                </div>
+                <div>
+                  <div style="font-size:10px;color:var(--gray-500);font-weight:700;text-transform:uppercase;margin-bottom:3px;">Nombre / Razón Social</div>
+                  <div style="font-size:13px;font-weight:700;color:var(--gray-900);">${nombre}</div>
+                </div>
+                ${tipo === 'RUC' && data.estado ? `
+                <div>
+                  <div style="font-size:10px;color:var(--gray-500);font-weight:700;text-transform:uppercase;margin-bottom:3px;">Estado SUNAT</div>
+                  <span style="padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;background:${data.estado==='ACTIVO'?'#dcfce7':'#fee2e2'};color:${data.estado==='ACTIVO'?'#16a34a':'#dc2626'};">${data.estado}</span>
+                </div>
+                <div>
+                  <div style="font-size:10px;color:var(--gray-500);font-weight:700;text-transform:uppercase;margin-bottom:3px;">Condición</div>
+                  <span style="padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;background:${data.condicion==='HABIDO'?'#dcfce7':'#fee2e2'};color:${data.condicion==='HABIDO'?'#16a34a':'#dc2626'};">${data.condicion||'-'}</span>
+                </div>` : ''}
+                ${direccion ? `
+                <div style="grid-column:1/-1">
+                  <div style="font-size:10px;color:var(--gray-500);font-weight:700;text-transform:uppercase;margin-bottom:3px;">Dirección</div>
+                  <div style="font-size:12px;color:var(--gray-700);">${direccion}</div>
+                </div>` : ''}
+              </div>
+              <div style="margin-top:10px;font-size:10px;color:var(--gray-400);display:flex;align-items:center;gap:4px;">
+                <i class="fas fa-info-circle"></i>
+                Los campos se han autocompletado. Puedes editarlos si necesitas.
+              </div>
+            </div>`;
+        }
+
+        App.toast('✅ Datos encontrados y autocompletados', 'success');
+
+      } else {
+        if (res) {
+          res.innerHTML = `
+            <div style="display:flex;align-items:center;gap:10px;padding:12px 16px;background:rgba(220,38,38,0.06);border:1px solid rgba(220,38,38,0.2);border-radius:10px;">
+              <i class="fas fa-exclamation-circle" style="color:#dc2626;font-size:18px;"></i>
+              <div>
+                <div style="font-size:13px;font-weight:700;color:var(--gray-900);">No se encontraron datos</div>
+                <div style="font-size:11px;color:var(--gray-500);">Verifica el número o ingresa los datos manualmente</div>
+              </div>
+            </div>`;
+        }
+        App.toast('No se encontraron datos para ese ' + tipo, 'warning');
+      }
+
+    } catch(e) {
+      if (res) {
+        res.innerHTML = `
+          <div style="display:flex;align-items:center;gap:10px;padding:12px 16px;background:rgba(220,38,38,0.06);border:1px solid rgba(220,38,38,0.2);border-radius:10px;">
+            <i class="fas fa-wifi" style="color:#dc2626;font-size:18px;"></i>
+            <div>
+              <div style="font-size:13px;font-weight:700;color:var(--gray-900);">Error de conexión</div>
+              <div style="font-size:11px;color:var(--gray-500);">Verifica tu internet e intenta nuevamente</div>
+            </div>
+          </div>`;
+      }
+      App.toast('Error al consultar la API. Verifica tu conexión.', 'error');
+    } finally {
+      if (btn) {
+        btn.innerHTML = '<i class="fas fa-search"></i> Buscar';
+        btn.disabled = false;
+      }
+    }
+  },
+
+  // ============================================================
   guardar(id) {
     const tipo = document.getElementById('f_tipo')?.value;
     const doc = document.getElementById('f_doc')?.value?.trim();
