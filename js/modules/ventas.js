@@ -1129,7 +1129,7 @@ _montoCombinadoB: 0,
       var url = doc.length === 11
         ? 'https://peruapi.com/api/ruc/' + doc + '?api_token=' + this._API_KEY
         : 'https://peruapi.com/api/dni/' + doc + '?api_token=' + this._API_KEY;
-      var res  = await fetch(url);
+      var res = await fetch('https://corsproxy.io/?' + encodeURIComponent(url));
       var data = await res.json();
       if (data.code === '200' || data.code === 200) {
         var nombre = doc.length === 11
