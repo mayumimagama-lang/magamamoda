@@ -21,6 +21,7 @@ const VentasModule = {
   montoPago:       0,
   descGlobal:      0,
   modoVista:       'comprobante',
+  _API_KEY: '93d2a2c57c97b46ca1a42e85ad46fe50',
   _subMetodoCombinado: 'YAPE+EFECTIVO',
   mayoristaModo: false,
 _montoCombinadoA: 0,
@@ -483,10 +484,12 @@ _montoCombinadoB: 0,
             '<div style="margin-bottom:14px;">'+
               '<div style="font-size:11px;font-weight:700;color:var(--gray-500);text-transform:uppercase;margin-bottom:6px;">CLIENTE <span style="color:#dc2626;">*</span></div>'+
               '<div style="display:flex;gap:8px;">'+
-                '<input class="form-control" id="cliSearch" type="text" '+
-                  'placeholder="Ingresa DNI/RUC y presiona Enter para buscar..." '+
-                  'value="'+(cli?cli.doc+' — '+cli.nombre:'')+'" '+
-                  'onkeydown="VentasModule.buscarCliente(event)" style="flex:1;font-size:14px;padding:10px 12px;"/>'+
+              '<input class="form-control" id="cliSearch" type="text" ' +
+                'placeholder="Ingresa DNI/RUC — se busca automáticamente..." ' +
+                'value="'+(cli?cli.doc+' — '+cli.nombre:'')+'" ' +
+                'onkeydown="VentasModule.buscarCliente(event)" ' +
+                'oninput="VentasModule._onClienteInput(this.value)" ' +
+                'style="flex:1;font-size:14px;padding:10px 12px;"/>'+
                 '<button class="btn btn-outline" onclick="VentasModule.seleccionarCliente()" style="padding:10px 14px;" title="Buscar">'+
                   '<i class="fas fa-search"></i></button>'+
               '</div>'+
@@ -1086,14 +1089,81 @@ _montoCombinadoB: 0,
 
   buscarCliente(event) {
     if (event.key !== 'Enter') return;
-    var val   = event.target.value.trim();
+    var val = event.target.value.trim();
+    this._buscarClientePorDoc(val);
+  },
+
+  _onClienteInput(val) {
+    var digits = val.replace(/\D/g, '');
+    if (digits.length === 8 || digits.length === 11) {
+      this._buscarClientePorDoc(digits);
+    }
+  },
+
+  _buscarClientePorDoc(val) {
+    if (!val) return;
+    // 1° Buscar local
     var found = DB.clientes.find(function(c){ return c.doc === val; });
     if (found) {
       this.selectedCliente = found;
-      event.target.value   = found.doc + ' — ' + found.nombre;
-      App.toast('Cliente: ' + found.nombre, 'info');
+      var inp = document.getElementById('cliSearch');
+      if (inp) inp.value = found.doc + ' — ' + found.nombre;
+      App.toast('✅ Cliente: ' + found.nombre, 'success');
+      return;
+    }
+    // 2° No está local → consultar API
+    var digits = val.replace(/\D/g, '');
+    if (digits.length === 8 || digits.length === 11) {
+      this._consultarAPICliente(digits);
     } else {
-      App.toast('No encontrado. Usa el botón para buscar o registra el cliente.', 'warning');
+      App.toast('No encontrado. Verifica el número o usa el buscador.', 'warning');
+    }
+  },
+
+  async _consultarAPICliente(doc) {
+    var inp = document.getElementById('cliSearch');
+    var tipo = doc.length === 11 ? 'RUC' : 'DNI';
+    if (inp) inp.value = '🔍 Consultando ' + tipo + '...';
+    App.toast('Consultando ' + tipo + ' en SUNAT/RENIEC...', 'info');
+    try {
+      var url = doc.length === 11
+        ? 'https://peruapi.com/api/ruc/' + doc + '?api_token=' + this._API_KEY
+        : 'https://peruapi.com/api/dni/' + doc + '?api_token=' + this._API_KEY;
+      var res  = await fetch(url);
+      var data = await res.json();
+      if (data.code === '200' || data.code === 200) {
+        var nombre = doc.length === 11
+          ? (data.razon_social || '')
+          : (data.cliente || '');
+        var direccion = data.direccion || '';
+        // Crear cliente temporal
+        var clienteTemp = {
+          id: Date.now(),
+          doc: doc,
+          tipo: tipo,
+          nombre: nombre,
+          direccion: direccion,
+          telefono: '',
+          email: '',
+          tipo_cliente: 'cliente'
+        };
+        // Guardar en DB para no volver a consultar
+        DB.clientes.push(clienteTemp);
+        this.selectedCliente = clienteTemp;
+        if (inp) inp.value = doc + ' — ' + nombre;
+        // Mostrar info extra si es RUC
+        if (doc.length === 11 && data.estado) {
+          App.toast('✅ ' + nombre + ' · ' + data.estado + ' · ' + (data.condicion||''), 'success');
+        } else {
+          App.toast('✅ ' + nombre, 'success');
+        }
+      } else {
+        if (inp) inp.value = '';
+        App.toast('No se encontró el ' + tipo + '. Ingresa los datos manualmente.', 'warning');
+      }
+    } catch(e) {
+      if (inp) inp.value = '';
+      App.toast('Error de conexión. Verifica tu internet.', 'error');
     }
   },
 
