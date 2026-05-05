@@ -356,9 +356,9 @@ const ClientesModule = {
         ? `https://peruapi.com/api/ruc/${doc}?api_token=${this._API_KEY}`
         : `https://peruapi.com/api/dni/${doc}?api_token=${this._API_KEY}`;
 
-      const response = await fetch('https://api.allorigins.win/get?url=' + encodeURIComponent(endpoint));
-      const wrapper = await response.json();
-      const data = JSON.parse(wrapper.contents);
+      var PROXY = 'https://script.google.com/macros/s/AKfycbzopc9-UZI3fNvav1c1_Tar52kRy_gom7grN5-q4MdlTOQ6SSvD_BH2CSmTmgW1j_EfXg/exec';
+      const response = await fetch(PROXY + '?accion=' + (tipo==='RUC'?'ruc':'dni') + '&tipo=' + (tipo==='RUC'?'ruc':'dni') + '&doc=' + doc);
+      const data = await response.json();
 
       if (data.code === '200' || data.code === 200) {
         // Extraer datos según tipo
