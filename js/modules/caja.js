@@ -377,6 +377,9 @@ const CajaModule = {
           '</div>' +
           '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--gray-200);font-size:13px;">' +
             '<span>Ventas tarjeta:</span><span style="font-weight:700;color:#2563eb;">S/ '+bal.ventaTarjeta.toFixed(2)+'</span>' +
+            '</div>' +
+          '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--gray-200);font-size:13px;">' +
+            '<span>Ventas combinado:</span><span style="font-weight:700;color:#ea580c;">S/ '+bal.ventaCombinado.toFixed(2)+'</span>' +
           '</div>' +
           '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--gray-200);font-size:13px;">' +
             '<span>Ingresos extra:</span><span style="font-weight:700;color:#16a34a;">+ S/ '+bal.ingresos.toFixed(2)+'</span>' +
