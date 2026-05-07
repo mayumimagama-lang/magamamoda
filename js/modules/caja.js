@@ -30,7 +30,7 @@ const CajaModule = {
     var movs   = this._getMovimientos().filter(function(m){ return m.fecha === CajaModule._fechaHoy(); });
     var ventas = this._ventasHoy();
 
-    var ventaEfectivo = 0, ventaYape = 0, ventaTarjeta = 0, ventaTotal = 0;
+    var ventaEfectivo = 0, ventaYape = 0, ventaTarjeta = 0, ventaCombinado = 0, ventaTotal = 0;
 
     ventas.forEach(function(v) {
       ventaTotal += v.total;
@@ -53,6 +53,7 @@ const CajaModule = {
           else if (mp === 'TARJETA') ventaTarjeta += v.total;
         }
       });
+      if (mp.includes('+')) ventaCombinado += v.total;
     });
 
     var ingresos = movs.filter(function(m){ return m.tipo==='INGRESO'; }).reduce(function(s,m){ return s+m.monto; }, 0);
@@ -63,7 +64,7 @@ const CajaModule = {
 
     return {
       montoInicial: caja.monto_inicial || 0,
-      ventaEfectivo, ventaYape, ventaTarjeta, ventaTotal,
+      ventaEfectivo, ventaYape, ventaTarjeta, ventaCombinado, ventaTotal,
       ingresos, egresos,
       balanceEfectivo, balanceTotal,
       numVentas: ventas.length
@@ -144,7 +145,7 @@ const CajaModule = {
           '</div>' +
           '<span style="font-size:12px;color:var(--gray-400);">'+this._fechaHoy()+'</span>' +
         '</div>' +
-        '<div style="padding:20px;display:grid;grid-template-columns:repeat(3,1fr);gap:16px;">' +
+        '<div style="padding:20px;display:grid;grid-template-columns:repeat(4,1fr);gap:16px;">' +
 
         // Efectivo
         '<div style="padding:16px;background:#f0fdf4;border-radius:12px;border:2px solid #86efac;">' +
@@ -188,6 +189,21 @@ const CajaModule = {
           '</div>' +
           '<div style="font-size:11px;color:#2563eb;">'+
             this._ventasHoy().filter(function(v){ return v.metodo_pago && v.metodo_pago.includes('TARJETA'); }).length+
+          ' ventas</div>' +
+        '</div>' +
+
+        // Combinado
+        '<div style="padding:16px;background:#fff7ed;border-radius:12px;border:2px solid #fed7aa;">' +
+          '<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">' +
+            '<div style="width:36px;height:36px;border-radius:9px;background:#ea580c;display:flex;align-items:center;justify-content:center;">' +
+              '<i class="fas fa-layer-group" style="color:white;font-size:16px;"></i></div>' +
+            '<div>' +
+              '<div style="font-size:11px;font-weight:700;color:#ea580c;text-transform:uppercase;">Combinado</div>' +
+              '<div style="font-size:20px;font-weight:900;color:#c2410c;">S/ '+bal.ventaCombinado.toFixed(2)+'</div>' +
+            '</div>' +
+          '</div>' +
+          '<div style="font-size:11px;color:#ea580c;">'+
+            this._ventasHoy().filter(function(v){ return v.metodo_pago && v.metodo_pago.includes('+'); }).length+
           ' ventas</div>' +
         '</div>' +
 
