@@ -352,6 +352,7 @@ const CajaModule = {
             hora_apertura: CajaModule._horaAhora(),
             responsable: DB.usuarioActual?.usuario || ''
           };
+          DB.save();
           App.toast('✅ Caja abierta con S/ '+monto.toFixed(2), 'success');
           App.closeModal();
           App.renderPage();
@@ -410,6 +411,7 @@ const CajaModule = {
           DB.cajas[0].estado = 'CERRADA';
           DB.cajas[0].hora_cierre = CajaModule._horaAhora();
           DB.cajas[0].monto_contado = parseFloat(document.getElementById('montoContado')?.value) || 0;
+          DB.save();
           App.toast('🔒 Caja cerrada correctamente', 'warning');
           App.closeModal();
           App.renderPage();
