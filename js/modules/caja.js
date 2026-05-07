@@ -26,17 +26,34 @@ const CajaModule = {
 
   // ── Calcular balance actual ──
   _calcBalance() {
-    var caja      = this._getCaja();
-    var movs      = this._getMovimientos().filter(function(m){ return m.fecha === CajaModule._fechaHoy(); });
-    var ventas    = this._ventasHoy();
+    var caja   = this._getCaja();
+    var movs   = this._getMovimientos().filter(function(m){ return m.fecha === CajaModule._fechaHoy(); });
+    var ventas = this._ventasHoy();
 
-    var ventaEfectivo  = ventas.filter(function(v){ return v.metodo_pago && v.metodo_pago.includes('EFECTIVO'); })
-                                .reduce(function(s,v){ return s+v.total; }, 0);
-    var ventaYape      = ventas.filter(function(v){ return v.metodo_pago && v.metodo_pago.includes('YAPE'); })
-                                .reduce(function(s,v){ return s+v.total; }, 0);
-    var ventaTarjeta   = ventas.filter(function(v){ return v.metodo_pago && v.metodo_pago.includes('TARJETA'); })
-                                .reduce(function(s,v){ return s+v.total; }, 0);
-    var ventaTotal     = ventas.reduce(function(s,v){ return s+v.total; }, 0);
+    var ventaEfectivo = 0, ventaYape = 0, ventaTarjeta = 0, ventaTotal = 0;
+
+    ventas.forEach(function(v) {
+      ventaTotal += v.total;
+      var mp = v.metodo_pago || '';
+
+      // Pagos combinados: "YAPE(S/50.00) + EFECTIVO(S/30.00)"
+      var partes = mp.split('+');
+      partes.forEach(function(parte) {
+        parte = parte.trim();
+        var montoMatch = parte.match(/\(S?\/?(\d+\.?\d*)\)/);
+        var monto = montoMatch ? parseFloat(montoMatch[1]) : v.total;
+
+        if (parte.includes('EFECTIVO')) ventaEfectivo += monto;
+        else if (parte.includes('YAPE') || parte.includes('PLIN')) ventaYape += monto;
+        else if (parte.includes('TARJETA')) ventaTarjeta += monto;
+        else if (parte === mp) {
+          // Pago simple sin paréntesis
+          if (mp === 'EFECTIVO') ventaEfectivo += v.total;
+          else if (mp === 'YAPE' || mp === 'PLIN') ventaYape += v.total;
+          else if (mp === 'TARJETA') ventaTarjeta += v.total;
+        }
+      });
+    });
 
     var ingresos = movs.filter(function(m){ return m.tipo==='INGRESO'; }).reduce(function(s,m){ return s+m.monto; }, 0);
     var egresos  = movs.filter(function(m){ return m.tipo==='EGRESO';  }).reduce(function(s,m){ return s+m.monto; }, 0);
@@ -45,7 +62,7 @@ const CajaModule = {
     var balanceTotal    = balanceEfectivo + ventaYape + ventaTarjeta;
 
     return {
-      montoInicial:  caja.monto_inicial || 0,
+      montoInicial: caja.monto_inicial || 0,
       ventaEfectivo, ventaYape, ventaTarjeta, ventaTotal,
       ingresos, egresos,
       balanceEfectivo, balanceTotal,
@@ -326,7 +343,6 @@ const CajaModule = {
       );
     } else {
       // CIERRE
-      var ventasHoy = this._ventasHoy();
       var resumenHTML =
         '<div style="background:linear-gradient(135deg,#fef2f2,#fee2e2);border-radius:12px;padding:16px;margin-bottom:16px;border:2px solid #fca5a5;">' +
           '<div style="font-size:13px;font-weight:800;color:#dc2626;margin-bottom:4px;"><i class="fas fa-lock" style="margin-right:6px;"></i>CIERRE DE CAJA</div>' +
