@@ -623,7 +623,7 @@ const CajaModule = {
       '<div class="row"><span>Ventas efectivo:</span><span class="bold">S/ '+bal.ventaEfectivo.toFixed(2)+'</span></div>' +
       '<div class="row"><span>Ventas Yape/Plin:</span><span class="bold">S/ '+bal.ventaYape.toFixed(2)+'</span></div>' +
       '<div class="row"><span>Ventas tarjeta:</span><span class="bold">S/ '+bal.ventaTarjeta.toFixed(2)+'</span></div>' +
-      (bal.ventaCombinado>0?'<div class="row"><span>Ventas combinado:</span><span class="bold">S/ '+bal.ventaCombinado.toFixed(2)+'</span></div>':'')+
+      '<div class="row"><span>Ventas combinado:</span><span class="bold">S/ '+bal.ventaCombinado.toFixed(2)+'</span></div>' +
       '<div class="row"><span>Total ventas ('+bal.numVentas+'):</span><span class="bold">S/ '+bal.ventaTotal.toFixed(2)+'</span></div>' +
       (bal.ingresos>0?'<div class="row"><span>Ingresos extra:</span><span class="bold">+S/ '+bal.ingresos.toFixed(2)+'</span></div>':'')+
       (bal.egresos>0?'<div class="row"><span>Egresos:</span><span class="bold">-S/ '+bal.egresos.toFixed(2)+'</span></div>':'')+
