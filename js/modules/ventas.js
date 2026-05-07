@@ -1126,17 +1126,24 @@ _montoCombinadoB: 0,
     if (inp) inp.value = '🔍 Consultando ' + tipo + '...';
     App.toast('Consultando ' + tipo + ' en SUNAT/RENIEC...', 'info');
     try {
-      var url = doc.length === 11
-        ? 'https://peruapi.com/api/ruc/' + doc + '?api_token=' + this._API_KEY
-        : 'https://peruapi.com/api/dni/' + doc + '?api_token=' + this._API_KEY;
-      var PROXY = 'https://script.google.com/macros/s/AKfycbzopc9-UZI3fNvav1c1_Tar52kRy_gom7grN5-q4MdlTOQ6SSvD_BH2CSmTmgW1j_EfXg/exec';
-      var res = await fetch(PROXY + '?accion=' + (doc.length===11?'ruc':'dni') + '&tipo=' + (doc.length===11?'ruc':'dni') + '&doc=' + doc);
+      var endpoint = doc.length === 11
+        ? 'https://apiperu.dev/api/ruc'
+        : 'https://apiperu.dev/api/dni';
+      var res = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Authorization': 'Bearer 2568cd05aaa32855bded783fdb2a9a7ef984e2d136aaeaf2d59091dc48ef68cb'
+        },
+        body: JSON.stringify(doc.length === 11 ? { ruc: doc } : { dni: doc })
+      });
       var data = await res.json();
-      if (data.code === '200' || data.code === 200) {
+      if (data.success) {
         var nombre = doc.length === 11
-          ? (data.razon_social || '')
-          : (data.cliente || '');
-        var direccion = data.direccion || '';
+          ? (data.data.nombre_o_razon_social || '')
+          : (data.data.nombre_completo || '');
+        var direccion = data.data.direccion || '';
         // Crear cliente temporal
         var clienteTemp = {
           id: Date.now(),
