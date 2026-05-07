@@ -552,7 +552,7 @@ const CajaModule = {
       '</div>' +
 
       // Resumen por método
-      '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px;">' +
+      '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px;">' +
         '<div style="padding:10px;background:#f0fdf4;border-radius:8px;text-align:center;">' +
           '<div style="font-size:10px;font-weight:700;color:#16a34a;text-transform:uppercase;margin-bottom:4px;">Efectivo</div>' +
           '<div style="font-size:16px;font-weight:900;color:#15803d;">S/ '+bal.ventaEfectivo.toFixed(2)+'</div>' +
@@ -564,6 +564,10 @@ const CajaModule = {
         '<div style="padding:10px;background:#eff6ff;border-radius:8px;text-align:center;">' +
           '<div style="font-size:10px;font-weight:700;color:#2563eb;text-transform:uppercase;margin-bottom:4px;">Tarjeta</div>' +
           '<div style="font-size:16px;font-weight:900;color:#1d4ed8;">S/ '+bal.ventaTarjeta.toFixed(2)+'</div>' +
+        '</div>' +
+        '<div style="padding:10px;background:#fff7ed;border-radius:8px;text-align:center;">' +
+          '<div style="font-size:10px;font-weight:700;color:#ea580c;text-transform:uppercase;margin-bottom:4px;">Combinado</div>' +
+          '<div style="font-size:16px;font-weight:900;color:#c2410c;">S/ '+bal.ventaCombinado.toFixed(2)+'</div>' +
         '</div>' +
       '</div>' +
 
