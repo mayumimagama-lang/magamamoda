@@ -353,23 +353,28 @@ const ClientesModule = {
 
     try {
       const endpoint = tipo === 'RUC'
-        ? `https://peruapi.com/api/ruc/${doc}?api_token=${this._API_KEY}`
-        : `https://peruapi.com/api/dni/${doc}?api_token=${this._API_KEY}`;
-
-      var PROXY = 'https://script.google.com/macros/s/AKfycbzopc9-UZI3fNvav1c1_Tar52kRy_gom7grN5-q4MdlTOQ6SSvD_BH2CSmTmgW1j_EfXg/exec';
-      const response = await fetch(PROXY + '?accion=' + (tipo==='RUC'?'ruc':'dni') + '&tipo=' + (tipo==='RUC'?'ruc':'dni') + '&doc=' + doc);
+        ? 'https://apiperu.dev/api/ruc'
+        : 'https://apiperu.dev/api/dni';
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Authorization': 'Bearer 2568cd05aaa32855bded783fdb2a9a7ef984e2d136aaeaf2d59091dc48ef68cb'
+        },
+        body: JSON.stringify(tipo === 'RUC' ? { ruc: doc } : { dni: doc })
+      });
       const data = await response.json();
 
-      if (data.code === '200' || data.code === 200) {
-        // Extraer datos según tipo
+      if (data.success) {
         var nombre    = '';
         var direccion = '';
 
         if (tipo === 'RUC') {
-          nombre    = data.razon_social || '';
-          direccion = data.direccion    || '';
+          nombre    = data.data.nombre_o_razon_social || '';
+          direccion = data.data.direccion || '';
         } else {
-          nombre = data.cliente || (data.nombres + ' ' + data.apellido_paterno + ' ' + data.apellido_materno).trim();
+          nombre = data.data.nombre_completo || '';
         }
 
         // Autocompletar campos
