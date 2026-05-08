@@ -259,8 +259,10 @@ const Storage = {
     kardex:      'erp_jumila_kardex',
     cotizaciones:'erp_jumila_cotizaciones',
     cuentasCorr: 'erp_jumila_cuentascorriente',
-    agenda:      'erp_jumila_agenda',
-    notasCredito:'erp_jumila_notascredito',
+    agenda:          'erp_jumila_agenda',
+    notasCredito:    'erp_jumila_notascredito',
+    cajas:           'erp_jumila_cajas',
+    movimientosCaja: 'erp_jumila_movimientos_caja',
   },
 
   cargar() {
@@ -299,6 +301,12 @@ const Storage = {
       const nc = localStorage.getItem(this.KEYS.notasCredito);
       if (nc) DB.notasCredito = JSON.parse(nc);
 
+      const cj = localStorage.getItem(this.KEYS.cajas);
+      if (cj) DB.cajas = JSON.parse(cj);
+
+     const mc = localStorage.getItem(this.KEYS.movimientosCaja);
+     if (mc) DB.movimientosCaja = JSON.parse(mc);
+
     } catch(e) {
       console.warn('Error al cargar localStorage:', e);
     }
@@ -313,17 +321,19 @@ const Storage = {
     }
   },
 
-  guardarProductos()    { return this.guardar(this.KEYS.productos, DB.productos); }, // guarda local + Sheets
-  guardarVentas()       { return this.guardar(this.KEYS.ventas,       DB.ventas); },
-  guardarClientes()     { return this.guardar(this.KEYS.clientes,     DB.clientes); },
-  guardarCompras()      { return this.guardar(this.KEYS.compras,      DB.compras); },
-  guardarSequences()    { return this.guardar(this.KEYS.sequences,    DB._sequences); },
-  guardarEmpresa()      { return this.guardar(this.KEYS.empresa,      DB.empresa); },
-  guardarKardex()       { return this.guardar(this.KEYS.kardex,       DB.kardex || []); },
-  guardarCotizaciones() { return this.guardar(this.KEYS.cotizaciones, DB.cotizaciones || []); },
-  guardarCuentasCorr()  { return this.guardar(this.KEYS.cuentasCorr,  DB.cuentasCorriente || []); },
-  guardarAgenda()       { return this.guardar(this.KEYS.agenda,       DB.agenda || []); },
-  guardarNotasCredito() { return this.guardar(this.KEYS.notasCredito, DB.notasCredito || []); },
+  guardarProductos()       { return this.guardar(this.KEYS.productos, DB.productos); }, // guarda local + Sheets
+  guardarVentas()          { return this.guardar(this.KEYS.ventas,       DB.ventas); },
+  guardarClientes()        { return this.guardar(this.KEYS.clientes,     DB.clientes); },
+  guardarCompras()         { return this.guardar(this.KEYS.compras,      DB.compras); },
+  guardarSequences()       { return this.guardar(this.KEYS.sequences,    DB._sequences); },
+  guardarEmpresa()         { return this.guardar(this.KEYS.empresa,      DB.empresa); },
+  guardarKardex()          { return this.guardar(this.KEYS.kardex,       DB.kardex || []); },
+  guardarCotizaciones()    { return this.guardar(this.KEYS.cotizaciones, DB.cotizaciones || []); },
+  guardarCuentasCorr()     { return this.guardar(this.KEYS.cuentasCorr,  DB.cuentasCorriente || []); },
+  guardarAgenda()          { return this.guardar(this.KEYS.agenda,       DB.agenda || []); },
+  guardarNotasCredito()    { return this.guardar(this.KEYS.notasCredito, DB.notasCredito || []); },
+  guardarCajas()           { return this.guardar(this.KEYS.cajas,          DB.cajas || []); },
+  guardarMovimientosCaja() { return this.guardar(this.KEYS.movimientosCaja, DB.movimientosCaja || []); },
 
   limpiarTodo() {
     Object.values(this.KEYS).forEach(k => localStorage.removeItem(k));
