@@ -27,27 +27,25 @@ const ConfiguracionModule = {
       { id:'acerca',     icon:'fa-info-circle',     label:'Acerca de',      desc:'Versión del sistema' },
     ];
 
-    var sidebar = '<div style="width:220px;flex-shrink:0;">' +
-      secciones.map(function(s) {
-        var activo = ConfiguracionModule._seccion === s.id;
-        return '<div onclick="ConfiguracionModule._irSeccion(\''+s.id+'\')" ' +
-          'style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:10px;cursor:pointer;margin-bottom:4px;' +
-          'background:'+(activo?'var(--accent)':'transparent')+';' +
-          'color:'+(activo?'white':'var(--gray-700)')+';transition:all 0.15s;" ' +
-          'onmouseover="if(\''+s.id+'\'!==ConfiguracionModule._seccion) this.style.background=\'var(--gray-100)\'" ' +
-          'onmouseout="if(\''+s.id+'\'!==ConfiguracionModule._seccion) this.style.background=\'transparent\'">' +
-          '<div style="width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0;' +
-            'background:'+(activo?'rgba(255,255,255,0.2)':'var(--gray-100)')+';' +
-            'color:'+(activo?'white':'var(--accent)')+';font-size:14px;">' +
-            '<i class="fas '+s.icon+'"></i>' +
-          '</div>' +
-          '<div>' +
-            '<div style="font-size:13px;font-weight:700;">' +s.label+'</div>' +
-            '<div style="font-size:10px;opacity:'+(activo?'0.8':'0.6')+';">'+s.desc+'</div>' +
-          '</div>' +
-        '</div>';
-      }).join('') +
-    '</div>';
+    var sidebarItems = secciones.map(function(s) {
+      var activo = ConfiguracionModule._seccion === s.id;
+      return '<div onclick="ConfiguracionModule._irSeccion(\''+s.id+'\')" ' +
+        'style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:10px;cursor:pointer;margin-bottom:4px;' +
+        'background:'+(activo?'var(--accent)':'transparent')+';' +
+        'color:'+(activo?'white':'var(--gray-700)')+';transition:all 0.15s;" ' +
+        'onmouseover="if(\''+s.id+'\'!==ConfiguracionModule._seccion) this.style.background=\'var(--gray-100)\'" ' +
+        'onmouseout="if(\''+s.id+'\'!==ConfiguracionModule._seccion) this.style.background=\'transparent\'">' +
+        '<div style="width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0;' +
+          'background:'+(activo?'rgba(255,255,255,0.2)':'var(--gray-100)')+';' +
+          'color:'+(activo?'white':'var(--accent)')+';font-size:14px;">' +
+          '<i class="fas '+s.icon+'"></i>' +
+        '</div>' +
+        '<div style="min-width:0;">' +
+          '<div style="font-size:13px;font-weight:700;white-space:nowrap;">'+s.label+'</div>' +
+          '<div style="font-size:10px;opacity:'+(activo?'0.8':'0.6')+';white-space:nowrap;">'+s.desc+'</div>' +
+        '</div>' +
+      '</div>';
+    }).join('');
 
     var contenido = this._renderSeccion();
 
@@ -59,11 +57,9 @@ const ConfiguracionModule = {
         '</div>' +
       '</div>' +
       '<div style="display:flex;gap:16px;align-items:flex-start;">' +
-        // Sidebar
-        '<div class="card" style="width:220px;flex-shrink:0;padding:12px;">'+
-          sidebar.replace('<div style="width:220px;flex-shrink:0;">','').replace('</div>','') +
+        '<div class="card" style="width:210px;flex-shrink:0;padding:10px;">' +
+          sidebarItems +
         '</div>' +
-        // Contenido
         '<div style="flex:1;min-width:0;" id="configContenido">' + contenido + '</div>' +
       '</div>'
     );
