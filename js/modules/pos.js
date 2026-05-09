@@ -137,7 +137,7 @@ const POSModule = {
 
     // -- Grid productos --
     var prods = this.getProductosFiltrados();
-    var grid = '<div class="pos-grid">';
+    var grid = '<div class="pos-grid" style="max-height:750px;overflow-y:auto;">';
     if (!prods.length) {
       grid += '<div style="grid-column:1/-1;text-align:center;padding:60px 20px;color:var(--gray-400);">' +
         '<i class="fas fa-search" style="font-size:40px;display:block;margin-bottom:12px;opacity:0.4;"></i>' +
