@@ -150,10 +150,10 @@ const PreciosModule = {
         '<div style="position:relative;flex:1;min-width:200px;">' +
           '<i class="fas fa-search" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--gray-400);font-size:13px;"></i>' +
           '<input type="text" placeholder="Buscar producto o código..." value="'+this.searchProducto+'" ' +
-            'oninput="PreciosModule.searchProducto=this.value;PreciosModule.currentPage=1;App.renderPage()" ' +
+            'oninput="PreciosModule.searchProducto=this.value;PreciosModule.currentPage=1;PreciosModule._updateTabla()" ' +
             'style="width:100%;padding:8px 10px 8px 32px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:13px;outline:none;box-sizing:border-box;"/>' +
         '</div>' +
-        '<select onchange="PreciosModule.searchCategoria=this.value;PreciosModule.currentPage=1;App.renderPage()" ' +
+        '<select onchange="PreciosModule.searchCategoria=this.value;PreciosModule.currentPage=1;PreciosModule._updateTabla()" ' +
           'style="padding:8px 12px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:13px;background:white;cursor:pointer;min-width:180px;">' +
           categorias.map(function(c){
             return '<option value="'+c+'"'+(self.searchCategoria===c?' selected':'')+'>'+( c==='todas'?'Todas las categorías':c)+'</option>';
@@ -188,7 +188,8 @@ const PreciosModule = {
         '<button class="btn btn-primary" onclick="PreciosModule.nuevaLista()"><i class="fas fa-plus"></i> Nueva Lista</button>' +
       '</div>' +
     '</div>' +
-    cardsHTML + kpisHTML + toolbar + tablaHTML + paginacion;
+    cardsHTML + kpisHTML + toolbar +
+     '<div id="preciosContent">' + tablaHTML + paginacion + '</div>';
   },
 
   // ──────────────────────────────────────────────────────
@@ -605,6 +606,28 @@ const PreciosModule = {
   },
 
   exportar() { this.exportarLista(); },
+
+  _updateTabla() {
+    var self = this;
+    var lista = this.listas.find(function(l){return l.id===self.selectedLista;}) || this.listas[0];
+    var filtrados = (DB.productos||[]).filter(function(p){
+      var matchCat  = self.searchCategoria==='todas' || p.categoria===self.searchCategoria;
+      var matchProd = !self.searchProducto ||
+        (p.nombre||'').toLowerCase().includes(self.searchProducto.toLowerCase()) ||
+        (p.codigo||'').toLowerCase().includes(self.searchProducto.toLowerCase());
+      return matchCat && matchProd;
+    });
+    var totalPages = Math.max(1, Math.ceil(filtrados.length / this._porPagina));
+    if (this.currentPage > totalPages) this.currentPage = 1;
+    var paginados  = filtrados.slice((this.currentPage-1)*this._porPagina, this.currentPage*this._porPagina);
+    var cont = document.getElementById('preciosContent');
+    if (cont) {
+      cont.innerHTML =
+        (this._vistaComparacion ? this._buildTablaComparativa(paginados, lista) : this._buildTabla(paginados, lista)) +
+        this._buildPaginacion(this.currentPage, totalPages, filtrados.length);
+    }
+  },
+  
 };
 
 // ============================================================
