@@ -357,7 +357,7 @@ const ReportesModule = {
           '</tr></tfoot>' +
         '</table>' +
       '</div>',
-      function(){ ReportesModule._exportarReporteVentas(); }
+      true
     );
   },
 
@@ -415,7 +415,7 @@ const ReportesModule = {
           '<tbody>'+filas+'</tbody>' +
         '</table>' +
       '</div>',
-      function(){ ReportesModule._exportarReporteInventario(); }
+      true
     );
   },
 
@@ -470,7 +470,7 @@ const ReportesModule = {
           '<tbody>'+filas+'</tbody>' +
         '</table>' +
       '</div>',
-      function(){ ReportesModule._exportarReporteClientes(); }
+      true
     );
   },
 
@@ -604,7 +604,7 @@ const ReportesModule = {
       '</div>' +
       '<div style="display:flex;gap:8px;">' +
         this._selectorPeriodoCompacto() +
-        (onExportar?'<button onclick="('+onExportar.toString()+'')()" style="padding:7px 16px;background:white;color:#16a34a;border:1.5px solid #16a34a;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;"><i class="fas fa-file-csv" style="margin-right:5px;"></i>Exportar CSV</button>':'') +
+         (onExportar?'<button onclick="ReportesModule._exportar()" style="padding:7px 16px;background:white;color:#16a34a;border:1.5px solid #16a34a;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;"><i class="fas fa-file-csv" style="margin-right:5px;"></i>Exportar CSV</button>':'') +
       '</div>' +
     '</div>' +
     '<div class="card"><div style="padding:16px 20px;">'+contenido+'</div></div>';
@@ -697,5 +697,12 @@ const ReportesModule = {
 
   // Alias por compatibilidad
   ver(tipo) { App.toast('Cargando reporte...','info'); },
+  _exportar() {
+  if(this._vistaActual==='ventas')          this._exportarReporteVentas();
+  else if(this._vistaActual==='inventario') this._exportarReporteInventario();
+  else if(this._vistaActual==='clientes')   this._exportarReporteClientes();
+  else this.exportarCSV();
+},
+
   exportarPDF() { App.toast('Usa Exportar CSV o imprime con Ctrl+P','info'); }
 };
