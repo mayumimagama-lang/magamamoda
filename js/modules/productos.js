@@ -322,13 +322,24 @@ const ProductosModule = {
   seleccionarTodos(checked){ const ids=this.getPaged(this.getFiltered()).map(p=>p.id); if(checked){ids.forEach(id=>{if(!this.seleccionados.includes(id))this.seleccionados.push(id);});}else{this.seleccionados=this.seleccionados.filter(id=>!ids.includes(id));} App.renderPage(); },
   eliminarSeleccionados(){
     if(!this.seleccionados.length) return;
-    if(!confirm('¿Eliminar '+this.seleccionados.length+' productos?')) return;
-    DB.productos = DB.productos.filter(p => !this.seleccionados.includes(p.id));
-    Storage.guardarProductos();
-    this.seleccionados.forEach(id => SupabaseDB.eliminarProducto(id)); // ← SHEETS
-    App.toast(this.seleccionados.length+' productos eliminados','warning');
-    this.seleccionados = [];
-    App.renderPage();
+    var cnt = this.seleccionados.length;
+    App.showModal('🗑️ Eliminar Productos',
+      '<div style="text-align:center;padding:10px;">' +
+        '<div style="width:60px;height:60px;border-radius:50%;background:#fef2f2;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;"><i class="fas fa-trash" style="font-size:28px;color:#dc2626;"></i></div>' +
+        '<div style="font-size:16px;font-weight:800;margin-bottom:6px;">¿Eliminar '+cnt+' productos?</div>' +
+        '<div style="font-size:13px;color:var(--gray-500);margin-bottom:12px;">Esta acción no se puede deshacer.</div>' +
+        '<div style="background:#fef2f2;border:1px solid #fca5a5;border-radius:10px;padding:12px;font-size:12px;color:#dc2626;"><i class="fas fa-exclamation-triangle" style="margin-right:6px;"></i>Se eliminarán permanentemente del sistema.</div>' +
+      '</div>',
+      [{text:'🗑️ Sí, eliminar '+cnt,cls:'btn-danger',cb:function(){
+        DB.productos=DB.productos.filter(function(p){return!ProductosModule.seleccionados.includes(p.id);});
+        Storage.guardarProductos();
+        ProductosModule.seleccionados.forEach(function(id){SupabaseDB.eliminarProducto(id);});
+        App.toast(cnt+' productos eliminados','warning');
+        ProductosModule.seleccionados=[];
+        App.closeModal(); App.renderPage();
+      }}]
+    );
+    document.getElementById('modalBox').style.maxWidth='380px';
   },
   exportarSeleccionados(){ this._descargarCSV(DB.productos.filter(p=>this.seleccionados.includes(p.id)),'productos_seleccionados'); },
   toggleMenu(id){ document.querySelectorAll('.action-menu').forEach(m=>{if(m.id!=='menu-prod-'+id)m.classList.add('hidden');}); document.getElementById('menu-prod-'+id)?.classList.toggle('hidden'); },
@@ -713,14 +724,24 @@ const ProductosModule = {
   // ─── ELIMINAR ───
   eliminar(id){
     const p=DB.productos.find(x=>x.id===id); if(!p)return;
-    if(confirm('¿Eliminar "'+p.nombre+'"?')){
-      DB.productos=DB.productos.filter(x=>x.id!==id);
-      this.seleccionados=this.seleccionados.filter(x=>x!==id);
-      Storage.guardarProductos();
-      SupabaseDB.eliminarProducto(id); // ← SHEETS
-      App.toast('Producto eliminado: '+p.nombre,'warning');
-      App.renderPage();
-    }
+    App.showModal('🗑️ Eliminar Producto',
+      '<div style="text-align:center;padding:10px;">' +
+        '<div style="width:60px;height:60px;border-radius:50%;background:#fef2f2;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;"><i class="fas fa-trash" style="font-size:28px;color:#dc2626;"></i></div>' +
+        '<div style="font-size:16px;font-weight:800;margin-bottom:6px;">¿Eliminar este producto?</div>' +
+        '<div style="font-size:14px;color:var(--accent);font-weight:700;margin-bottom:4px;">'+p.nombre+'</div>' +
+        '<div style="font-size:12px;color:var(--gray-500);margin-bottom:12px;">'+p.codigo+' · Stock: '+p.stock+' uds</div>' +
+        '<div style="background:#fef2f2;border:1px solid #fca5a5;border-radius:10px;padding:12px;font-size:12px;color:#dc2626;"><i class="fas fa-exclamation-triangle" style="margin-right:6px;"></i>Esta acción no se puede deshacer.</div>' +
+      '</div>',
+      [{text:'🗑️ Sí, eliminar',cls:'btn-danger',cb:function(){
+        DB.productos=DB.productos.filter(function(x){return x.id!==id;});
+        ProductosModule.seleccionados=ProductosModule.seleccionados.filter(function(x){return x!==id;});
+        Storage.guardarProductos();
+        SupabaseDB.eliminarProducto(id);
+        App.toast('Producto eliminado: '+p.nombre,'warning');
+        App.closeModal(); App.renderPage();
+      }}]
+    );
+    document.getElementById('modalBox').style.maxWidth='380px';
   },
 
   // ─── EXPORTAR / IMPORTAR / IMPRIMIR ───
