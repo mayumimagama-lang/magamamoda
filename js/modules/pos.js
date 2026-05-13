@@ -998,8 +998,10 @@ const POSModule = {
       tipo_comprobante:tipoNomMap[this.tipoComp],
       metodo_pago:metodo, monto_pago:montoPagado, vuelto,
       nota:this.notaVenta, estado:'NO_ENVIADO',
-      cajero:DB.usuarioActual?.usuario||'—'
-    };
+      cajero:DB.usuarioActual?.usuario||'—',
+      cliente_nombre:this.clienteSeleccionado?.nombre||'PÚBLICO EN GENERAL',
+      cliente_doc:this.clienteSeleccionado?.doc||'00000000'
+     };
 
     var itemsCopy=JSON.parse(JSON.stringify(this.items));
     itemsCopy.forEach(function(item){
