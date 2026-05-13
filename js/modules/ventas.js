@@ -134,8 +134,8 @@ const VentasModule = {
             '<div style="font-size:13px;font-weight:800;color:'+tipoColor+';">'+v.serie+'-'+v.numero+'</div>' +
           '</td>' +
           '<td style="padding:11px 8px;">' +
-            '<div style="font-size:13px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:180px;">'+(cli?cli.nombre:'N/A')+'</div>' +
-            '<div style="font-size:10px;color:var(--gray-400);">'+(cli?cli.tipo+': '+cli.doc:'')+'</div>' +
+            '<div style="font-size:13px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:180px;">'+cliNombre+'</div>' +
+            '<div style="font-size:10px;color:var(--gray-400);">'+cliDoc+'</div>' +
           '</td>' +
           '<td style="padding:11px 8px;">' +
             '<div style="font-size:12px;color:var(--gray-600);max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+v.metodo_pago+'</div>' +
