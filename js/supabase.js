@@ -127,7 +127,7 @@ const SupabaseDB = {
       DB.ventas = data;
      Storage.guardarVentas();
 console.log('✅ ' + DB.ventas.length + ' ventas cargadas desde Supabase');
-if (typeof App !== 'undefined' && App.currentPage === 'inicio') {
+if (typeof App !== 'undefined') {
   App.renderPage();
 }
 return { ok: true };
