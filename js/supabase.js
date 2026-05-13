@@ -8,7 +8,7 @@ const SUPABASE_KEY = 'sb_publishable_c53ZhfK5P2nGYlP5JP8Mow_IGciQWui';
 const { createClient } = supabase;
 const db = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// ============================================================
+// ===========================================================
 // PRODUCTOS
 // ============================================================
 const SupabaseDB = {
