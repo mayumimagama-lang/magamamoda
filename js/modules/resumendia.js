@@ -363,7 +363,7 @@ const ResumenDiaModule = {
       var ordenadas = ventasHoy.slice().reverse();
       ordenadas.forEach(function(v, idx) {
         var cli    = DB.clientes.find(function(x){ return x.id===v.cliente_id; });
-        var nombre = cli ? cli.nombre.substring(0,26) : 'Público General';
+        var nombre = cli ? cli.nombre.substring(0,26) : (v.cliente_nombre||'Público General').substring(0,26);
         var items  = (v.items||[]).length;
         var m2 = (v.metodo_pago||'EFECTIVO').toUpperCase();
         var mc, mg, mi2;
@@ -384,7 +384,7 @@ const ResumenDiaModule = {
           '<td><span style="padding:4px 10px;border-radius:6px;font-size:11px;font-weight:700;' +
             'background:' + (v.estado==='ACEPTADO'?'#dcfce7':'#fee2e2') + ';' +
             'color:' + (v.estado==='ACEPTADO'?'#16a34a':'#dc2626') + ';">' +
-            (v.estado==='ACEPTADO'?'✓ ACEPT.':'✗ NO ENV.') + '</span></td>' +
+            (v.estado==='ACEPTADO'?'✓ ACEPT.':v.estado==='ANULADO'?'✗ ANULADO':'⏳ NO ENV.') + '</span></td>' +
         '</tr>';
       });
 
