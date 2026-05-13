@@ -64,7 +64,7 @@ const ResumenDiaModule = {
 
     var desglose   = { EFECTIVO:0, YAPE:0, TARJETA:0, COMBINADO:0 };
     var cantMetodo = { EFECTIVO:0, YAPE:0, TARJETA:0, COMBINADO:0 };
-    ventasHoy.forEach(function(v) {
+    ventasActivas.forEach(function(v) {
       var res = ResumenDiaModule._parsearMetodo(v.metodo_pago, v.total);
       Object.keys(res).forEach(function(k) {
         if (res[k] > 0) { desglose[k] += res[k]; cantMetodo[k]++; }
