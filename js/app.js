@@ -1043,5 +1043,8 @@ SupabaseDB.obtenerSesionActual().then(function(result) {
   // 6. Guardar antes de cerrar la pestaña
   window.addEventListener('beforeunload', function() {
     try { App._saveDB(); } catch(e) {}
+
+    // 7. Iniciar sincronización en segundo plano con Supabase
+  SupabaseDB.iniciarSincronizacion();
   });
 });
