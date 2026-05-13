@@ -52,6 +52,7 @@ const ResumenDiaModule = {
 
   render() {
     App.setTabs2('Resumen del Día', '');
+    this._iniciarAutoRefresh();
     var hoy = this._fechaLocal(new Date());
     var fechaVer = this._fechaActual || hoy;
     var ventasHoy     = DB.ventas.filter(function(v){ return v.fecha === fechaVer; });
@@ -424,6 +425,15 @@ const ResumenDiaModule = {
     var res = document.getElementById('resultadoBusqueda');
     if (res) res.textContent = count + ' resultado' + (count !== 1 ? 's' : '');
   },
+
+  _iniciarAutoRefresh() {
+  if (this._refreshInterval) clearInterval(this._refreshInterval);
+  this._refreshInterval = setInterval(async function() {
+    if (App.currentPage === 'resumendia') {
+      await SupabaseDB.cargarVentas();
+    }
+  }, 120000);
+},
 
   _filtrarTabla(metodo) {
     // Actualizar estilos de botones
