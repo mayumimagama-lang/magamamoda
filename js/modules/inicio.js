@@ -452,10 +452,10 @@ var saludo = hora<12?'🌅 Buenos días':hora<18?'🌤️ Buenas tardes':'🌙 B
     var C = { blue:'#2563eb', green:'#16a34a', orange:'#ea580c', purple:'#7c3aed', red:'#dc2626', gold:'#d97706', cyan:'#0891b2' };
 
     function sumasPorDia(filtro) {
-      return fechas.map(function(f){
-        var t=0; DB.ventas.forEach(function(v){if(v.fecha===f&&filtro(v))t+=v.total;}); return parseFloat(t.toFixed(2));
-      });
-    }
+    return fechas.map(function(f){
+    var t=0; DB.ventas.forEach(function(v){if(v.fecha===f&&v.estado!=='ANULADO'&&filtro(v))t+=v.total;}); return parseFloat(t.toFixed(2));
+   });
+   }
 
     var optsLine = {
       responsive:true, maintainAspectRatio:true,
