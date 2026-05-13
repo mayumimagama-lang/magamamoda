@@ -114,6 +114,8 @@ const VentasModule = {
       '</td></tr>' :
       paged.map(function(v){
         var cli = (DB.clientes||[]).find(function(c){return c.id===v.cliente_id;});
+        var cliNombre = cli ? cli.nombre : (v.cliente_nombre||'N/A');
+        var cliDoc = cli ? (cli.tipo+': '+cli.doc) : (v.cliente_doc||'');
         var tipoColor = v.tipo==='BOL'?'#2563eb':v.tipo==='FAC'?'#7c3aed':'#ea580c';
         var tipoLabel = v.tipo==='BOL'?'BOLETA':v.tipo==='FAC'?'FACTURA':'N. VENTA';
         var estMap = {
