@@ -844,6 +844,12 @@ const VentasModule = {
     SupabaseDB.guardarVenta(venta);
 
     App.toast('✅ '+serie+'-'+numero+' procesado — Vuelto: S/ '+venta.vuelto.toFixed(2),'success');
+    venta.items.forEach(function(item){
+    var p=(DB.productos||[]).find(function(x){return x.id===item.prod_id;});
+    if(!p)return;
+    if(p.stock===0) App.toast('❌ '+p.nombre+' se agotó','error');
+    else if(p.stock<=5) App.toast('⚠️ '+p.nombre+' solo quedan '+p.stock+' uds','warning');
+});
     this._montoCombinadoA=0; this._montoCombinadoB=0; this.mayoristaModo=false;
     this.modoVista='lista'; App.renderPage();
     this.verDetalle(venta.id);
