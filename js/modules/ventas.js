@@ -85,7 +85,7 @@ const VentasModule = {
       [
         {l:'Ventas Hoy',      v:vHoy.length,                   sub:'S/ '+tHoy.toFixed(2),              c:'#2563eb',bg:'#eff6ff',i:'fa-calendar-day'},
         {l:'En Período',      v:filtered.length,                sub:filtered.length+' comprobantes',    c:'#16a34a',bg:'#f0fdf4',i:'fa-file-invoice'},
-        {l:'Total Período',   v:'S/ '+tFiltered.toFixed(2),    sub:'acumulado',                         c:'#7c3aed',bg:'#f5f3ff',i:'fa-dollar-sign'},
+        {l:'Anulados', v:filtered.filter(function(v){return v.estado==='ANULADO';}).length, sub:'comprobantes anulados', c:'#dc2626',bg:'#fef2f2',i:'fa-ban'},
         {l:'Aceptados SUNAT', v:filtered.filter(function(v){return v.estado==='ACEPTADO';}).length, sub:'S/ '+tAcep.toFixed(2), c:'#16a34a',bg:'#f0fdf4',i:'fa-check-circle'},
         {l:'Por Enviar',      v:filtered.filter(function(v){return v.estado==='NO_ENVIADO';}).length, sub:'pendientes SUNAT', c:'#d97706',bg:'#fffbeb',i:'fa-clock'},
       ].map(function(k){
@@ -1009,6 +1009,7 @@ const VentasModule = {
             if(pi>=0) DB.productos[pi].stock=(DB.productos[pi].stock||0)+item.qty;
           });
           Storage.guardarVentas(); Storage.guardarProductos();
+          SupabaseDB.actualizarVenta(DB.ventas[i]);
         }
         App.toast('Comprobante anulado y stock devuelto','warning');
         App.closeModal(); App.renderPage();
