@@ -1021,6 +1021,12 @@ const POSModule = {
     ModoEventoModule.registrarVentaEvento(total);
     App.closeModal();
     App.toast('✅ '+serie+'-'+numero+' · Vuelto: S/ '+vuelto.toFixed(2),'success');
+    itemsCopy.forEach(function(item){
+    var p=(DB.productos||[]).find(function(x){return x.id===item.prod_id;});
+    if(!p)return;
+    if(p.stock===0) App.toast('❌ '+p.nombre+' se agotó','error');
+    else if(p.stock<=5) App.toast('⚠️ '+p.nombre+' solo quedan '+p.stock+' uds','warning');
+});
     this._mostrarDetalleVenta(venta);
     this.items=[]; this.notaVenta=''; this.mayoristaModo=false;
     App.renderPage();
