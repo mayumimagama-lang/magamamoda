@@ -1007,7 +1007,6 @@ const POSModule = {
       if(pi>=0) DB.productos[pi].stock=Math.max(0,(DB.productos[pi].stock||0)-item.qty);
     });
     Storage.guardarProductos();
-    SheetsSync.guardarVenta(venta);
     SupabaseDB.guardarVenta(venta);
     DB.ventas.unshift(venta);
     Storage.guardarVentas();
