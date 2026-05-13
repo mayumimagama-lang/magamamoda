@@ -167,6 +167,8 @@ return { ok: true };
       return { ok: true };
     } catch(e) {
       console.warn('⚠️ Error guardando venta:', e);
+      this._colaPendiente.push(venta);
+      App.toast('⚠️ Sin conexión — venta en cola de sincronización','warning');
       return { ok: false };
     }
   },
@@ -214,6 +216,32 @@ return { ok: true };
       return { ok: false, msg: e.message };
     }
   },
+
+  // ── Cola de sincronización pendiente ──
+_colaPendiente: [],
+
+async _reintentarPendientes() {
+    if (this._colaPendiente.length === 0) return;
+    var pendientes = this._colaPendiente.slice();
+    for (var i = 0; i < pendientes.length; i++) {
+        var venta = pendientes[i];
+        var res = await this.guardarVenta(venta);
+        if (res.ok) {
+            var idx = this._colaPendiente.indexOf(venta);
+            if (idx >= 0) this._colaPendiente.splice(idx, 1);
+            App.toast('✅ Venta '+venta.serie+'-'+venta.numero+' sincronizada','success');
+        }
+    }
+},
+
+iniciarSincronizacion() {
+    var self = this;
+    setInterval(async function() {
+        if (self._colaPendiente.length > 0) {
+            await self._reintentarPendientes();
+        }
+    }, 30000);
+},
 
   async cerrarSesion() {
     try {
