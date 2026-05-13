@@ -388,8 +388,8 @@ var saludo = hora<12?'🌅 Buenos días':hora<18?'🌤️ Buenas tardes':'🌙 B
     var dInicio = new Date(); dInicio.setDate(dInicio.getDate()-dias);
     var iniStr  = this._fechaLocal(dInicio);
 
-    var vPer = DB.ventas.filter(function(v){return v.fecha>=iniStr&&v.fecha<=hoyStr;});
-    var vHoy = DB.ventas.filter(function(v){return v.fecha===hoyStr;});
+    var vPer = DB.ventas.filter(function(v){return v.fecha>=iniStr&&v.fecha<=hoyStr&&v.estado!=='ANULADO';});
+    var vHoy = DB.ventas.filter(function(v){return v.fecha===hoyStr&&v.estado!=='ANULADO';});
 
     var totalPeriodo = vPer.reduce(function(s,v){return s+v.total;},0);
     var totalHoy     = vHoy.reduce(function(s,v){return s+v.total;},0);
