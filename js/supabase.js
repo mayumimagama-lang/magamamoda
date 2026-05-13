@@ -125,14 +125,17 @@ const SupabaseDB = {
       const { data, error } = await db.from('ventas').select('*').order('created_at', { ascending: false });
       if (error) throw error;
       DB.ventas = data;
-      Storage.guardarVentas();
-      console.log('✅ ' + DB.ventas.length + ' ventas cargadas desde Supabase');
-      return { ok: true };
-    } catch(e) {
-      console.warn('⚠️ Error cargando ventas:', e);
-      return { ok: false };
-    }
-  },
+     Storage.guardarVentas();
+console.log('✅ ' + DB.ventas.length + ' ventas cargadas desde Supabase');
+if (typeof App !== 'undefined' && App.currentPage === 'inicio') {
+  App.renderPage();
+}
+return { ok: true };
+  } catch(e) {
+    console.warn('⚠️ Error cargando ventas:', e);
+    return { ok: false };
+  }
+},
 
   // Guardar venta
   async guardarVenta(venta) {
@@ -153,7 +156,11 @@ const SupabaseDB = {
         monto_pago:       venta.monto_pago       || 0,
         vuelto:           venta.vuelto           || 0,
         estado:           venta.estado           || 'NO_ENVIADO',
-        items:            venta.items            || []
+        items:            venta.items            || [],
+        cajero:           venta.cajero           || '',
+        nota:             venta.nota             || '',
+        cliente_nombre:   venta.cliente_nombre   || '',
+        cliente_doc:      venta.cliente_doc      || '' 
       }]);
       if (error) throw error;
       console.log('✅ Venta guardada en Supabase');
