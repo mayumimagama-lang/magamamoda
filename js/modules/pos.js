@@ -1008,6 +1008,7 @@ const POSModule = {
     });
     Storage.guardarProductos();
     SheetsSync.guardarVenta(venta);
+    SupabaseDB.guardarVenta(venta);
     DB.ventas.unshift(venta);
     Storage.guardarVentas();
     if(typeof KardexModule!=='undefined') KardexModule.registrar(itemsCopy,'SALIDA','Venta POS '+serie+'-'+numero);
