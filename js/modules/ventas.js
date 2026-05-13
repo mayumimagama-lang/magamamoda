@@ -1009,6 +1009,10 @@ const VentasModule = {
             if(pi>=0) DB.productos[pi].stock=(DB.productos[pi].stock||0)+item.qty;
           });
           Storage.guardarVentas(); Storage.guardarProductos();
+         (DB.ventas[i].items||[]).forEach(function(item){
+         var pi=(DB.productos||[]).findIndex(function(p){return p.id===item.prod_id;});
+        if(pi>=0) SupabaseDB.actualizarProducto(DB.productos[pi]);
+      });
           SupabaseDB.actualizarVenta(DB.ventas[i]);
         }
         App.toast('Comprobante anulado y stock devuelto','warning');
