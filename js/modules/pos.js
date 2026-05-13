@@ -990,7 +990,7 @@ const POSModule = {
     var fecha=this._fechaLocal(), hora=this._horaLocal();
 
     var venta={
-      id:DB.ventas.length+1, fecha, hora, serie, numero,
+      id:Date.now(), fecha, hora, serie, numero,
       tipo:tipoMap[this.tipoComp],
       cliente_id:this.clienteSeleccionado?this.clienteSeleccionado.id:1,
       items:this.items.map(function(i){return{prod_id:i.prod_id,nombre:i.nombre,qty:i.qty,precio:i.precioCustom||i.precio,total:i.total,nota:i.nota||''};}),
