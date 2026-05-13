@@ -838,7 +838,7 @@ const VentasModule = {
     Storage.guardarVentas();
     Storage.guardarProductos();
     Storage.guardarSequences && Storage.guardarSequences();
-    if(typeof SheetsSync!=='undefined') SheetsSync.guardarVenta && SheetsSync.guardarVenta(venta);
+    SupabaseDB.guardarVenta(venta);
 
     App.toast('✅ '+serie+'-'+numero+' procesado — Vuelto: S/ '+venta.vuelto.toFixed(2),'success');
     this._montoCombinadoA=0; this._montoCombinadoB=0; this.mayoristaModo=false;
