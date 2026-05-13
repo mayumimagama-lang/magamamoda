@@ -54,9 +54,11 @@ const ResumenDiaModule = {
     App.setTabs2('Resumen del Día', '');
     var hoy = this._fechaLocal(new Date());
     var fechaVer = this._fechaActual || hoy;
-    var ventasHoy = DB.ventas.filter(function(v){ return v.fecha === fechaVer; });
+    var ventasHoy     = DB.ventas.filter(function(v){ return v.fecha === fechaVer; });
+    var ventasActivas = ventasHoy.filter(function(v){ return v.estado !== 'ANULADO'; });
 
-    var totalHoy   = ventasHoy.reduce(function(s,v){ return s+v.total; }, 0);
+    var totalHoy   = ventasActivas.reduce(function(s,v){ return s+v.total; }, 0);
+    var cantHoy    = ventasActivas.length;
     var cantHoy    = ventasHoy.length;
     var ticketProm = cantHoy > 0 ? totalHoy / cantHoy : 0;
 
