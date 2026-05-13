@@ -75,7 +75,7 @@ const VentasModule = {
     var paged      = filtered.slice((page-1)*this.itemsPerPage, page*this.itemsPerPage);
 
     // Stats de hoy
-    var vHoy      = (DB.ventas||[]).filter(function(v){return v.fecha===hoy;});
+    var vHoy      = (DB.ventas||[]).filter(function(v){return v.fecha===hoy && v.estado!=='ANULADO';});
     var tHoy      = vHoy.reduce(function(s,v){return s+v.total;},0);
     var tFiltered = filtered.reduce(function(s,v){return s+v.total;},0);
     var tAcep     = filtered.filter(function(v){return v.estado==='ACEPTADO';}).reduce(function(s,v){return s+v.total;},0);
