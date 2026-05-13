@@ -1049,7 +1049,7 @@ const VentasModule = {
   getFiltered() {
     var self=this;
     return (DB.ventas||[]).filter(function(v){
-      var matchTipo   = self.tipoFilter==='todos'||v.tipo===self.tipoFilter;
+      var matchTipo   = self.tipoFilter==='todos'||(self.tipoFilter==='ANULADO'?v.estado==='ANULADO':v.tipo===self.tipoFilter&&v.estado!=='ANULADO');
       var q           = (self.searchTerm||'').toLowerCase();
       var cli         = (DB.clientes||[]).find(function(c){return c.id===v.cliente_id;});
       var matchSearch = !q||
