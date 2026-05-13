@@ -208,6 +208,7 @@ const VentasModule = {
               '<option value="N. VENTA"'+(this.tipoFilter==='N. VENTA'?' selected':'')+'>Nota de Venta</option>' +
               '<option value="BOL"'+(this.tipoFilter==='BOL'?' selected':'')+'>Boleta</option>' +
               '<option value="FAC"'+(this.tipoFilter==='FAC'?' selected':'')+'>Factura</option>' +
+              '<option value="ANULADO"'+(this.tipoFilter==='ANULADO'?' selected':'')+'>Anulados</option>' +
             '</select>' +
             '<div style="position:relative;flex:1;min-width:200px;">' +
               '<i class="fas fa-search" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--gray-400);font-size:13px;"></i>' +
