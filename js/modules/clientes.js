@@ -705,9 +705,10 @@ const ClientesModule = {
     }
 
     Storage.guardarClientes();
+    SupabaseDB.guardarCliente(id ? DB.clientes[DB.clientes.findIndex(function(x){ return x.id === id; })] : DB.clientes[DB.clientes.length-1]);
     App.closeModal();
     App.renderPage();
-  },
+   },
 
   // ──────────────────────────────────────────────────────
   // ELIMINAR
