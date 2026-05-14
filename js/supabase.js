@@ -169,6 +169,52 @@ async eliminarCliente(id) {
     }
 },
 
+// ============================================================
+// COTIZACIONES
+// ============================================================
+
+async cargarCotizaciones() {
+    try {
+        const { data, error } = await db.from('cotizaciones').select('*').order('created_at', { ascending: false });
+        if (error) throw error;
+        DB.cotizaciones = data;
+        console.log('✅ ' + DB.cotizaciones.length + ' cotizaciones cargadas desde Supabase');
+        return { ok: true };
+    } catch(e) {
+        console.warn('⚠️ Error cargando cotizaciones:', e);
+        return { ok: false };
+    }
+},
+
+async guardarCotizacion(cot) {
+    try {
+        const { error } = await db.from('cotizaciones').upsert([{
+            id: cot.id, numero: cot.numero||'', fecha: cot.fecha||'',
+            vencimiento: cot.vencimiento||'', cliente_id: cot.cliente_id||0,
+            cliente_nombre: cot.cliente_nombre||'', items: cot.items||[],
+            subtotal: cot.subtotal||0, descuento: cot.descuento||0,
+            total: cot.total||0, estado: cot.estado||'PENDIENTE',
+            notas: cot.notas||'', cajero: cot.cajero||''
+        }]);
+        if (error) throw error;
+        console.log('✅ Cotización guardada en Supabase');
+        return { ok: true };
+    } catch(e) {
+        console.warn('⚠️ Error guardando cotización:', e);
+        return { ok: false };
+    }
+},
+
+async eliminarCotizacion(id) {
+    try {
+        const { error } = await db.from('cotizaciones').delete().eq('id', id);
+        if (error) throw error;
+        return { ok: true };
+    } catch(e) {
+        return { ok: false };
+    }
+},
+
   // ============================================================
   // VENTAS
   // ============================================================
