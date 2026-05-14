@@ -116,6 +116,48 @@ const SupabaseDB = {
   },
 
   // ============================================================
+// CLIENTES
+// ============================================================
+
+async cargarClientes() {
+    try {
+        const { data, error } = await db.from('clientes').select('*');
+        if (error) throw error;
+        DB.clientes = data.map(function(c) {
+            return {
+                id: c.id, doc: c.doc||'', tipo: c.tipo||'DNI',
+                nombre: c.nombre||'', telefono: c.telefono||'',
+                email: c.email||'', direccion: c.direccion||'',
+                tipo_cliente: c.tipo_cliente||'cliente'
+            };
+        });
+        Storage.guardarClientes && Storage.guardarClientes();
+        console.log('✅ ' + DB.clientes.length + ' clientes cargados desde Supabase');
+        return { ok: true };
+    } catch(e) {
+        console.warn('⚠️ Error cargando clientes:', e);
+        return { ok: false };
+    }
+},
+
+async guardarCliente(cliente) {
+    try {
+        const { error } = await db.from('clientes').upsert([{
+            id: cliente.id, doc: cliente.doc||'', tipo: cliente.tipo||'DNI',
+            nombre: cliente.nombre||'', telefono: cliente.telefono||'',
+            email: cliente.email||'', direccion: cliente.direccion||'',
+            tipo_cliente: cliente.tipo_cliente||'cliente'
+        }]);
+        if (error) throw error;
+        console.log('✅ Cliente guardado en Supabase');
+        return { ok: true };
+    } catch(e) {
+        console.warn('⚠️ Error guardando cliente:', e);
+        return { ok: false };
+    }
+},
+
+  // ============================================================
   // VENTAS
   // ============================================================
 
