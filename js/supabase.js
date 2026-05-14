@@ -157,6 +157,18 @@ async guardarCliente(cliente) {
     }
 },
 
+async eliminarCliente(id) {
+    try {
+        const { error } = await db.from('clientes').delete().eq('id', id);
+        if (error) throw error;
+        console.log('✅ Cliente eliminado en Supabase');
+        return { ok: true };
+    } catch(e) {
+        console.warn('⚠️ Error eliminando cliente:', e);
+        return { ok: false };
+    }
+},
+
   // ============================================================
   // VENTAS
   // ============================================================
