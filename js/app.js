@@ -123,6 +123,8 @@ const App = {
 
   _loadDB() {
     try {
+      var cotSeq = localStorage.getItem('erp_cotseq');
+      if (cotSeq) DB._cotSeq = parseInt(cotSeq);
       var raw = localStorage.getItem('erp_jumila_db');
       if (!raw) return false;
       var s = JSON.parse(raw);
@@ -1045,8 +1047,8 @@ SupabaseDB.obtenerSesionActual().then(function(result) {
   // 6. Guardar antes de cerrar la pestaña
   window.addEventListener('beforeunload', function() {
     try { App._saveDB(); } catch(e) {}
-
-    // 7. Iniciar sincronización en segundo plano con Supabase
-  SupabaseDB.iniciarSincronizacion();
   });
+
+  // 7. Iniciar sincronización en segundo plano con Supabase
+  SupabaseDB.iniciarSincronizacion();
 });
