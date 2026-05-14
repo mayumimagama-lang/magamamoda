@@ -989,14 +989,19 @@ document.addEventListener('DOMContentLoaded', function() {
   if (savedId) {
     var u = DB.usuarios.find(function(x){ return x.id === parseInt(savedId) && x.activo; });
     if (u) {
-      DB.usuarioActual = u;
-      document.getElementById('loginPage').classList.add('hidden');
-      document.getElementById('mainApp').classList.remove('hidden');
-      document.getElementById('welcomeName').textContent = u.nombre;
-      App.buildSidebar();
-      App.navigate('inicio');
-      return; // no registrar eventos de login
-    } else {
+  DB.usuarioActual = u;
+  App._loadDB();
+  SheetsSync.cargarProductos();
+  SupabaseDB.cargarClientes();
+  SupabaseDB.cargarCotizaciones();
+  SupabaseDB.iniciarSincronizacion();
+  document.getElementById('loginPage').classList.add('hidden');
+  document.getElementById('mainApp').classList.remove('hidden');
+  document.getElementById('welcomeName').textContent = u.nombre;
+  App.buildSidebar();
+  App.navigate('inicio');
+  return;
+} else {
       localStorage.removeItem('erp_jumila_uid'); // sesión inválida, limpiar
     }
   }
