@@ -734,6 +734,7 @@ const ClientesModule = {
         var i = DB.clientes.findIndex(function(x){ return x.id === id; });
         if (i >= 0) DB.clientes.splice(i, 1);
         Storage.guardarClientes();
+        SupabaseDB.eliminarCliente(id);
         App.toast('🗑️ Registro eliminado', 'warning');
         App.closeModal();
         App.renderPage();
