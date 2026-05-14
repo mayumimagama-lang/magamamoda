@@ -1005,6 +1005,7 @@ document.addEventListener('DOMContentLoaded', function() {
   // 2. Cargar productos desde Google Sheets
   SheetsSync.cargarProductos();
   SupabaseDB.cargarClientes();
+  SupabaseDB.cargarCotizaciones();
 
   // 3. Intentar restaurar sesión activa (evita cerrar sesión al recargar)
   var sessionRestored = false;
