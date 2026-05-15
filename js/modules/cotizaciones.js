@@ -771,7 +771,7 @@ const CotizacionesModule = {
     });
     VentasModule.selectedCliente = (DB.clientes||[]).find(function(x){ return x.id===c.cliente_id; });
     VentasModule.tipoComprobante = 'NOTA DE VENTA';
-    VentasModule.serieActual = 'NV03';
+    VentasModule.serieActual = 'NV01';
     var idx = (DB.cotizaciones||[]).findIndex(function(x){ return x.id===id; });
     if (idx >= 0) {
       DB.cotizaciones[idx].estado = 'CONVERTIDA';
