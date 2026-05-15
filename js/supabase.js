@@ -220,9 +220,13 @@ async cargarAgenda() {
   try {
     const { data, error } = await db.from('agenda').select('*').order('fecha');
     if (error) throw error;
-    DB.agenda = data;
+    if (data && data.length > 0) DB.agenda = data;
+    console.log('✅ ' + (data||[]).length + ' eventos cargados desde Supabase');
     return { ok: true };
-  } catch(e) { return { ok: false }; }
+  } catch(e) { 
+  console.warn('⚠️ Error guardando agenda:', e);
+  return { ok: false }; 
+}
 },
 async guardarAgenda(evento) {
   try {
@@ -234,14 +238,20 @@ async guardarAgenda(evento) {
     }]);
     if (error) throw error;
     return { ok: true };
-  } catch(e) { return { ok: false }; }
+  } catch(e) { 
+  console.warn('⚠️ Error guardando agenda:', e);
+  return { ok: false }; 
+}
 },
 async eliminarAgenda(id) {
   try {
     const { error } = await db.from('agenda').delete().eq('id', id);
     if (error) throw error;
     return { ok: true };
-  } catch(e) { return { ok: false }; }
+  } catch(e) { 
+  console.warn('⚠️ Error eliminando agenda:', e);
+  return { ok: false }; 
+}
 },
 
   // ============================================================
