@@ -215,7 +215,7 @@ async eliminarCotizacion(id) {
     }
 },
 
-  // AGENDA
+// AGENDA
 async cargarAgenda() {
   try {
     const { data, error } = await db.from('agenda').select('*').order('fecha');
