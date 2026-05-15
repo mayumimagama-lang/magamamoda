@@ -227,9 +227,6 @@ async eliminarCotizacion(id) {
       DB.ventas = data;
      Storage.guardarVentas();
 console.log('✅ ' + DB.ventas.length + ' ventas cargadas desde Supabase');
-if (typeof App !== 'undefined') {
-  App.renderPage();
-}
 return { ok: true };
   } catch(e) {
     console.warn('⚠️ Error cargando ventas:', e);
@@ -240,7 +237,7 @@ return { ok: true };
   // Guardar venta
   async guardarVenta(venta) {
     try {
-      const { error } = await db.from('ventas').insert([{
+      const { error } = await db.from('ventas').upsert([{
         id:               String(venta.id),
         serie:            venta.serie            || '',
         numero:           venta.numero           || '',
