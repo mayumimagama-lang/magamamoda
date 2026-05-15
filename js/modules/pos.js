@@ -982,7 +982,7 @@ const POSModule = {
       vuelto=Math.max(0,montoPagado-total);
     }
 
-    var serieMap={NV:'NV03',BOL:'BV03',FAC:'FC01'};
+    var serieMap={NV:'NV01',BOL:'B001',FAC:'F001'};
     var tipoMap={NV:'N. VENTA',BOL:'BOL',FAC:'FAC'};
     var tipoNomMap={NV:'NOTA DE VENTA',BOL:'BOLETA DE VENTA ELECTRONICA',FAC:'FACTURA ELECTRONICA'};
     var serie=serieMap[this.tipoComp]||'NV03';
