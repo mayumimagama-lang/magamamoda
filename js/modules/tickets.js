@@ -287,7 +287,7 @@ const TicketsModule = {
   },
 
   _generarTicketHTML(cfg, venta) {
-    var numero   = venta ? (venta.serie+'-'+venta.numero) : 'NV03-00000001';
+    var numero = venta ? (venta.serie+'-'+venta.numero) : 'NV01-00000001';
     var fecha    = venta ? venta.fecha     : this._fechaLocal();
     var hora     = venta ? venta.hora      : '10:30:00';
     var cliente  = venta ? (DB.clientes.find(function(c){ return c.id===venta.cliente_id; })||{nombre:'PÚBLICO EN GENERAL'}).nombre : 'PÚBLICO EN GENERAL';
