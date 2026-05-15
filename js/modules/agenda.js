@@ -595,6 +595,8 @@ const AgendaModule = {
       DB.agenda.push(Object.assign({id: newId}, datos));
       App.toast('✅ Evento agendado','success');
     }
+    var eventoGuardado = id ? DB.agenda.find(function(x){ return x.id===id; }) : DB.agenda[DB.agenda.length-1];
+    if (eventoGuardado) SupabaseDB.guardarAgenda(eventoGuardado);
     App.closeModal();
     App.renderPage();
   },
@@ -607,6 +609,7 @@ const AgendaModule = {
     if (i >= 0) {
       DB.agenda[i].completado = true;
       DB.agenda[i].fechaCompletado = this._hoy();
+      SupabaseDB.guardarAgenda(DB.agenda[i]);
       App.toast('✅ Evento completado — ¡Bien hecho!','success');
       App.renderPage();
     }
@@ -636,6 +639,7 @@ const AgendaModule = {
       [{text:'🗑️ Sí, eliminar', cls:'btn-danger', cb:function(){
         var i = (DB.agenda||[]).findIndex(function(x){ return x.id===id; });
         if (i >= 0) DB.agenda.splice(i, 1);
+        SupabaseDB.eliminarAgenda(id);
         App.toast('Evento eliminado','warning');
         App.closeModal();
         App.renderPage();
