@@ -215,6 +215,35 @@ async eliminarCotizacion(id) {
     }
 },
 
+  // AGENDA
+async cargarAgenda() {
+  try {
+    const { data, error } = await db.from('agenda').select('*').order('fecha');
+    if (error) throw error;
+    DB.agenda = data;
+    return { ok: true };
+  } catch(e) { return { ok: false }; }
+},
+async guardarAgenda(evento) {
+  try {
+    const { error } = await db.from('agenda').upsert([{
+      id: evento.id, titulo: evento.titulo||'', tipo: evento.tipo||'recordatorio',
+      prioridad: evento.prioridad||'media', fecha: evento.fecha||'',
+      hora: evento.hora||'09:00', descripcion: evento.descripcion||'',
+      completado: evento.completado||false, fecha_completado: evento.fechaCompletado||''
+    }]);
+    if (error) throw error;
+    return { ok: true };
+  } catch(e) { return { ok: false }; }
+},
+async eliminarAgenda(id) {
+  try {
+    const { error } = await db.from('agenda').delete().eq('id', id);
+    if (error) throw error;
+    return { ok: true };
+  } catch(e) { return { ok: false }; }
+},
+
   // ============================================================
   // VENTAS
   // ============================================================
