@@ -17,7 +17,7 @@ const VentasModule = {
   currentItems:    [],
   selectedCliente: null,
   tipoComprobante: 'NOTA DE VENTA',
-  serieActual:     'NV03',
+  serieActual:     'NV01',
   metodoPago:      'EFECTIVO',
   montoPago:       0,
   descGlobal:      0,
@@ -253,7 +253,7 @@ const VentasModule = {
     }
     this.selectedCliente = pub;
     this.tipoComprobante = 'NOTA DE VENTA';
-    this.serieActual     = 'NV03';
+    this.serieActual     = 'NV01';
     this.metodoPago      = 'EFECTIVO';
     this.montoPago       = 0;
     this.descGlobal      = 0;
@@ -278,10 +278,10 @@ const VentasModule = {
     var usuario  = DB.usuarioActual;
 
     var tipos = [
-      {key:'NV03',label:'NOTA DE VENTA',     color:'#ea580c',nombre:'NOTA DE VENTA'},
-      {key:'BV03',label:'BOLETA ELECTRÓNICA', color:'#2563eb',nombre:'BOLETA DE VENTA ELECTRONICA'},
-      {key:'FC01',label:'FACTURA ELECTRÓNICA',color:'#7c3aed',nombre:'FACTURA ELECTRONICA'},
-    ];
+  {key:'NV01',label:'NOTA DE VENTA',     color:'#ea580c',nombre:'NOTA DE VENTA'},
+  {key:'B001',label:'BOLETA ELECTRÓNICA', color:'#2563eb',nombre:'BOLETA DE VENTA ELECTRONICA'},
+  {key:'F001',label:'FACTURA ELECTRÓNICA',color:'#7c3aed',nombre:'FACTURA ELECTRONICA'},
+  ];
     var tiposBtns = '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">';
     tipos.forEach(function(t){
       var act = self.serieActual===t.key;
@@ -819,7 +819,7 @@ const VentasModule = {
     var fecha=ahora.getFullYear()+'-'+String(ahora.getMonth()+1).padStart(2,'0')+'-'+String(ahora.getDate()).padStart(2,'0');
     var hora=ahora.toTimeString().slice(0,8);
     var serie=this.serieActual, numero=DB.nextNumber(serie);
-    var tipoCorto=serie.startsWith('BV')?'BOL':serie.startsWith('FC')?'FAC':'N. VENTA';
+    var tipoCorto=serie==='B001'?'BOL':serie==='F001'?'FAC':'N. VENTA';
 
     var venta={
       id:Date.now(), fecha, hora, serie, numero, tipo:tipoCorto,
