@@ -75,7 +75,7 @@ const DB = {
   compras: [],
 
   // ---- SECUENCIAS ----
-  _sequences: { NV03:1, BV03:1, FC01:1 },
+  _sequences: { NV01:1, B001:1, F001:1 },
 
   nextNumber(serie) {
     const n = this._sequences[serie] || 1;
