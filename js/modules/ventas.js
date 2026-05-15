@@ -985,6 +985,7 @@ const VentasModule = {
     setTimeout(function(){
       var i=(DB.ventas||[]).findIndex(function(x){return Number(x.id)===Number(id);});
       if(i>=0){DB.ventas[i].estado='ACEPTADO';Storage.guardarVentas();}
+      SupabaseDB.actualizarVenta(DB.ventas[i]);
       App.toast('✅ Comprobante aceptado por SUNAT','success'); App.renderPage();
     },1500);
   },
