@@ -994,6 +994,7 @@ document.addEventListener('DOMContentLoaded', function() {
   SheetsSync.cargarProductos();
   SupabaseDB.cargarClientes();
   SupabaseDB.cargarCotizaciones();
+  SupabaseDB.cargarVentas();
   SupabaseDB.iniciarSincronizacion();
   document.getElementById('loginPage').classList.add('hidden');
   document.getElementById('mainApp').classList.remove('hidden');
@@ -1011,6 +1012,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // 2. Cargar productos desde Google Sheets
   SheetsSync.cargarProductos();
+  SupabaseDB.cargarVentas();
   SupabaseDB.cargarClientes();
   SupabaseDB.cargarCotizaciones();
 
