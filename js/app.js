@@ -254,6 +254,7 @@ const App = {
       case 'kardex':          html = KardexModule.render(); break;
       case 'agenda':          html = AgendaModule.render(); break;
       case 'herramientas':    html = HerramientasModule.render(); break;
+      case 'cupones':         html = CuponesModule.render(); break;
       default:                html = this.renderInicio();
     }
     el.innerHTML = html;
@@ -749,7 +750,7 @@ const App = {
     { key:'cotizaciones',    label:'Cotizaciones',         grupo:'Ventas'    },
     { key:'notascredito',    label:'Notas Cred./Deb.',     grupo:'Ventas'    },
     { key:'guias',           label:'Guias de Remision',    grupo:'Ventas'    },
-    { key:'compras',         label:'Compras',              grupo:'Compras'   },
+    { key:'cupones',         label:'Cupones de Descuento', grupo:'Marketing' },
     { key:'cuentas',         label:'Cuentas Bancarias',    grupo:'Compras'   },
     { key:'inventario',      label:'Inventario',           grupo:'Almacen'   },
     { key:'kardex',          label:'Kardex',               grupo:'Almacen'   },
