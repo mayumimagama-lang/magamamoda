@@ -1073,12 +1073,9 @@ const POSModule = {
       '</div>',
       [
         {text:'<i class="fas fa-print"></i> Imprimir',cls:'btn-primary',cb:function(){App.closeModal();POSModule._imprimirTicket(venta);}},
-        {text:'<i class="fas fa-share-alt"></i> WhatsApp',cls:'btn-outline',cb:function(){
-          var cli2=(DB.clientes||[]).find(function(c){return c.id===venta.cliente_id;});
-          if(cli2&&cli2.telefono){
-            var msg=encodeURIComponent('*'+DB.empresa.nombre+'*\n'+venta.serie+'-'+venta.numero+'\nTotal: S/ '+venta.total.toFixed(2)+'\n¡Gracias por su compra!');
-            window.open('https://wa.me/51'+cli2.telefono.replace(/\D/g,'')+'?text='+msg,'_blank');
-          } else App.toast('El cliente no tiene teléfono registrado','warning');
+        {text:'<i class="fab fa-whatsapp"></i> WhatsApp',cls:'btn-outline',cb:function(){
+          App.closeModal();
+          if(typeof TicketsModule!=='undefined') TicketsModule.enviarWhatsApp(venta.id);
         }},
       ]
     );
