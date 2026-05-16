@@ -44,6 +44,7 @@ const TicketsModule = {
         mostrarIGV:     true,
         mostrarQR:      true,
         mostrarFirma:   false,
+        whatsappAdmin:  '',
       };
     }
     return this.cfg;
@@ -168,6 +169,7 @@ const TicketsModule = {
                       '<button class="action-menu-item" onclick="TicketsModule.verDetalle('+v.id+')"><i class="fas fa-eye"></i> Ver detalle</button>' +
                       (v.estado!=='ANULADO'?'<button class="action-menu-item" onclick="TicketsModule.editarTicket('+v.id+')"><i class="fas fa-edit"></i> Editar ticket</button>':'') +
                       '<button class="action-menu-item" onclick="TicketsModule.imprimirTicket('+v.id+')"><i class="fas fa-print"></i> Imprimir</button>' +
+                      '<button class="action-menu-item" onclick="TicketsModule.enviarWhatsApp('+v.id+')" style="color:#16a34a;font-weight:800;"><i class="fab fa-whatsapp" style="color:#16a34a;"></i> Enviar por WhatsApp</button>' +
                       (v.estado==='NO_ENVIADO'?'<button class="action-menu-item" onclick="TicketsModule.enviarSunat('+v.id+')"><i class="fas fa-paper-plane"></i> Enviar SUNAT</button>':'') +
                       (v.estado!=='ANULADO'?'<div style="border-top:1px solid var(--gray-200);margin:4px 0;"></div><button class="action-menu-item danger" onclick="TicketsModule.anularTicket('+v.id+')"><i class="fas fa-ban"></i> Anular</button>':'') +
                     '</div></div></td>' +
@@ -237,6 +239,14 @@ const TicketsModule = {
             inp('telefono', 'Tel\u00e9fono/WhatsApp', cfg.telefono, 'text') +
             inp('email',    'Email',              cfg.email,    'email') +
             inp('web',      'Web / Instagram',   cfg.web,      'text') +
+            '<div style="margin-bottom:11px;"><label style="display:block;font-size:11px;font-weight:700;color:#16a34a;text-transform:uppercase;margin-bottom:4px;"><i class="fab fa-whatsapp" style="margin-right:4px;"></i>Tu WhatsApp para recibir copias</label>' +
+              '<div style="display:flex;align-items:center;gap:7px;">' +
+                '<span style="padding:9px 10px;background:#dcfce7;border:2px solid #bbf7d0;border-radius:8px;font-size:13px;font-weight:800;color:#16a34a;">+51</span>' +
+                '<input type="tel" id="tc_whatsappAdmin" value="'+(cfg.whatsappAdmin||'')+'" oninput="TicketsModule._previewLive()" placeholder="987654321" ' +
+                'style="flex:1;padding:9px 12px;border:2px solid #bbf7d0;border-radius:8px;font-size:14px;background:#f0fdf4;box-sizing:border-box;"/>' +
+              '</div>' +
+              '<p style="font-size:10px;color:var(--gray-400);margin:4px 0 0;">Sin espacios. Al enviar un comprobante también recibirás una copia.</p>' +
+            '</div>' +
           '</div></div>' +
 
           '<div class="card"><div style="padding:12px 18px;border-bottom:1px solid var(--gray-200);font-size:12px;font-weight:800;color:var(--gray-400);text-transform:uppercase;"><i class="fas fa-heart" style="color:#e94560;margin-right:5px;"></i>Mensajes al Cliente</div>' +
@@ -408,7 +418,7 @@ const TicketsModule = {
   _previewLive() {
     var cfg = this._getCfg();
     var get = function(id){ return document.getElementById('tc_'+id); };
-    ['nombre','slogan','ruc','direccion','telefono','email','web','mensaje1','mensaje2','mensaje3'].forEach(function(k){ var el=get(k); if(el) cfg[k]=el.value; });
+    ['nombre','slogan','ruc','direccion','telefono','email','web','mensaje1','mensaje2','mensaje3','whatsappAdmin'].forEach(function(k){ var el=get(k); if(el) cfg[k]=el.value; });
     ['mostrarLogo','mostrarSlogan','mostrarRuc','mostrarDir','mostrarTel','mostrarEmail','mostrarWeb','mostrarIGV','mostrarQR','mostrarFirma'].forEach(function(k){ var el=get(k); if(el) cfg[k]=el.checked; });
     ['colorHeader','colorAcento','colorTotal'].forEach(function(k){ var el=get(k); if(el){ cfg[k]=el.value; var v=document.getElementById('tc_'+k+'_val'); if(v) v.textContent=el.value; }});
     var c=document.getElementById('tc_preview_container');
@@ -617,7 +627,8 @@ const TicketsModule = {
         '<div style="margin-top:6px;font-size:11px;color:var(--gray-500);">M\u00e9todo: <strong>'+v.metodo_pago+'</strong> &middot; Pag\u00f3: <strong>S/ '+v.monto_pago.toFixed(2)+'</strong> &middot; Vuelto: <strong>S/ '+v.vuelto.toFixed(2)+'</strong></div>' +
       '</div>',
       [{text:'\u270f\ufe0f Editar',   cls:'btn-outline', cb:function(){App.closeModal();TicketsModule.editarTicket(id);}},
-       {text:'\ud83d\udda8\ufe0f Imprimir', cls:'btn-primary', cb:function(){TicketsModule.imprimirTicket(id);App.closeModal();}}]
+       {text:'\ud83d\udda8\ufe0f Imprimir', cls:'btn-primary', cb:function(){TicketsModule.imprimirTicket(id);App.closeModal();}},
+       {text:'\ud83d\udcac WhatsApp',  cls:'btn-success', cb:function(){App.closeModal();TicketsModule.enviarWhatsApp(id);}}]
     );
     document.getElementById('modalBox').style.maxWidth='520px';
   },
@@ -673,5 +684,73 @@ const TicketsModule = {
 
   limpiarFiltros(){this.searchTerm='';this.tipoFilter='todos';this.estadoFilter='todos';this.fechaInicio='';this.fechaFin='';this.currentPage=1;App.renderPage();},
   formatFecha(f){if(!f)return '';var p=f.split('-');return p[2]+'/'+p[1]+'/'+p[0];},
-  toggleMenu(id){document.querySelectorAll('.action-menu').forEach(function(m){if(m.id!=='menu-ticket-'+id)m.classList.add('hidden');});var el=document.getElementById('menu-ticket-'+id);if(el)el.classList.toggle('hidden');}
+  toggleMenu(id){document.querySelectorAll('.action-menu').forEach(function(m){if(m.id!=='menu-ticket-'+id)m.classList.add('hidden');});var el=document.getElementById('menu-ticket-'+id);if(el)el.classList.toggle('hidden');},
+
+  enviarWhatsApp(id) {
+    var v = DB.ventas.find(function(x){ return x.id===id; });
+    if (!v) return;
+    var cli = DB.clientes.find(function(c){ return c.id===v.cliente_id; });
+    var cfg = this._getCfg();
+    var waAdmin = (cfg.whatsappAdmin || (DB.empresa && DB.empresa.whatsapp) || '').replace(/\D/g,'');
+    var telCliente = (cli && cli.telefono) ? cli.telefono.replace(/\D/g,'') : '';
+    App.showModal('\ud83d\udcf1 Enviar por WhatsApp',
+      '<div>' +
+        '<p style="font-size:14px;color:var(--gray-600);margin-bottom:14px;">Comprobante: <strong style="color:var(--accent);">'+v.serie+'-'+v.numero+'</strong> &middot; S/ '+v.total.toFixed(2)+'</p>' +
+        '<label style="display:block;font-size:11px;font-weight:700;color:var(--gray-500);text-transform:uppercase;margin-bottom:5px;">WhatsApp del cliente</label>' +
+        '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">' +
+          '<span style="padding:10px 12px;background:#dcfce7;border:2px solid #bbf7d0;border-radius:8px;font-size:14px;font-weight:800;color:#16a34a;">+51</span>' +
+          '<input type="tel" id="wa_num_cliente" placeholder="987 654 321" value="'+telCliente+'" maxlength="9" ' +
+          'style="flex:1;padding:10px 13px;border:2px solid var(--gray-200);border-radius:8px;font-size:16px;font-weight:700;letter-spacing:1px;outline:none;" ' +
+          'oninput="this.value=this.value.replace(/\\D/g,\'\')" />' +
+        '</div>' +
+        '<p style="font-size:10px;color:var(--gray-400);margin-bottom:12px;">Solo números, 9 dígitos. Ej: 987654321</p>' +
+        (waAdmin ?
+          '<div style="padding:9px 12px;background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:8px;font-size:12px;color:#15803d;">' +
+            '<i class="fab fa-whatsapp" style="margin-right:5px;"></i>Copia automática a tu WhatsApp: <strong>+51 '+waAdmin+'</strong>' +
+          '</div>' : '') +
+      '</div>',
+      [
+        {text:'Cancelar', cls:'btn-outline', cb: function(){ App.closeModal(); }},
+        {text:'\ud83d\udce4 Enviar', cls:'btn-success', cb: function(){
+          var el = document.getElementById('wa_num_cliente');
+          var num = el ? el.value.replace(/\D/g,'') : '';
+          if (!num || num.length !== 9) { App.toast('Ingresa los 9 d\u00edgitos del WhatsApp', 'error'); return; }
+          App.closeModal();
+          TicketsModule._abrirWhatsApp('51'+num, v);
+          if (waAdmin) {
+            setTimeout(function(){ TicketsModule._abrirWhatsApp('51'+waAdmin, v); }, 1200);
+          }
+        }}
+      ]
+    );
+    setTimeout(function(){ var el=document.getElementById('wa_num_cliente'); if(el) el.focus(); }, 200);
+    document.getElementById('modalBox').style.maxWidth = '440px';
+  },
+
+  _abrirWhatsApp(numero, v) {
+    var cfg = this._getCfg();
+    var cli = DB.clientes.find(function(c){ return c.id===v.cliente_id; }) || { nombre: 'P\u00daBLICO EN GENERAL' };
+    var lineas = v.items.map(function(i){
+      return '  \u2022 '+i.nombre+' x'+i.qty+' \u2014 S/ '+i.total.toFixed(2);
+    }).join('\n');
+    var msg =
+      '\ud83e\uddfe *'+cfg.nombre+'*\n' +
+      '\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n' +
+      '\ud83d\udccb *'+v.tipo+': '+v.serie+'-'+v.numero+'*\n' +
+      '\ud83d\udcc5 Fecha: '+this.formatFecha(v.fecha)+' '+v.hora+'\n' +
+      '\ud83d\udc64 Cliente: '+cli.nombre+'\n\n' +
+      '\ud83d\udce6 *PRODUCTOS:*\n'+lineas+'\n\n' +
+      '\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n' +
+      '\ud83d\udcb0 *TOTAL: S/ '+v.total.toFixed(2)+'*\n' +
+      '\ud83d\udcb3 M\u00e9todo: '+v.metodo_pago+'\n' +
+      '\u2705 Recibido: S/ '+v.monto_pago.toFixed(2)+'\n' +
+      '\ud83d\udd04 Vuelto: S/ '+v.vuelto.toFixed(2)+'\n\n' +
+      (cfg.mensaje1 ? cfg.mensaje1+'\n' : '') +
+      (cfg.mensaje2 ? cfg.mensaje2+'\n' : '') +
+      (cfg.direccion ? '\n\ud83d\udccd '+cfg.direccion : '') +
+      (cfg.telefono  ? '\n\ud83d\udcde '+cfg.telefono  : '');
+    var url = 'https://wa.me/'+numero+'?text='+encodeURIComponent(msg);
+    window.open(url, '_blank');
+    App.toast('\u2705 Abriendo WhatsApp...', 'success');
+  }
 };
