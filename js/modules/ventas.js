@@ -933,6 +933,26 @@ const VentasModule = {
         '<div style="padding:10px;background:var(--gray-50);border-radius:8px;"><div style="font-size:10px;font-weight:800;color:var(--gray-400);text-transform:uppercase;margin-bottom:3px;">Monto Recibido</div><div style="font-size:12px;font-weight:700;">S/ '+( v.monto_pago||v.total).toFixed(2)+'</div></div>' +
         '<div style="padding:10px;background:#f0fdf4;border-radius:8px;"><div style="font-size:10px;font-weight:800;color:#16a34a;text-transform:uppercase;margin-bottom:3px;">Vuelto</div><div style="font-size:14px;font-weight:900;color:#16a34a;">S/ '+(v.vuelto||0).toFixed(2)+'</div></div>' +
         '<div style="padding:10px;background:var(--gray-50);border-radius:8px;"><div style="font-size:10px;font-weight:800;color:var(--gray-400);text-transform:uppercase;margin-bottom:3px;">Productos</div><div style="font-size:12px;font-weight:700;">'+(v.items?v.items.length:0)+' ítem(s)</div></div>' +
+      '</div>' +
+      '<div style="margin-top:14px;padding:12px 14px;background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:10px;">' +
+        '<div style="display:flex;align-items:center;gap:7px;margin-bottom:9px;">' +
+          '<i class="fab fa-whatsapp" style="font-size:17px;color:#16a34a;"></i>' +
+          '<span style="font-size:11px;font-weight:800;color:#15803d;text-transform:uppercase;">Enviar comprobante por WhatsApp</span>' +
+        '</div>' +
+        '<div style="display:flex;align-items:center;gap:7px;">' +
+          '<span style="padding:8px 10px;background:#dcfce7;border:2px solid #bbf7d0;border-radius:8px;font-size:13px;font-weight:800;color:#16a34a;white-space:nowrap;">+51</span>' +
+          '<input type="tel" id="wa_tel_detalle" placeholder="987 654 321" maxlength="9" ' +
+            'value="'+(cli&&cli.telefono?cli.telefono.replace(/\D/g,''):'')+'" ' +
+            'oninput="this.value=this.value.replace(/\\D/g,\'\')" ' +
+            'style="flex:1;padding:8px 12px;border:2px solid #bbf7d0;border-radius:8px;font-size:15px;font-weight:700;outline:none;letter-spacing:1px;"/>' +
+          '<button onclick="VentasModule._enviarWADetalle('+v.id+')" ' +
+            'style="padding:8px 16px;background:#16a34a;color:white;border:none;border-radius:8px;font-size:13px;font-weight:800;cursor:pointer;white-space:nowrap;">' +
+            '<i class="fab fa-whatsapp" style="margin-right:4px;"></i>Enviar' +
+          '</button>' +
+        '</div>' +
+        '<p style="font-size:10px;color:var(--gray-400);margin:5px 0 0;">' +
+          (cli&&cli.telefono?'✅ Número del cliente pre-cargado.':'9 dígitos sin el +51. Ej: 987654321') +
+        '</p>' +
       '</div>',
       [
         {text:'🖨️ Imprimir',cls:'btn-primary',cb:function(){VentasModule.imprimirComprobante(v);App.closeModal();}},
@@ -1071,6 +1091,25 @@ const VentasModule = {
   limpiarFiltros() {
     this.searchTerm=''; this.tipoFilter='todos'; this.fechaInicio=''; this.fechaFin='';
     this.currentPage=1; this._filtroRapido=''; App.renderPage();
+  },
+
+  _enviarWADetalle(id) {
+    var el  = document.getElementById('wa_tel_detalle');
+    var num = el ? el.value.replace(/\D/g,'') : '';
+    if (!num || num.length !== 9) { App.toast('Ingresa los 9 dígitos del WhatsApp', 'error'); return; }
+    var v = (DB.ventas||[]).find(function(x){ return Number(x.id)===Number(id); });
+    if (!v) return;
+    App.closeModal();
+    if (typeof TicketsModule !== 'undefined' && TicketsModule._abrirWhatsApp) {
+      TicketsModule._abrirWhatsApp('51'+num, v);
+      var cfg     = TicketsModule._getCfg();
+      var waAdmin = (cfg.whatsappAdmin || (DB.empresa&&DB.empresa.whatsapp) || '').replace(/\D/g,'');
+      if (waAdmin) setTimeout(function(){ TicketsModule._abrirWhatsApp('51'+waAdmin, v); }, 1200);
+    } else {
+      var msg = '\ud83e\uddfe *'+DB.empresa.nombre+'*\n'+v.tipo+': '+v.serie+'-'+v.numero+'\nTotal: S/ '+v.total.toFixed(2)+'\n\u00a1Gracias por su compra!';
+      window.open('https://wa.me/51'+num+'?text='+encodeURIComponent(msg), '_blank');
+    }
+    App.toast('\u2705 Abriendo WhatsApp...', 'success');
   },
 
   toggleMenu(id) {
