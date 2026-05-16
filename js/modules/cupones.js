@@ -445,7 +445,7 @@ const CuponesModule = {
       (c.estado==='USADO'?
         '<div style="padding:12px;background:#f5f3ff;border-radius:10px;font-size:12px;color:#7c3aed;margin-bottom:12px;">'+
           '<i class="fas fa-check-double" style="margin-right:6px;"></i>Usado el '+this._formatFecha(c.fecha_uso)+(c.venta_serie?' · '+c.venta_serie+'-'+c.venta_numero:'')+
-        '</div>':''+
+        '</div>':''
       )+
       // WhatsApp rápido
       (c.estado==='ACTIVO'?
