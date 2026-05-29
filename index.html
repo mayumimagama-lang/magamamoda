@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta name="google-site-verification" content="v5zGgmIx_jTeXqwxlyXQygIsWXm_quJKcOG6zmj_iks" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>JUMILA ERP - Sistema de Gestión Empresarial</title>
+  <link rel="stylesheet" href="css/styles.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+<!-- LOGIN PAGE -->
+<div id="loginPage" style="min-height:100vh;background:#050510;display:flex;align-items:center;justify-content:center;padding:24px;box-sizing:border-box;">
+  <div style="width:100%;max-width:860px;display:flex;border-radius:16px;overflow:hidden;box-shadow:0 25px 60px rgba(0,0,0,0.7);">
+
+    <!-- Panel izquierdo -->
+    <div style="width:42%;background:linear-gradient(160deg,#020218 0%,#060630 40%,#020218 100%);padding:40px 32px;display:flex;flex-direction:column;justify-content:space-between;position:relative;overflow:hidden;">
+      <div style="position:absolute;top:-60px;right:-60px;width:200px;height:200px;border-radius:50%;border:1px solid rgba(0,150,255,0.1);"></div>
+      <div style="position:absolute;top:-30px;right:-30px;width:140px;height:140px;border-radius:50%;border:1px solid rgba(0,150,255,0.15);"></div>
+      <div style="position:absolute;bottom:-80px;left:-40px;width:220px;height:220px;border-radius:50%;border:1px solid rgba(212,175,55,0.08);"></div>
+      <div style="position:absolute;top:0;left:0;width:3px;height:100%;background:linear-gradient(180deg,transparent,#0096ff,#d4af37,transparent);opacity:0.7;"></div>
+
+      <div>
+        <!-- Logo MAGAMA con imagen -->
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:48px;">
+          <div style="width:48px;height:48px;border-radius:10px;border:1.5px solid #0096ff;display:flex;align-items:center;justify-content:center;box-shadow:0 0 14px rgba(0,150,255,0.4);background:rgba(0,150,255,0.08);overflow:hidden;">
+            <img src="assets/magama-logo.png" alt="MAGAMA" style="width:52px;height:52px;object-fit:contain;filter:brightness(0) saturate(100%) invert(70%) sepia(60%) saturate(400%) hue-rotate(5deg);"/>
+          </div>
+          <div>
+            <div style="font-size:13px;font-weight:700;letter-spacing:4px;background:linear-gradient(90deg,#0096ff,#d4af37);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;">MAGAMA</div>
+            <div style="font-size:9px;letter-spacing:2px;color:rgba(212,175,55,0.5);text-transform:uppercase;">Fashion Store</div>
+          </div>
+        </div>
+        <div style="margin-bottom:24px;">
+          <div style="width:32px;height:2px;background:linear-gradient(90deg,#0096ff,#d4af37);margin-bottom:16px;box-shadow:0 0 8px rgba(0,150,255,0.4);"></div>
+          <div style="font-size:22px;font-weight:700;color:#fff;line-height:1.4;margin-bottom:10px;">Tu tienda de<br/>moda favorita</div>
+          <div style="font-size:12px;color:rgba(255,255,255,0.35);line-height:1.7;">Ropa variada para toda<br/>ocasión en Huánuco, Perú</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:12px;margin-top:32px;">
+          <div style="display:flex;align-items:center;gap:12px;padding:10px 12px;background:rgba(0,150,255,0.05);border:1px solid rgba(0,150,255,0.2);border-radius:8px;">
+            <i class="fas fa-shopping-bag" style="color:#0096ff;font-size:14px;width:14px;"></i>
+            <div>
+              <div style="font-size:10px;color:rgba(0,150,255,0.6);letter-spacing:1px;">CATÁLOGO</div>
+              <div style="font-size:12px;color:rgba(255,255,255,0.75);font-weight:600;">Prendas exclusivas</div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;padding:10px 12px;background:rgba(212,175,55,0.05);border:1px solid rgba(212,175,55,0.2);border-radius:8px;">
+            <i class="fas fa-chart-line" style="color:#d4af37;font-size:14px;width:14px;"></i>
+            <div>
+              <div style="font-size:10px;color:rgba(212,175,55,0.6);letter-spacing:1px;">VENTAS</div>
+              <div style="font-size:12px;color:rgba(255,255,255,0.75);font-weight:600;">Control en tiempo real</div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;padding:10px 12px;background:rgba(0,150,255,0.05);border:1px solid rgba(0,150,255,0.2);border-radius:8px;">
+            <i class="fas fa-lock" style="color:#0096ff;font-size:14px;width:14px;"></i>
+            <div>
+              <div style="font-size:10px;color:rgba(0,150,255,0.6);letter-spacing:1px;">SEGURIDAD</div>
+              <div style="font-size:12px;color:rgba(255,255,255,0.75);font-weight:600;">Acceso protegido</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Industry Yara -->
+      <div style="border-top:1px solid rgba(0,150,255,0.15);padding-top:16px;">
+        <div style="font-size:9px;color:rgba(255,255,255,0.2);letter-spacing:1px;margin-bottom:8px;text-transform:uppercase;">Desarrollado por</div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div style="width:26px;height:26px;border-radius:6px;border:1px solid rgba(0,150,255,0.4);display:flex;align-items:center;justify-content:center;background:rgba(0,150,255,0.08);box-shadow:0 0 8px rgba(0,150,255,0.2);">
+            <span style="font-size:11px;font-weight:700;color:#0096ff;">IY</span>
+          </div>
+          <div>
+            <div style="font-size:11px;font-weight:700;color:rgba(0,150,255,0.8);letter-spacing:1.5px;">INDUSTRY YARA</div>
+            <div style="font-size:9px;color:rgba(255,255,255,0.2);letter-spacing:0.5px;">Soluciones digitales · 2026</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Panel derecho -->
+    <div style="flex:1;background:#0a0a1a;padding:40px 36px;display:flex;flex-direction:column;justify-content:center;position:relative;">
+      <div style="position:absolute;top:24px;right:24px;display:flex;align-items:center;gap:6px;padding:5px 10px;background:rgba(0,150,255,0.08);border:1px solid rgba(0,150,255,0.25);border-radius:20px;box-shadow:0 0 10px rgba(0,150,255,0.1);">
+        <div style="width:6px;height:6px;border-radius:50%;background:#0096ff;box-shadow:0 0 6px rgba(0,150,255,0.8);"></div>
+        <span style="font-size:10px;color:#0096ff;letter-spacing:1px;">SISTEMA ACTIVO</span>
+      </div>
+      <div style="position:absolute;bottom:20px;right:24px;display:flex;align-items:center;gap:5px;opacity:0.35;">
+        <i class="fas fa-star" style="font-size:10px;color:#d4af37;"></i>
+        <span style="font-size:10px;color:#d4af37;letter-spacing:1px;">Industry Yara</span>
+      </div>
+
+      <div style="margin-bottom:32px;">
+        <div style="font-size:22px;font-weight:700;color:#fff;margin-bottom:6px;">Iniciar Sesión</div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div style="height:2px;width:24px;background:linear-gradient(90deg,#0096ff,#d4af37);box-shadow:0 0 6px rgba(0,150,255,0.5);"></div>
+          <div style="font-size:12px;color:rgba(255,255,255,0.35);letter-spacing:0.5px;">Ingresa tus credenciales</div>
+        </div>
+      </div>
+
+      <div style="margin-bottom:16px;">
+        <label style="font-size:10px;font-weight:700;letter-spacing:2px;color:rgba(212,175,55,0.7);display:block;margin-bottom:8px;">USUARIO</label>
+        <div style="position:relative;">
+          <i class="fas fa-user" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:rgba(212,175,55,0.5);font-size:14px;"></i>
+          <input type="text" id="loginUser" placeholder="Ingresa tu usuario"
+            style="width:100%;padding:13px 14px 13px 42px;background:#0d0d20;border:1px solid rgba(212,175,55,0.2);border-radius:10px;color:rgba(255,255,255,0.85);font-size:13px;box-sizing:border-box;outline:none;"
+            onfocus="this.style.borderColor='rgba(0,150,255,0.7)';this.style.boxShadow='0 0 12px rgba(0,150,255,0.15)'"
+            onblur="this.style.borderColor='rgba(212,175,55,0.2)';this.style.boxShadow='none'"/>
+        </div>
+      </div>
+
+      <div style="margin-bottom:24px;">
+        <label style="font-size:10px;font-weight:700;letter-spacing:2px;color:rgba(212,175,55,0.7);display:block;margin-bottom:8px;">CONTRASEÑA</label>
+        <div style="position:relative;">
+          <i class="fas fa-lock" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:rgba(212,175,55,0.5);font-size:14px;"></i>
+          <input type="password" id="loginPass" placeholder="••••••••••"
+            style="width:100%;padding:13px 42px 13px 42px;background:#0d0d20;border:1px solid rgba(212,175,55,0.2);border-radius:10px;color:rgba(255,255,255,0.85);font-size:13px;box-sizing:border-box;outline:none;letter-spacing:2px;"
+            onfocus="this.style.borderColor='rgba(0,150,255,0.7)';this.style.boxShadow='0 0 12px rgba(0,150,255,0.15)'"
+            onblur="this.style.borderColor='rgba(212,175,55,0.2)';this.style.boxShadow='none'"/>
+          <button onclick="var i=document.getElementById('loginPass');i.type=i.type==='password'?'text':'password'"
+            style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;padding:4px;">
+            <i class="fas fa-eye" style="color:rgba(212,175,55,0.5);font-size:14px;"></i>
+          </button>
+        </div>
+      </div>
+
+      <button onclick="App.login()"
+        style="width:100%;padding:14px;background:linear-gradient(135deg,#b8860b,#d4af37,#f5e17a,#d4af37,#b8860b);border:none;border-radius:10px;color:#0a0a1a;font-size:12px;font-weight:800;letter-spacing:3px;text-transform:uppercase;cursor:pointer;margin-bottom:14px;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:0 0 20px rgba(212,175,55,0.35);">
+        <i class="fas fa-sign-in-alt" style="font-size:14px;"></i>
+        Ingresar al Sistema
+      </button>
+
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+        <div style="flex:1;height:1px;background:linear-gradient(90deg,transparent,rgba(212,175,55,0.2),transparent);"></div>
+        <span style="font-size:10px;color:rgba(212,175,55,0.4);letter-spacing:1px;">ACCESO SEGURO</span>
+        <div style="flex:1;height:1px;background:linear-gradient(90deg,transparent,rgba(212,175,55,0.2),transparent);"></div>
+      </div>
+
+      <div style="display:flex;align-items:center;justify-content:center;gap:20px;">
+        <div style="display:flex;align-items:center;gap:6px;">
+          <i class="fas fa-shield-alt" style="font-size:11px;color:#d4af37;"></i>
+          <span style="font-size:10px;color:rgba(212,175,55,0.6);letter-spacing:0.5px;">SSL Seguro</span>
+        </div>
+        <div style="width:3px;height:3px;border-radius:50%;background:rgba(212,175,55,0.4);"></div>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <i class="fas fa-lock" style="font-size:11px;color:#d4af37;"></i>
+          <span style="font-size:10px;color:rgba(212,175,55,0.6);letter-spacing:0.5px;">Datos cifrados</span>
+        </div>
+        <div style="width:3px;height:3px;border-radius:50%;background:rgba(212,175,55,0.4);"></div>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <i class="fas fa-user-shield" style="font-size:11px;color:#d4af37;"></i>
+          <span style="font-size:10px;color:rgba(212,175,55,0.6);letter-spacing:0.5px;">Solo autorizado</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="mainApp" class="main-app hidden">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo" style="background:linear-gradient(135deg,#050510,#0a0a1a);border:1px solid rgba(212,175,55,0.15);padding:12px 14px;">
+  <div style="width:42px;height:42px;border-radius:10px;border:1.5px solid #0096ff;display:flex;align-items:center;justify-content:center;box-shadow:0 0 10px rgba(0,150,255,0.3);background:rgba(0,150,255,0.08);overflow:hidden;flex-shrink:0;">
+    <img src="assets/magama-logo.png" alt="MAGAMA" style="width:36px;height:36px;object-fit:contain;filter:brightness(0) saturate(100%) invert(70%) sepia(60%) saturate(400%) hue-rotate(5deg);"/>
+  </div>
+  <div>
+    <div style="font-size:13px;font-weight:800;letter-spacing:3px;background:linear-gradient(90deg,#0096ff,#d4af37);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;">MAGAMA</div>
+    <div style="font-size:9px;letter-spacing:1.5px;color:rgba(212,175,55,0.5);text-transform:uppercase;font-weight:600;">Fashion Store</div>
+  </div>
+</div>
+
+    <div class="sidebar-info">
+      <div class="info-row"><span class="info-label">EMPRESA</span></div>
+      <div class="info-value">GRUPO JUMILA SOCIEDAD ANONIMA CERRADA</div>
+      <div class="info-row mt-1"><span class="info-label">CARGO</span></div>
+      <div class="info-value">VENDEDOR</div>
+      <div class="info-row mt-1"><span class="info-label">SUCURSAL</span></div>
+      <div class="info-value">JUMILA IMPORTACIONES <i class="fas fa-chevron-down"></i></div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <!-- SECCIÓN PRINCIPAL -->
+      <div class="nav-section-label">PRINCIPAL</div>
+      <div class="nav-grid">
+        <button class="nav-btn blue" onclick="App.navigate('inicio')" data-page="inicio">
+          <i class="fas fa-home"></i><span>INICIO</span>
+        </button>
+        <button class="nav-btn pos-color" onclick="App.navigate('pos')" data-page="pos">
+          <i class="fas fa-cash-register"></i><span>PUNTO DE VENTA</span>
+        </button>
+      </div>
+
+      <!-- SECCIÓN CATÁLOGO -->
+      <div class="nav-section-label">CATÁLOGO</div>
+      <div class="nav-grid">
+        <button class="nav-btn green" onclick="App.navigate('productos')" data-page="productos">
+          <i class="fas fa-boxes"></i><span>PRODUCTOS / SERVICIOS</span>
+        </button>
+        <button class="nav-btn precios-color" onclick="App.navigate('precios')" data-page="precios">
+          <i class="fas fa-tags"></i><span>LISTA DE PRECIOS</span>
+        </button>
+      </div>
+
+      <!-- SECCIÓN CLIENTES -->
+      <div class="nav-section-label">CLIENTES</div>
+      <div class="nav-grid">
+        <button class="nav-btn purple" onclick="App.navigate('clientes')" data-page="clientes">
+          <i class="fas fa-users"></i><span>CLIENTES / PROVEEDORES</span>
+        </button>
+        <button class="nav-btn cuentacte-color" onclick="App.navigate('tickets')" data-page="tickets">
+          <i class="fas fa-ticket-alt"></i><span>TICKETS</span>
+        </button>
+      </div>
+
+      <!-- SECCIÓN VENTAS -->
+      <div class="nav-section-label">VENTAS</div>
+      <div class="nav-grid">
+        <button class="nav-btn darkgreen" onclick="App.navigate('ventas')" data-page="ventas">
+          <i class="fas fa-file-invoice-dollar"></i><span>VENTAS</span>
+        </button>
+        <button class="nav-btn cotiz-color" onclick="App.navigate('cotizaciones')" data-page="cotizaciones">
+          <i class="fas fa-file-alt"></i><span>COTIZACIONES</span>
+        </button>
+        <button class="nav-btn notasc-color" onclick="App.navigate('notascredito')" data-page="notascredito">
+          <i class="fas fa-file-invoice"></i><span>NOTAS CRÉD./DÉB.</span>
+        </button>
+        <button class="nav-btn teal" onclick="App.navigate('resumendia')" data-page="resumendia">
+  <i class="fas fa-chart-pie"></i><span>RESUMEN DEL DÍA</span>
+</button>
+      </div>
+
+      <!-- SECCIÓN MARKETING -->
+      <div class="nav-section-label">MARKETING</div>
+      <div class="nav-grid">
+        <button class="nav-btn cotiz-color" onclick="App.navigate('cupones')" data-page="cupones">
+  <i class="fas fa-ticket-alt"></i><span>CUPONES</span>
+</button>
+        <button class="nav-btn" data-page="modoevento" onclick="App.navigate('modoevento')">
+        <i class="fas fa-bolt"></i>MODO EVENTO
+      </button>
+      </div>
+
+      <!-- SECCIÓN ALMACÉN -->
+      <div class="nav-section-label">ALMACÉN</div>
+      <div class="nav-grid">
+        <button class="nav-btn blue3" onclick="App.navigate('inventario')" data-page="inventario">
+          <i class="fas fa-warehouse"></i><span>INVENTARIO</span>
+        </button>
+        <button class="nav-btn kardex-color" onclick="App.navigate('kardex')" data-page="kardex">
+          <i class="fas fa-history"></i><span>KARDEX</span>
+        </button>
+      </div>
+
+      <!-- SECCIÓN FINANZAS -->
+      <div class="nav-section-label">FINANZAS</div>
+      <div class="nav-grid">
+        <button class="nav-btn slate" onclick="App.navigate('finanzas')" data-page="finanzas">
+          <i class="fas fa-chart-line"></i><span>FINANZAS</span>
+        </button>
+        <button class="nav-btn teal" onclick="App.navigate('caja')" data-page="caja">
+          <i class="fas fa-cash-register"></i><span>CAJA</span>
+        </button>
+      </div>
+
+      <!-- SECCIÓN GESTIÓN -->
+      <div class="nav-section-label">GESTIÓN</div>
+      <div class="nav-grid">
+        <button class="nav-btn olive" onclick="App.navigate('reportes')" data-page="reportes">
+          <i class="fas fa-chart-bar"></i><span>REPORTES</span>
+        </button>
+        <button class="nav-btn agenda-color" onclick="App.navigate('agenda')" data-page="agenda">
+          <i class="fas fa-calendar-alt"></i><span>AGENDA</span>
+        </button>
+        <button class="nav-btn herram-color" onclick="App.navigate('herramientas')" data-page="herramientas">
+          <i class="fas fa-tools"></i><span>HERRAMIENTAS</span>
+        </button>
+        <button class="nav-btn brown" onclick="App.navigate('administracion')" data-page="administracion">
+          <i class="fas fa-database"></i><span>ADMINISTRACIÓN</span>
+        </button>
+        <button class="nav-btn blue4" onclick="App.navigate('configuracion')" data-page="configuracion">
+          <i class="fas fa-cog"></i><span>CONFIGURACIÓN</span>
+        </button>
+        <button class="nav-btn pink" onclick="App.navigate('soporte')" data-page="soporte">
+          <i class="fas fa-headset"></i><span>SOPORTE / AYUDA</span>
+        </button>
+      </div>
+    </nav>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <div class="content-area">
+
+    <!-- TOP BAR -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="menu-toggle" onclick="App.toggleSidebar()">
+          <i class="fas fa-bars"></i>
+        </button>
+        <span class="welcome-text">Bienvenido <strong id="welcomeName">MAGAMA</strong></span>
+      </div>
+      <div class="topbar-tabs" id="topbarTabs"></div>
+      <div class="topbar-right">
+        <button class="topbar-btn" title="Descargar"><i class="fas fa-download"></i></button>
+        <button class="topbar-btn" title="Mi Perfil" onclick="App.verPerfil()"><i class="fas fa-user-circle"></i></button>
+        <button class="theme-toggle-btn" onclick="App.toggleTheme()" title="Cambiar tema">
+          <i class="fas fa-sun theme-icon-sun"></i>
+          <i class="fas fa-moon theme-icon-moon"></i>
+          <span id="themeLabel">Oscuro</span>
+        </button>
+        <button class="topbar-btn btn-logout" onclick="App.logout()" title="Cerrar sesión"><i class="fas fa-sign-out-alt"></i></button>
+        <button class="btn-ayuda">AYUDA <i class="fas fa-question-circle"></i></button>
+      </div>
+    </header>
+
+    <!-- PAGE CONTENT -->
+    <main class="page-content" id="pageContent"></main>
+  </div>
+</div>
+
+<!-- MODAL CONTAINER -->
+<div id="modalOverlay" class="modal-overlay hidden" onclick="App.closeModal(event)">
+  <div class="modal-box" id="modalBox" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <h3 id="modalTitle">Modal</h3>
+      <button onclick="App.closeModal()" class="modal-close"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-footer" id="modalFooter"></div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toastContainer" class="toast-container"></div>
+  
+<input type="hidden" id="fp_imagen" value="">
+<script src="js/supabase.js"></script>
+<script src="js/data.js"></script>
+<script src="js/modules/clientes.js"></script>
+<script src="js/modules/configuracion.js"></script>
+<script src="js/modules/productos.js"></script>
+<script src="js/modules/ventas.js"></script>
+<script src="js/modules/caja.js"></script>
+<script src="js/modules/inventario.js"></script>
+<script src="js/modules/reportes.js"></script>
+<script src="js/modules/pos.js"></script>
+<script src="js/modules/precios.js"></script>
+<script src="js/modules/tickets.js"></script>
+<script src="js/modules/cotizaciones.js"></script>
+<script src="js/modules/notascredito.js"></script>
+<script src="js/modules/kardex.js"></script>
+<script src="js/modules/agenda.js"></script>
+<script src="js/modules/resumendia.js"></script>
+<script src="js/modules/herramientas.js"></script>
+<script src="js/modules/administracion.js"></script>
+<script src="js/modules/cupones.js"></script>
+<script src="js/modules/inicio.js"></script>
+<script src="js/modules/modoevento.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
