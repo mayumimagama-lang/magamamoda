@@ -58,6 +58,10 @@ const App = {
       this._loginBloqueadoHasta = null;
       this.buildSidebar();
       this.navigate('inicio');
+      if (window.innerWidth <= 768) {
+  const sidebar = document.getElementById('sidebar');
+  if (sidebar) sidebar.classList.remove('mobile-open');
+}
     } else {
       this._loginIntentos++;
       var restantes = 5 - this._loginIntentos;
@@ -431,10 +435,16 @@ const App = {
 
   // ---- SIDEBAR ----
   toggleSidebar() {
+  const sidebar = document.getElementById('sidebar');
+  if (!sidebar) return;
+  const isMobile = window.innerWidth <= 768;
+  if (isMobile) {
+    sidebar.classList.toggle('mobile-open');
+  } else {
     this.sidebarOpen = !this.sidebarOpen;
-    const sidebar = document.getElementById('sidebar');
-    if (sidebar) sidebar.classList.toggle('collapsed', !this.sidebarOpen);
-  },
+    sidebar.classList.toggle('collapsed', !this.sidebarOpen);
+  }
+},
 
   // ---- MODAL ----
   showModal(title, bodyHTML, buttons = []) {
@@ -1003,6 +1013,10 @@ document.addEventListener('DOMContentLoaded', function() {
   document.getElementById('welcomeName').textContent = u.nombre;
   App.buildSidebar();
   App.navigate('inicio');
+  if (window.innerWidth <= 768) {
+  const sidebar = document.getElementById('sidebar');
+  if (sidebar) sidebar.classList.remove('mobile-open');
+}
   return;
 } else {
       localStorage.removeItem('erp_jumila_uid'); // sesión inválida, limpiar
@@ -1029,6 +1043,12 @@ SupabaseDB.obtenerSesionActual().then(function(result) {
     document.getElementById('welcomeName').textContent = result.usuario.nombre;
     App.buildSidebar();
     App.navigate('inicio');
+
+  // En móvil cerrar sidebar por defecto
+if (window.innerWidth <= 768) {
+  const sidebar = document.getElementById('sidebar');
+  if (sidebar) sidebar.classList.remove('mobile-open');
+}
   }
 });
 
