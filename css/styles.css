@@ -1160,3 +1160,15 @@ body.dark-mode #loginPass::placeholder {
   .toast { min-width: auto; font-size: 13px; }
   .toast-container { left: 10px; right: 10px; bottom: 10px; }
 }
+
+/* ========== IMAGEN PRODUCTO HOVER ========== */
+.data-table img {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  cursor: zoom-in;
+}
+.data-table img:hover {
+  transform: scale(2.5);
+  box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+  z-index: 999;
+  position: relative;
+}
