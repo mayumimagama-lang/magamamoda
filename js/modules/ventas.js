@@ -480,7 +480,7 @@ const VentasModule = {
     var self = this;
     return this.currentItems.map(function(item,i){
       var imgH = item.imagen
-        ? '<img src="'+item.imagen+'" style="width:80px;height:80px;object-fit:cover;border-radius:12px;flex-shrink:0;border:2px solid var(--gray-200);" alt=""/>'
+        ? '<img src="'+item.imagen+'" style="width:80px;height:80px;object-fit:cover;border-radius:12px;flex-shrink:0;border:2px solid var(--gray-200);transition:transform 0.2s ease,box-shadow 0.2s ease;cursor:zoom-in;" onmouseover="this.style.transform=\'scale(2.5)\';this.style.boxShadow=\'0 8px 30px rgba(0,0,0,0.4)\';this.style.zIndex=\'999\';this.style.position=\'relative\';" onmouseout="this.style.transform=\'scale(1)\';this.style.boxShadow=\'none\';this.style.zIndex=\'1\';" alt=""/>'
         : '<div style="width:80px;height:80px;border-radius:12px;background:var(--gray-100);display:flex;align-items:center;justify-content:center;flex-shrink:0;border:2px dashed var(--gray-300);"><i class="fas fa-image" style="font-size:24px;color:var(--gray-300);"></i></div>';
       var dctoAmt = item.precio*item.qty*(item.dcto||0)/100;
       var hasDcto = (item.dcto||0)>0;
