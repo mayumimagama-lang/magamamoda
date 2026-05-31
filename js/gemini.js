@@ -51,19 +51,10 @@ var GeminiAI = GeminiAI || {
     this._agregarMensaje('usuario', mensaje);
     this._mostrarTyping();
 
-    try {
-      var mensajes = [{
-        role: 'user',
-        parts: [{ text: this._getContexto() + '\n\nUsuario: ' + mensaje }]
-      }];
-
-      if (this.historial.length > 0) {
-        mensajes = this.historial.concat([{
-          role: 'user',
-          parts: [{ text: mensaje }]
-        }]);
-        mensajes[0].parts[0].text = this._getContexto() + '\n\n' + mensajes[0].parts[0].text;
-      }
+    var mensajes = [{
+    role: 'user',
+    parts: [{ text: this._getContexto() + '\n\nPregunta: ' + mensaje }]
+    }];
 
       var response = await fetch(this.API_URL + '?key=' + this.API_KEY, {
         method: 'POST',
