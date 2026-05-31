@@ -2,7 +2,7 @@
 // GEMINI AI — Asistente Inteligente para JUMILA ERP
 // ============================================================
 
-var GeminiAI = GeminiAI || {
+const GeminiAI = {
   API_KEY: 'AIzaSyBn2QmYmNVwqYpSZNzZwayool9i9Tda0IU',
   API_URL: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent',
   historial: [],
@@ -51,9 +51,10 @@ var GeminiAI = GeminiAI || {
     this._agregarMensaje('usuario', mensaje);
     this._mostrarTyping();
 
-    var mensajes = [{
-    role: 'user',
-    parts: [{ text: this._getContexto() + '\n\nPregunta: ' + mensaje }]
+    try {
+      var mensajes = [{
+     role: 'user',
+     parts: [{ text: this._getContexto() + '\n\nPregunta: ' + mensaje }]
     }];
 
       var response = await fetch(this.API_URL + '?key=' + this.API_KEY, {
@@ -302,6 +303,9 @@ var GeminiAI = GeminiAI || {
 
 // Auto-inicializar cuando el DOM esté listo
 document.addEventListener('DOMContentLoaded', function() {
-  // Esperar a que el ERP cargue completamente
-  setTimeout(function() { GeminiAI.init(); }, 3000);
+  setTimeout(function() {
+    if (typeof GeminiAI !== 'undefined' && !document.getElementById('gemini-fab')) {
+      GeminiAI.init();
+    }
+  }, 3000);
 });
