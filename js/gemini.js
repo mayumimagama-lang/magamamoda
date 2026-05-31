@@ -2,7 +2,7 @@
 // GEMINI AI — Asistente Inteligente para JUMILA ERP
 // ============================================================
 
-const GeminiAI = {
+var GeminiAI = GeminiAI || {
   API_KEY: 'AIzaSyBn2QmYmNVwqYpSZNzZwayool9i9Tda0IU',
   API_URL: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent',
   historial: [],
