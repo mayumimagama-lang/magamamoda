@@ -3,7 +3,7 @@
 // ============================================================
 
 const GeminiAI = {
-  API_KEY: 'AIzaSyBn2QmYmNVwqYpSZNzZwayool9i9Tda0IU',
+  API_KEY: 'AIzaSyAQ.Ab8RN6K5uirMwzSZHIKj2RBah3aXqftklamus8U3m9f3fHaZNQ',
   API_URL: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent',
   historial: [],
   abierto: false,
