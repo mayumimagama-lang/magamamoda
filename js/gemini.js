@@ -277,7 +277,7 @@ const GeminiAI = {
       // Sugerencias rápidas
       '<div style="padding:6px 12px;display:flex;gap:6px;overflow-x:auto;flex-shrink:0;border-top:1px solid #1e2a3d;">' +
         ['¿Cuánto vendí hoy?', '¿Qué productos están agotados?', '¿Cómo crear una venta?', '¿Cuántos clientes tengo?'].map(function(s) {
-          return '<button onclick="document.getElementById(\'gemini-input\').value=\'' + s + '\';GeminiAI.enviar();" ' +
+          return '<button onclick="document.getElementById(\'gemini-input\').value=\'' + s + '\';" ' +
             'style="padding:4px 10px;background:#1e2a3d;border:1px solid #2a3a52;border-radius:12px;color:#8fa5bf;font-size:11px;cursor:pointer;white-space:nowrap;flex-shrink:0;">' +
             s + '</button>';
         }).join('') +
