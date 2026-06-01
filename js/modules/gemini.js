@@ -3,6 +3,7 @@
 // ------------------------------------------------------------
 // La clave de Gemini vive SEGURA dentro del Apps Script
 // (lado servidor). Este archivo NO contiene ninguna clave.
+// Incluye modo CLARO y OSCURO (botón sol/luna en la barra).
 // ============================================================
 
 const GeminiAI = {
@@ -11,7 +12,6 @@ const GeminiAI = {
   // ⚠️ Debe ser EXACTAMENTE la que copiaste con "Copy" y terminar en /exec.
   PROXY_URL: 'https://script.google.com/macros/s/AKfycbzopc9-UZI3fNvav1c1_Tar52kRy_gom7grN5-q4MdlTOQ6SSvD_BH2CSmTmgW1j_EfXg/exec',
 
-  // Acciones rápidas (chips de la pantalla de bienvenida)
   SUGERENCIAS: [
     { icon: '📊', texto: '¿Cuántas ventas tengo hoy y por cuánto?' },
     { icon: '📦', texto: '¿Qué productos tienen stock bajo?' },
@@ -25,11 +25,13 @@ const GeminiAI = {
   abierto: false,
   cargando: false,
 
-  // ── Inicializar ──
   init() {
     if (document.getElementById('magamaIA-fab')) return;
     this._inyectarUI();
     this._eventos();
+    let t = 'oscuro';
+    try { t = localStorage.getItem('magamaIA_tema') || 'oscuro'; } catch (e) {}
+    this._aplicarTema(t);
   },
 
   _inyectarUI() {
@@ -40,7 +42,7 @@ const GeminiAI = {
       #magamaIA-root *, #magamaIA-root *::before, #magamaIA-root *::after { box-sizing: border-box; margin: 0; }
       #magamaIA-root { font-family: 'Manrope', system-ui, sans-serif; }
 
-      /* Boton flotante */
+      /* Boton flotante (se mantiene dorado en ambos modos) */
       #magamaIA-fab {
         position: fixed; bottom: 26px; right: 26px;
         width: 64px; height: 64px; border-radius: 50%;
@@ -58,18 +60,64 @@ const GeminiAI = {
         background: #38c172; border: 2.5px solid #cf9b54; border-radius: 50%;
       }
 
-      /* Panel */
+      /* Panel — variables de tema (OSCURO por defecto) */
       #magamaIA-panel {
+        --mia-panel-bg: linear-gradient(168deg, #1d1b22 0%, #161419 100%);
+        --mia-header-bg: linear-gradient(120deg, #221f27, #1a181f);
+        --mia-border: rgba(216,168,92,.18);
+        --mia-text: #f3ede2;
+        --mia-text2: #e9e5dd;
+        --mia-muted: #9a9aa6;
+        --mia-surface: #272530;
+        --mia-surface-border: rgba(255,255,255,.05);
+        --mia-strong: #f0d9a8;
+        --mia-input-bg: #262430;
+        --mia-input-border: #34313d;
+        --mia-input-text: #ede9e2;
+        --mia-chip-bg: #221f27;
+        --mia-chip-border: rgba(255,255,255,.07);
+        --mia-chip-hover: #2a2731;
+        --mia-msgrow-bg: #1a181f;
+        --mia-scroll: #3a3742;
+        --mia-hbtn-bg: rgba(255,255,255,.06);
+        --mia-hbtn-text: #cbb48a;
+        --mia-placeholder: #75717e;
+        --mia-shadow: rgba(0,0,0,.5);
+
         position: fixed; bottom: 104px; right: 26px;
         width: 410px; max-width: calc(100vw - 28px);
         height: 640px; max-height: calc(100vh - 140px);
         z-index: 999999; border-radius: 22px; overflow: hidden;
         display: flex; flex-direction: column;
-        background: linear-gradient(168deg, #1d1b22 0%, #161419 100%);
-        border: 1px solid rgba(216,168,92,.18);
-        box-shadow: 0 24px 70px rgba(0,0,0,.55);
+        background: var(--mia-panel-bg);
+        border: 1px solid var(--mia-border);
+        box-shadow: 0 24px 70px var(--mia-shadow);
         transform-origin: bottom right;
         animation: magamaIA-in .32s cubic-bezier(.21,1.02,.46,1) both;
+      }
+      /* Tema CLARO */
+      #magamaIA-panel.magamaIA-light {
+        --mia-panel-bg: linear-gradient(168deg, #ffffff 0%, #faf6ef 100%);
+        --mia-header-bg: linear-gradient(120deg, #fdfaf5, #f6f1e8);
+        --mia-border: rgba(180,130,60,.30);
+        --mia-text: #2a2630;
+        --mia-text2: #33303a;
+        --mia-muted: #8a8694;
+        --mia-surface: #f5f1ea;
+        --mia-surface-border: rgba(0,0,0,.06);
+        --mia-strong: #a8763a;
+        --mia-input-bg: #f4f0e9;
+        --mia-input-border: #e3ddd0;
+        --mia-input-text: #2a2630;
+        --mia-chip-bg: #f6f2ec;
+        --mia-chip-border: rgba(0,0,0,.08);
+        --mia-chip-hover: #efe9df;
+        --mia-msgrow-bg: #f7f3ec;
+        --mia-scroll: #d8d2c6;
+        --mia-hbtn-bg: rgba(0,0,0,.05);
+        --mia-hbtn-text: #9c7a40;
+        --mia-placeholder: #9a9488;
+        --mia-shadow: rgba(120,90,40,.22);
       }
       #magamaIA-panel.magamaIA-hidden { display: none; }
       @keyframes magamaIA-in { from { opacity: 0; transform: translateY(18px) scale(.94); } to { opacity: 1; transform: none; } }
@@ -77,8 +125,8 @@ const GeminiAI = {
       /* Header */
       #magamaIA-header {
         padding: 16px 18px; position: relative;
-        background: linear-gradient(120deg, #221f27, #1a181f);
-        border-bottom: 1px solid rgba(216,168,92,.22);
+        background: var(--mia-header-bg);
+        border-bottom: 1px solid var(--mia-border);
         display: flex; align-items: center; gap: 12px;
       }
       #magamaIA-header::after {
@@ -95,25 +143,25 @@ const GeminiAI = {
       #magamaIA-titulos { flex: 1; min-width: 0; }
       #magamaIA-marca {
         font-family: 'Playfair Display', serif; font-weight: 600; font-size: 17px;
-        color: #f3ede2; letter-spacing: .4px; line-height: 1.1;
+        color: var(--mia-text); letter-spacing: .4px; line-height: 1.1;
       }
-      #magamaIA-estado { display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: #9a9aa6; margin-top: 2px; }
+      #magamaIA-estado { display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--mia-muted); margin-top: 2px; }
       #magamaIA-estado .magamaIA-dot { width: 7px; height: 7px; border-radius: 50%; background: #38c172; box-shadow: 0 0 0 0 rgba(56,193,114,.6); animation: magamaIA-pulse 2s infinite; }
       @keyframes magamaIA-pulse { 0% { box-shadow: 0 0 0 0 rgba(56,193,114,.5);} 70%{ box-shadow: 0 0 0 7px rgba(56,193,114,0);} 100%{ box-shadow:0 0 0 0 rgba(56,193,114,0);} }
       .magamaIA-hbtn {
         width: 32px; height: 32px; border-radius: 9px; border: none; cursor: pointer;
-        background: rgba(255,255,255,.06); color: #cbb48a; font-size: 16px;
-        display: flex; align-items: center; justify-content: center; transition: background .2s;
+        background: var(--mia-hbtn-bg); color: var(--mia-hbtn-text); font-size: 15px;
+        display: flex; align-items: center; justify-content: center; transition: background .2s; flex-shrink: 0;
       }
-      .magamaIA-hbtn:hover { background: rgba(216,168,92,.18); color: #f0d9a8; }
+      .magamaIA-hbtn:hover { background: rgba(216,168,92,.2); color: #d9b878; }
 
       /* Mensajes */
       #magamaIA-mensajes {
         flex: 1; overflow-y: auto; padding: 18px 16px; display: flex; flex-direction: column; gap: 14px;
-        scrollbar-width: thin; scrollbar-color: #3a3742 transparent;
+        scrollbar-width: thin; scrollbar-color: var(--mia-scroll) transparent;
       }
       #magamaIA-mensajes::-webkit-scrollbar { width: 7px; }
-      #magamaIA-mensajes::-webkit-scrollbar-thumb { background: #3a3742; border-radius: 4px; }
+      #magamaIA-mensajes::-webkit-scrollbar-thumb { background: var(--mia-scroll); border-radius: 4px; }
 
       .magamaIA-fila { display: flex; gap: 9px; align-items: flex-end; animation: magamaIA-msg .28s ease both; }
       @keyframes magamaIA-msg { from { opacity: 0; transform: translateY(8px);} to { opacity: 1; transform: none; } }
@@ -123,11 +171,9 @@ const GeminiAI = {
         display: flex; align-items: center; justify-content: center; font-size: 14px;
         background: radial-gradient(120% 120% at 30% 25%, #e7c489, #b5853f); color: #241b0f;
       }
-      .magamaIA-burbuja {
-        max-width: 78%; padding: 11px 14px; font-size: 14px; line-height: 1.5; word-wrap: break-word;
-      }
+      .magamaIA-burbuja { max-width: 78%; padding: 11px 14px; font-size: 14px; line-height: 1.5; word-wrap: break-word; }
       .magamaIA-bot .magamaIA-burbuja {
-        background: #272530; color: #e9e5dd; border: 1px solid rgba(255,255,255,.05);
+        background: var(--mia-surface); color: var(--mia-text2); border: 1px solid var(--mia-surface-border);
         border-radius: 16px 16px 16px 5px;
       }
       .magamaIA-user .magamaIA-burbuja {
@@ -135,31 +181,31 @@ const GeminiAI = {
         border-radius: 16px 16px 5px 16px;
       }
       .magamaIA-burbuja strong { font-weight: 700; }
-      .magamaIA-bot .magamaIA-burbuja strong { color: #f0d9a8; }
-      .magamaIA-hora { font-size: 10px; color: #6f6b78; margin-top: 4px; padding: 0 4px; }
+      .magamaIA-bot .magamaIA-burbuja strong { color: var(--mia-strong); }
+      .magamaIA-hora { font-size: 10px; color: var(--mia-muted); margin-top: 4px; padding: 0 4px; }
       .magamaIA-fila.user .magamaIA-hora { text-align: right; }
 
       /* Bienvenida + chips */
       #magamaIA-bienvenida { display: flex; flex-direction: column; gap: 14px; }
       .magamaIA-welcome-card {
-        background: #272530; border: 1px solid rgba(216,168,92,.15); border-radius: 16px;
-        padding: 16px; color: #e9e5dd;
+        background: var(--mia-surface); border: 1px solid var(--mia-border); border-radius: 16px;
+        padding: 16px; color: var(--mia-text2);
       }
-      .magamaIA-welcome-card h4 { font-family: 'Playfair Display', serif; font-weight: 600; font-size: 16px; color: #f3ede2; margin-bottom: 5px; }
-      .magamaIA-welcome-card p { font-size: 13px; color: #a8a4af; line-height: 1.5; }
+      .magamaIA-welcome-card h4 { font-family: 'Playfair Display', serif; font-weight: 600; font-size: 16px; color: var(--mia-text); margin-bottom: 5px; }
+      .magamaIA-welcome-card p { font-size: 13px; color: var(--mia-muted); line-height: 1.5; }
       .magamaIA-chips { display: flex; flex-direction: column; gap: 8px; }
       .magamaIA-chip {
         text-align: left; cursor: pointer; font-family: inherit;
-        background: #221f27; border: 1px solid rgba(255,255,255,.07); color: #ddd8d0;
+        background: var(--mia-chip-bg); border: 1px solid var(--mia-chip-border); color: var(--mia-text2);
         padding: 11px 13px; border-radius: 12px; font-size: 13px; display: flex; align-items: center; gap: 10px;
         transition: border-color .2s, transform .12s, background .2s;
       }
-      .magamaIA-chip:hover { border-color: rgba(216,168,92,.55); background: #2a2731; transform: translateX(2px); }
+      .magamaIA-chip:hover { border-color: rgba(216,168,92,.55); background: var(--mia-chip-hover); transform: translateX(2px); }
       .magamaIA-chip .ic { font-size: 16px; }
 
       /* Indicador escribiendo */
       .magamaIA-typing { display: flex; gap: 4px; padding: 6px 2px; }
-      .magamaIA-typing span { width: 7px; height: 7px; border-radius: 50%; background: #cbb48a; opacity: .5; animation: magamaIA-bounce 1.2s infinite; }
+      .magamaIA-typing span { width: 7px; height: 7px; border-radius: 50%; background: #c2913f; opacity: .5; animation: magamaIA-bounce 1.2s infinite; }
       .magamaIA-typing span:nth-child(2){ animation-delay: .15s; }
       .magamaIA-typing span:nth-child(3){ animation-delay: .3s; }
       @keyframes magamaIA-bounce { 0%,60%,100%{ transform: translateY(0); opacity:.4; } 30%{ transform: translateY(-5px); opacity:1; } }
@@ -167,15 +213,15 @@ const GeminiAI = {
       /* Input */
       #magamaIA-input-row {
         display: flex; gap: 9px; padding: 13px 14px;
-        background: #1a181f; border-top: 1px solid rgba(255,255,255,.05); align-items: center;
+        background: var(--mia-msgrow-bg); border-top: 1px solid var(--mia-surface-border); align-items: center;
       }
       #magamaIA-input {
-        flex: 1; background: #262430; border: 1px solid #34313d; color: #ede9e2;
+        flex: 1; background: var(--mia-input-bg); border: 1px solid var(--mia-input-border); color: var(--mia-input-text);
         border-radius: 13px; padding: 12px 14px; font-size: 14px; font-family: inherit; outline: none;
         transition: border-color .2s;
       }
-      #magamaIA-input::placeholder { color: #75717e; }
-      #magamaIA-input:focus { border-color: rgba(216,168,92,.6); }
+      #magamaIA-input::placeholder { color: var(--mia-placeholder); }
+      #magamaIA-input:focus { border-color: rgba(216,168,92,.7); }
       #magamaIA-send {
         width: 46px; height: 46px; flex-shrink: 0; border: none; cursor: pointer; border-radius: 13px;
         background: linear-gradient(135deg, #dcae66, #c2913f); color: #241b0f;
@@ -205,6 +251,7 @@ const GeminiAI = {
             <div id="magamaIA-marca">MAGAMA SHOP · IA</div>
             <div id="magamaIA-estado"><span class="magamaIA-dot"></span> Asistente en línea</div>
           </div>
+          <button class="magamaIA-hbtn" id="magamaIA-tema" title="Cambiar tema">☀️</button>
           <button class="magamaIA-hbtn" id="magamaIA-limpiar" title="Limpiar conversación">&#8635;</button>
           <button class="magamaIA-hbtn" id="magamaIA-min" title="Cerrar">&times;</button>
         </div>
@@ -224,10 +271,31 @@ const GeminiAI = {
     document.getElementById('magamaIA-fab').onclick = () => this.toggle();
     document.getElementById('magamaIA-min').onclick = () => this.toggle();
     document.getElementById('magamaIA-limpiar').onclick = () => this.limpiar();
+    document.getElementById('magamaIA-tema').onclick = () => this.cambiarTema();
     document.getElementById('magamaIA-send').onclick = () => this.enviar();
     document.getElementById('magamaIA-input').addEventListener('keydown', (e) => {
       if (e.key === 'Enter') { e.preventDefault(); this.enviar(); }
     });
+  },
+
+  // ── Tema claro / oscuro ──
+  _aplicarTema(tema) {
+    const panel = document.getElementById('magamaIA-panel');
+    const btn = document.getElementById('magamaIA-tema');
+    if (tema === 'claro') {
+      panel.classList.add('magamaIA-light');
+      btn.textContent = '🌙'; btn.title = 'Cambiar a modo oscuro';
+    } else {
+      panel.classList.remove('magamaIA-light');
+      btn.textContent = '☀️'; btn.title = 'Cambiar a modo claro';
+    }
+  },
+
+  cambiarTema() {
+    const panel = document.getElementById('magamaIA-panel');
+    const nuevo = panel.classList.contains('magamaIA-light') ? 'oscuro' : 'claro';
+    try { localStorage.setItem('magamaIA_tema', nuevo); } catch (e) {}
+    this._aplicarTema(nuevo);
   },
 
   toggle() {
@@ -265,7 +333,6 @@ const GeminiAI = {
     });
   },
 
-  // Contexto del negocio (datos en vivo, fecha LOCAL)
   _getContexto() {
     const d = new Date();
     const hoy = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
@@ -298,7 +365,6 @@ DATOS ACTUALES DEL NEGOCIO:
 - Algunos productos (nombre, precio, stock): ${topProductos}`;
   },
 
-  // Enviar (input o sugerencia)
   async enviar(textoForzado) {
     const input = document.getElementById('magamaIA-input');
     const texto = (typeof textoForzado === 'string' ? textoForzado : (input.value || '')).trim();
@@ -342,9 +408,7 @@ DATOS ACTUALES DEL NEGOCIO:
     const cont = document.getElementById('magamaIA-mensajes');
     const fila = document.createElement('div');
     fila.className = 'magamaIA-fila ' + tipo;
-    const av = tipo === 'bot'
-      ? '<div class="magamaIA-av">✦</div>'
-      : '<div class="magamaIA-av">🧑</div>';
+    const av = tipo === 'bot' ? '<div class="magamaIA-av">✦</div>' : '<div class="magamaIA-av">🧑</div>';
     const cuerpo = tipo === 'bot' ? this._formatear(texto) : this._escapar(texto);
     fila.innerHTML = `${av}<div><div class="magamaIA-burbuja">${cuerpo}</div><div class="magamaIA-hora">${this._hora()}</div></div>`;
     cont.appendChild(fila);
@@ -369,11 +433,8 @@ DATOS ACTUALES DEL NEGOCIO:
     return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
   },
 
-  _escapar(t) {
-    return t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  },
+  _escapar(t) { return t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); },
 
-  // Formato basico tipo markdown: **negrita**, vinetas y saltos de linea
   _formatear(t) {
     let s = this._escapar(t);
     s = s.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
@@ -383,7 +444,6 @@ DATOS ACTUALES DEL NEGOCIO:
   }
 };
 
-// Auto-iniciar
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => GeminiAI.init());
 } else {
