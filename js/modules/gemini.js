@@ -334,35 +334,82 @@ const GeminiAI = {
   },
 
   _getContexto() {
-    const d = new Date();
-    const hoy = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-    const ventas    = (typeof DB !== 'undefined' && DB.ventas)    ? DB.ventas    : [];
-    const productos = (typeof DB !== 'undefined' && DB.productos) ? DB.productos : [];
-    const clientes  = (typeof DB !== 'undefined' && DB.clientes)  ? DB.clientes  : [];
-    const emp       = (typeof DB !== 'undefined' && DB.empresa)   ? DB.empresa   : {};
+    const pad = n => String(n).padStart(2, '0');
+    const fechaStr = dt => dt.getFullYear() + '-' + pad(dt.getMonth() + 1) + '-' + pad(dt.getDate());
+    const hoy = fechaStr(new Date());
+    const mesActual = hoy.slice(0, 7);
+    const h7 = new Date(); h7.setDate(h7.getDate() - 7);
+    const limite7 = fechaStr(h7);
 
-    const totalVentas = ventas.reduce((s, v) => s + (parseFloat(v.total) || 0), 0);
-    const ventasHoy   = ventas.filter(v => v.fecha === hoy && v.estado !== 'ANULADO');
-    const totalHoy    = ventasHoy.reduce((s, v) => s + (parseFloat(v.total) || 0), 0);
-    const agotados    = productos.filter(p => (parseInt(p.stock) || 0) === 0);
-    const bajos       = productos.filter(p => p.stock > 0 && p.stock <= (p.stock_minimo || 10));
-    const topProductos = productos.slice(0, 12)
-      .map(p => `${p.nombre} (S/ ${p.precio_venta}, stock: ${p.stock})`).join('; ');
+    const D = (typeof DB !== 'undefined') ? DB : {};
+    const ventas    = (D.ventas || []).filter(v => v.estado !== 'ANULADO');
+    const productos = D.productos || [];
+    const clientes  = D.clientes  || [];
+    const emp       = D.empresa   || {};
+    const cajas     = D.cajas     || [];
 
-    return `Eres el asistente inteligente de MAGAMA SHOP, integrado en el sistema JUMILA ERP de ${emp.nombre || 'MAGAMA'}, una tienda de ropa en Huánuco, Perú. Responde SIEMPRE en español, de forma breve, clara y amable. Usa **negritas** para resaltar cifras importantes y guiones para listas.
+    const soles = n => 'S/ ' + (parseFloat(n) || 0).toFixed(2);
+    const sum = arr => arr.reduce((s, v) => s + (parseFloat(v.total) || 0), 0);
 
-DATOS ACTUALES DEL NEGOCIO:
-- Empresa: ${emp.nombre || ''}
-- RUC: ${emp.ruc || ''}
-- Sucursal: ${emp.sucursal || ''}
-- Fecha de hoy: ${hoy}
-- Ventas de hoy: ${ventasHoy.length} comprobantes por S/ ${totalHoy.toFixed(2)}
-- Total histórico de ventas: S/ ${totalVentas.toFixed(2)}
+    const vHoy = ventas.filter(v => v.fecha === hoy);
+    const vSem = ventas.filter(v => v.fecha >= limite7);
+    const vMes = ventas.filter(v => (v.fecha || '').slice(0, 7) === mesActual);
+
+    const porPago = {};
+    ventas.forEach(v => { const m = v.metodo_pago || 'Otro'; porPago[m] = (porPago[m] || 0) + (parseFloat(v.total) || 0); });
+    const pagoStr = Object.keys(porPago).map(k => `${k}: ${soles(porPago[k])}`).join(', ') || 'sin datos';
+
+    const porSerie = {};
+    ventas.forEach(v => { const s = v.serie || '¿?'; porSerie[s] = (porSerie[s] || 0) + 1; });
+    const serieStr = Object.keys(porSerie).map(k => `${k}: ${porSerie[k]}`).join(', ') || 'sin datos';
+
+    const agotados = productos.filter(p => (parseInt(p.stock) || 0) === 0);
+    const bajos    = productos.filter(p => p.stock > 0 && p.stock <= (p.stock_minimo || 10));
+    const valorInv = productos.reduce((s, p) => s + (parseFloat(p.precio_venta) || 0) * (parseInt(p.stock) || 0), 0);
+
+    const porCat = {};
+    productos.forEach(p => { const c = p.categoria || 'General'; porCat[c] = (porCat[c] || 0) + 1; });
+    const catStr = Object.keys(porCat).map(c => `${c} (${porCat[c]})`).join(', ') || 'sin datos';
+
+    const porTipoCli = {};
+    clientes.forEach(c => { const t = c.tipo_cliente || 'cliente'; porTipoCli[t] = (porTipoCli[t] || 0) + 1; });
+    const tipoCliStr = Object.keys(porTipoCli).map(t => `${t}: ${porTipoCli[t]}`).join(', ');
+
+    const catalogo = productos
+      .map(p => `${p.nombre} | ${p.categoria || 'General'} | ${soles(p.precio_venta)} | stock ${p.stock}`)
+      .join('\n');
+
+    const cajaAbierta = cajas.find(c => c.estado === 'ABIERTA');
+    const cajaStr = cajaAbierta ? `ABIERTA (monto inicial ${soles(cajaAbierta.monto_inicial)})` : 'Sin caja abierta';
+
+    return `Eres el asistente inteligente de MAGAMA SHOP, integrado en JUMILA ERP, una tienda de ropa en Huánuco, Perú. Responde SIEMPRE en español, breve y claro. Usa **negritas** para cifras y guiones para listas. Si algo no está en los datos, dilo con honestidad y NO inventes cifras.
+
+=== EMPRESA ===
+${emp.nombre || ''} | RUC ${emp.ruc || ''} | ${emp.sucursal || ''}
+Fecha de hoy: ${hoy}
+
+=== VENTAS (sin anuladas) ===
+- Hoy: ${vHoy.length} comprobantes, ${soles(sum(vHoy))}
+- Últimos 7 días: ${vSem.length} comprobantes, ${soles(sum(vSem))}
+- Mes actual: ${vMes.length} comprobantes, ${soles(sum(vMes))}
+- Histórico: ${ventas.length} comprobantes, ${soles(sum(ventas))}
+- Por método de pago: ${pagoStr}
+- Por serie (comprobantes): ${serieStr}
+
+=== INVENTARIO ===
 - Productos registrados: ${productos.length}
-- Productos agotados (stock 0): ${agotados.length}
-- Productos con stock bajo: ${bajos.length}
-- Total de clientes: ${clientes.length}
-- Algunos productos (nombre, precio, stock): ${topProductos}`;
+- Valor del inventario (a precio venta): ${soles(valorInv)}
+- Agotados: ${agotados.length} | Stock bajo: ${bajos.length}
+- Categorías: ${catStr}
+
+=== CLIENTES ===
+- Total: ${clientes.length} (${tipoCliStr})
+
+=== ESTADO DE CAJA ===
+${cajaStr}
+
+=== CATÁLOGO COMPLETO (nombre | categoría | precio | stock) ===
+${catalogo}`;
   },
 
   async enviar(textoForzado) {
