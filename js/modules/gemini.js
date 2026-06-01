@@ -126,7 +126,8 @@ const GeminiAI = {
 
   // ── Construir el contexto del negocio (datos en vivo del ERP) ──
   _getContexto() {
-    const hoy       = new Date().toISOString().split('T')[0];
+    const _hoyD = new Date();
+    const hoy = _hoyD.getFullYear() + '-' + String(_hoyD.getMonth() + 1).padStart(2, '0') + '-' + String(_hoyD.getDate()).padStart(2, '0');
     const ventas    = (typeof DB !== 'undefined' && DB.ventas)    ? DB.ventas    : [];
     const productos = (typeof DB !== 'undefined' && DB.productos) ? DB.productos : [];
     const clientes  = (typeof DB !== 'undefined' && DB.clientes)  ? DB.clientes  : [];
