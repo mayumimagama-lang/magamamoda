@@ -44,7 +44,7 @@ const InicioModule = {
     // ✅ CORRECTO
 var saludo = hora<12?'🌅 Buenos días':hora<18?'🌤️ Buenas tardes':'🌙 Buenas noches';
     saludo = hora<12?'🌅 Buenos días':hora<18?'🌤️ Buenas tardes':'🌙 Buenas noches';
-    var nombre = DB.usuarioActual ? DB.usuarioActual.nombre.split(' ')[0] : 'Equipo';
+    var nombre = (DB.usuarioActual && DB.usuarioActual.nombre) ? DB.usuarioActual.nombre.split(' ')[0] : 'Equipo';  
 
     // Tendencias respecto al período anterior
     var ant   = this._calcularDatosAnteriores();
