@@ -339,8 +339,8 @@ const SupabaseDB = {
 
   // Respaldo: permite entrar desde CUALQUIER compu aunque la lista local esté vacía
   _infoUsuarios: {
-    'MayumiMagama': { usuario: 'MayumiMagama', activo: true, cargo: 'ADMINISTRADOR' },
-    'AstridVara':   { usuario: 'AstridVara',   activo: true, cargo: 'ADMINISTRADOR' } // ajusta si AstridVara no es admin
+    'MayumiMagama': { usuario: 'MayumiMagama', activo: true, cargo: 'ADMINISTRADOR', nombre: 'MAGAMA Administrador' },
+    'AstridVara':   { usuario: 'AstridVara',   activo: true, cargo: 'ADMINISTRADOR', nombre: 'Astrid Vara' } // ajusta el nombre si es otro
   },
 
   _resolverUsuario: function(usuario) {
