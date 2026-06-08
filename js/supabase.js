@@ -337,6 +337,20 @@ const SupabaseDB = {
     'bf399d25-053a-4154-9d5e-203de63c0045': 'AstridVara'
   },
 
+  // Respaldo: permite entrar desde CUALQUIER compu aunque la lista local esté vacía
+  _infoUsuarios: {
+    'MayumiMagama': { usuario: 'MayumiMagama', activo: true, cargo: 'ADMINISTRADOR' },
+    'AstridVara':   { usuario: 'AstridVara',   activo: true, cargo: 'ADMINISTRADOR' } // ajusta si AstridVara no es admin
+  },
+
+  _resolverUsuario: function(usuario) {
+    var found = (DB.usuarios || []).find(function(u) {
+      return u.usuario === usuario && u.activo;
+    });
+    if (!found) found = this._infoUsuarios[usuario] || { usuario: usuario, activo: true };
+    return found;
+  },
+
   async loginConSupabase(email, password) {
     try {
       const { data, error } = await db.auth.signInWithPassword({ email, password });
@@ -344,10 +358,7 @@ const SupabaseDB = {
       const uid     = data.user.id;
       const usuario = this._uuidMap[uid];
       if (!usuario) throw new Error('Usuario no autorizado en el sistema');
-      const found = DB.usuarios.find(function(u) {
-        return u.usuario === usuario && u.activo;
-      });
-      if (!found) throw new Error('Usuario inactivo o no encontrado');
+      const found = this._resolverUsuario(usuario);
       console.log('✅ Login Supabase OK:', found.usuario);
       return { ok: true, usuario: found };
     } catch(e) {
@@ -399,10 +410,7 @@ const SupabaseDB = {
       const uid     = data.session.user.id;
       const usuario = this._uuidMap[uid];
       if (!usuario) return { ok: false };
-      const found = DB.usuarios.find(function(u) {
-        return u.usuario === usuario && u.activo;
-      });
-      if (!found) return { ok: false };
+      const found = this._resolverUsuario(usuario);
       return { ok: true, usuario: found };
     } catch(e) {
       return { ok: false };
