@@ -1007,6 +1007,8 @@ document.addEventListener('DOMContentLoaded', function() {
   SupabaseDB.cargarCotizaciones();
   SupabaseDB.cargarVentas();
   SupabaseDB.cargarAgenda();
+  SupabaseDB.cargarCaja();
+  SupabaseDB.cargarMovimientosCaja();
   SupabaseDB.iniciarSincronizacion();
   document.getElementById('loginPage').classList.add('hidden');
   document.getElementById('mainApp').classList.remove('hidden');
@@ -1032,6 +1034,8 @@ document.addEventListener('DOMContentLoaded', function() {
   SupabaseDB.cargarClientes();
   SupabaseDB.cargarCotizaciones();
   SupabaseDB.cargarAgenda();
+  SupabaseDB.cargarCaja();
+  SupabaseDB.cargarMovimientosCaja();
 
   // 3. Intentar restaurar sesión activa (evita cerrar sesión al recargar)
   var sessionRestored = false;
