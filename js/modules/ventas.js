@@ -953,12 +953,9 @@ const VentasModule = {
         '<p style="font-size:10px;color:var(--gray-400);margin:5px 0 0;">' +
           (cli&&cli.telefono?'✅ Número del cliente pre-cargado.':'9 dígitos sin el +51. Ej: 987654321') +
         '</p>' +
-      '</div>',
-      [
-        {text:'🖨️ Imprimir',cls:'btn-primary',cb:function(){VentasModule.imprimirComprobante(v);App.closeModal();}},
-        (v.estado!=='ACEPTADO'&&v.estado!=='ANULADO'?{text:'📩 Enviar SUNAT',cls:'btn-outline',cb:function(){App.closeModal();VentasModule.enviarSunat(v.id);}}:null),
-        (v.estado!=='ANULADO'?{text:'🚫 Anular',cls:'btn-danger',cb:function(){App.closeModal();VentasModule.anular(v.id);}}:null),
-      ].filter(Boolean)
+      '</div>' +
+      VentasModule._panelAcciones(v),
+      [ {text:'Cerrar',cls:'btn-outline',cb:function(){App.closeModal();}} ]
     );
     document.getElementById('modalBox').style.maxWidth='560px';
   },
@@ -1412,6 +1409,81 @@ const VentasModule = {
       window.open('https://wa.me/51'+num+'?text='+encodeURIComponent(msg), '_blank');
     }
     App.toast('\u2705 Abriendo WhatsApp...', 'success');
+  },
+
+  // ─────────────────────────────────────────────────────────
+  // PANEL DE ACCIONES DEL COMPROBANTE (completo)
+  // ─────────────────────────────────────────────────────────
+  _panelAcciones(v) {
+    var esBolFac      = (v.tipo==='BOL'||v.tipo==='FAC');
+    var aceptadoSunat = (v.estado==='ACEPTADO' && v.sunat_documentId);
+    var noAnulado     = (v.estado!=='ANULADO');
+
+    function btn(label, icon, color, onclick) {
+      return '<button onclick="'+onclick+'" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:11px 12px;border:none;border-radius:9px;background:'+color+';color:white;font-size:13px;font-weight:700;cursor:pointer;width:100%;box-sizing:border-box;">' +
+        '<i class="'+icon+'"></i>'+label+'</button>';
+    }
+
+    var AZUL='#2563eb', VERDE='#16a34a', MORADO='#7c3aed', GRIS='#64748b', ROJO='#dc2626', TEAL='#0891b2';
+    var b = [];
+
+    b.push(btn('Enviar por correo','fas fa-envelope',AZUL,"VentasModule._enviarCorreo("+v.id+")"));
+    b.push(btn('Enviar por WhatsApp','fab fa-whatsapp',VERDE,"VentasModule._enviarWADetalle("+v.id+")"));
+    b.push(btn('Visualizar PDF','fas fa-file-pdf',AZUL,"VentasModule.imprimir("+v.id+");App.closeModal();"));
+    b.push(btn('Imprimir','fas fa-print',AZUL,"VentasModule.imprimir("+v.id+");App.closeModal();"));
+    b.push(btn('Descargar PDF','fas fa-download',AZUL,"VentasModule.imprimir("+v.id+");App.closeModal();"));
+    b.push(btn('Guía de Remisión','fas fa-truck',GRIS,"App.toast('Guías de Remisión — próximamente','info')"));
+    b.push(btn('Nota de Crédito','fas fa-file-invoice',MORADO,"App.closeModal();App.navigate('notascredito');"));
+    b.push(btn('Nota de Débito','fas fa-file-invoice-dollar',MORADO,"App.closeModal();App.navigate('notascredito');"));
+    if (aceptadoSunat) {
+      b.push(btn('Descargar XML','fas fa-code',GRIS,"VentasModule._descargarSunat("+v.id+",'xml')"));
+      b.push(btn('Descargar CDR','fas fa-file-contract',GRIS,"VentasModule._descargarSunat("+v.id+",'cdr')"));
+    }
+    if (esBolFac && v.estado!=='ACEPTADO' && noAnulado) {
+      b.push(btn('Enviar a SUNAT','fas fa-paper-plane',VERDE,"App.closeModal();VentasModule.enviarSunat("+v.id+");"));
+    }
+    b.push(btn('Nuevo','fas fa-plus-circle',VERDE,"App.closeModal();VentasModule.nuevaVenta();"));
+    if (noAnulado) b.push(btn('Anular','fas fa-ban',ROJO,"App.closeModal();VentasModule.anular("+v.id+");"));
+    b.push(btn('Listado','fas fa-list',TEAL,"App.closeModal();VentasModule.modoVista='lista';App.renderPage();"));
+    b.push(btn('Convertir a Nuevo CPE','fas fa-exchange-alt',AZUL,"VentasModule.convertirCPE("+v.id+")"));
+
+    return '<div style="margin-top:16px;padding-top:14px;border-top:2px solid var(--gray-200);">' +
+      '<div style="font-size:11px;font-weight:800;color:var(--gray-400);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;"><i class="fas fa-bolt" style="color:var(--accent);margin-right:5px;"></i>Acciones del Comprobante</div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">' + b.join('') + '</div>' +
+    '</div>';
+  },
+
+  _enviarCorreo(id) {
+    var v=(DB.ventas||[]).find(function(x){return Number(x.id)===Number(id);}); if(!v)return;
+    var cli=(DB.clientes||[]).find(function(c){return c.id===v.cliente_id;});
+    var para=(cli&&cli.email)?cli.email:'';
+    var asunto=(DB.empresa.nombre||'MAGAMA')+' — '+v.serie+'-'+v.numero;
+    var cuerpo='Hola'+(cli&&cli.nombre?' '+cli.nombre:'')+',\n\n'+
+      'Le compartimos el detalle de su comprobante:\n\n'+
+      v.tipo_comprobante+': '+v.serie+'-'+v.numero+'\n'+
+      'Fecha: '+v.fecha+' '+v.hora+'\n'+
+      'Total: S/ '+v.total.toFixed(2)+'\n\n'+
+      '¡Gracias por su compra!\n'+(DB.empresa.nombre||'MAGAMA');
+    window.location.href='mailto:'+encodeURIComponent(para)+'?subject='+encodeURIComponent(asunto)+'&body='+encodeURIComponent(cuerpo);
+    App.toast('📧 Abriendo tu correo...','info');
+  },
+
+  _descargarSunat(id, tipo) {
+    App.toast('La descarga de '+(tipo||'').toUpperCase()+' desde SUNAT necesita un paso extra en el proxy. Te lo armo aparte cuando quieras.','info');
+  },
+
+  convertirCPE(id) {
+    var v=(DB.ventas||[]).find(function(x){return Number(x.id)===Number(id);}); if(!v)return;
+    App.closeModal();
+    this.nuevaVenta();
+    this.currentItems=(v.items||[]).map(function(it){
+      var p=(DB.productos||[]).find(function(x){return x.id===it.prod_id;});
+      return {prod_id:it.prod_id,codigo:p?p.codigo:'',nombre:it.nombre,imagen:p?(p.imagen||''):'',unidad:p?(p.unidad||'UND'):'UND',precio:it.precio,qty:it.qty,dcto:0,total:it.total};
+    });
+    var cli=(DB.clientes||[]).find(function(c){return c.id===v.cliente_id;});
+    if(cli) this.selectedCliente=cli;
+    App.toast('📋 Datos copiados — elige el tipo de comprobante y procesa','info');
+    App.renderPage();
   },
 
   toggleMenu(id) {
