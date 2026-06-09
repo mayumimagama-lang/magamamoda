@@ -329,6 +329,77 @@ const SupabaseDB = {
   },
 
   // ============================================================
+  // CAJA
+  // ============================================================
+
+  async cargarCaja() {
+    try {
+      const { data, error } = await db.from('caja').select('*').order('id', { ascending: false }).limit(1);
+      if (error) throw error;
+      if (data && data.length > 0) DB.cajas = [data[0]];
+      console.log('✅ Caja cargada desde Supabase');
+      return { ok: true };
+    } catch(e) {
+      console.warn('⚠️ Error cargando caja:', e);
+      return { ok: false };
+    }
+  },
+
+  async guardarCaja(caja) {
+    try {
+      const { error } = await db.from('caja').upsert([{
+        id:             caja.id,
+        estado:         caja.estado         || 'CERRADA',
+        monto_inicial:  caja.monto_inicial  || 0,
+        fecha_apertura: caja.fecha_apertura || '',
+        hora_apertura:  caja.hora_apertura  || '',
+        responsable:    caja.responsable    || '',
+        hora_cierre:    caja.hora_cierre    || null,
+        monto_contado:  caja.monto_contado  ?? null
+      }]);
+      if (error) throw error;
+      console.log('✅ Caja guardada en Supabase');
+      return { ok: true };
+    } catch(e) {
+      console.warn('⚠️ Error guardando caja:', e);
+      return { ok: false };
+    }
+  },
+
+  async cargarMovimientosCaja() {
+    try {
+      const { data, error } = await db.from('movimientos_caja').select('*').order('id', { ascending: false });
+      if (error) throw error;
+      DB.movimientosCaja = data || [];
+      console.log('✅ ' + DB.movimientosCaja.length + ' movimientos de caja cargados desde Supabase');
+      return { ok: true };
+    } catch(e) {
+      console.warn('⚠️ Error cargando movimientos de caja:', e);
+      return { ok: false };
+    }
+  },
+
+  async guardarMovimientoCaja(mov) {
+    try {
+      const { error } = await db.from('movimientos_caja').upsert([{
+        id:          mov.id,
+        tipo:        mov.tipo        || '',
+        concepto:    mov.concepto    || '',
+        monto:       mov.monto       || 0,
+        fecha:       mov.fecha       || '',
+        hora:        mov.hora        || '',
+        responsable: mov.responsable || ''
+      }]);
+      if (error) throw error;
+      console.log('✅ Movimiento de caja guardado en Supabase');
+      return { ok: true };
+    } catch(e) {
+      console.warn('⚠️ Error guardando movimiento de caja:', e);
+      return { ok: false };
+    }
+  },
+
+  // ============================================================
   // AUTH
   // ============================================================
 
