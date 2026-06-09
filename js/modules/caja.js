@@ -346,6 +346,7 @@ const CajaModule = {
         [{ text:'✅ Abrir Caja', cls:'btn-success', cb: function() {
           var monto = parseFloat(document.getElementById('montoApertura')?.value) || 0;
           DB.cajas[0] = {
+            id: Date.now(),
             estado: 'ABIERTA',
             monto_inicial: monto,
             fecha_apertura: CajaModule._fechaHoy(),
@@ -353,6 +354,7 @@ const CajaModule = {
             responsable: DB.usuarioActual?.usuario || ''
           };
           Storage.guardarCajas();
+          SupabaseDB.guardarCaja(DB.cajas[0]);
           App.toast('✅ Caja abierta con S/ '+monto.toFixed(2), 'success');
           App.closeModal();
           App.renderPage();
@@ -408,10 +410,12 @@ const CajaModule = {
 
       App.showModal('🔒 Cierre de Caja', resumenHTML, [
         { text:'🔒 Confirmar Cierre', cls:'btn-danger', cb: function() {
+          if (!DB.cajas[0].id) DB.cajas[0].id = Date.now();
           DB.cajas[0].estado = 'CERRADA';
           DB.cajas[0].hora_cierre = CajaModule._horaAhora();
           DB.cajas[0].monto_contado = parseFloat(document.getElementById('montoContado')?.value) || 0;
           Storage.guardarCajas();
+          SupabaseDB.guardarCaja(DB.cajas[0]);
           App.toast('🔒 Caja cerrada correctamente', 'warning');
           App.closeModal();
           App.renderPage();
@@ -470,12 +474,14 @@ const CajaModule = {
         if (!concepto) { App.toast('Ingresa el concepto', 'error'); return; }
         if (monto <= 0) { App.toast('Ingresa un monto válido', 'error'); return; }
         if (!DB.movimientosCaja) DB.movimientosCaja = [];
-        DB.movimientosCaja.push({
+        var mov = {
           id: Date.now(), tipo: 'INGRESO', concepto: concepto,
           monto: monto, fecha: CajaModule._fechaHoy(), hora: CajaModule._horaAhora(),
           responsable: DB.usuarioActual?.usuario || ''
-        });
+        };
+        DB.movimientosCaja.push(mov);
         Storage.guardarMovimientosCaja();
+        SupabaseDB.guardarMovimientoCaja(mov);
         App.toast('✅ Ingreso registrado: S/ '+monto.toFixed(2), 'success');
         App.closeModal();
         App.renderPage();
@@ -514,12 +520,14 @@ const CajaModule = {
         if (!concepto) { App.toast('Ingresa el concepto', 'error'); return; }
         if (monto <= 0) { App.toast('Ingresa un monto válido', 'error'); return; }
         if (!DB.movimientosCaja) DB.movimientosCaja = [];
-        DB.movimientosCaja.push({
+        var mov = {
           id: Date.now(), tipo: 'EGRESO', concepto: concepto,
           monto: monto, fecha: CajaModule._fechaHoy(), hora: CajaModule._horaAhora(),
           responsable: DB.usuarioActual?.usuario || ''
-        });
+        };
+        DB.movimientosCaja.push(mov);
         Storage.guardarMovimientosCaja();
+        SupabaseDB.guardarMovimientoCaja(mov);
         App.toast('⚠️ Egreso registrado: S/ '+monto.toFixed(2), 'warning');
         App.closeModal();
         App.renderPage();
