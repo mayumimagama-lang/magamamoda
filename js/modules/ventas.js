@@ -258,6 +258,7 @@ const VentasModule = {
     this.montoPago       = 0;
     this.descGlobal      = 0;
     this.mayoristaModo   = false;
+    this._convertingFromId = null;
     this._montoCombinadoA = 0;
     this._montoCombinadoB = 0;
     this.modoVista       = 'comprobante';
@@ -831,6 +832,25 @@ const VentasModule = {
       metodo_pago:metodoFinal, monto_pago:monto, vuelto:Math.max(0,monto-total),
       cajero:DB.usuarioActual?.usuario||'—'
     };
+
+    // Si viene de "Convertir a Nuevo CPE": anula la Nota de Venta original (devuelve su stock) para no duplicar
+    if(this._convertingFromId){
+      var _oid=this._convertingFromId; this._convertingFromId=null;
+      var _oi=(DB.ventas||[]).findIndex(function(x){return Number(x.id)===Number(_oid);});
+      if(_oi>=0 && DB.ventas[_oi].estado!=='ANULADO'){
+        DB.ventas[_oi].estado='ANULADO';
+        (DB.ventas[_oi].items||[]).forEach(function(item){
+          var pi=(DB.productos||[]).findIndex(function(p){return p.id===item.prod_id;});
+          if(pi>=0) DB.productos[pi].stock=(DB.productos[pi].stock||0)+item.qty;
+        });
+        SupabaseDB.actualizarVenta(DB.ventas[_oi]);
+        (DB.ventas[_oi].items||[]).forEach(function(item){
+          var pi=(DB.productos||[]).findIndex(function(p){return p.id===item.prod_id;});
+          if(pi>=0) SupabaseDB.actualizarProducto(DB.productos[pi]);
+        });
+        App.toast('↩️ Nota de Venta original anulada (convertida a '+serie+'-'+numero+')','info');
+      }
+    }
 
     this.currentItems.forEach(function(item){
       var pi=(DB.productos||[]).findIndex(function(p){return p.id===item.prod_id;});
@@ -1482,7 +1502,8 @@ const VentasModule = {
     });
     var cli=(DB.clientes||[]).find(function(c){return c.id===v.cliente_id;});
     if(cli) this.selectedCliente=cli;
-    App.toast('📋 Datos copiados — elige el tipo de comprobante y procesa','info');
+    this._convertingFromId = id;
+    App.toast('📋 Productos copiados. Elige BOLETA o FACTURA arriba y procesa — la Nota de Venta original se anulará sola para no duplicar.','info');
     App.renderPage();
   },
 
