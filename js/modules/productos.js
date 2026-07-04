@@ -476,7 +476,12 @@ const ProductosModule = {
 
   // ─── FORMULARIO ───
   nuevo() { App.showModal('Nuevo Producto',this.formHTML({}),[{text:'Guardar',cls:'btn-success',cb:()=>this.guardar()}]); document.getElementById('modalBox').style.maxWidth='820px'; },
-  editar(id) { const p=DB.productos.find(x=>x.id===id); App.showModal('Editar Producto',this.formHTML(p||{}),[{text:'Guardar Cambios',cls:'btn-primary',cb:()=>this.guardar(id)}]); document.getElementById('modalBox').style.maxWidth='820px'; },
+  editar(id) {
+  const p = DB.productos.find(x=>x.id===id);
+  App.showModal('Editar Producto', this.formHTML(p||{}), [{text:'Guardar Cambios',cls:'btn-primary',cb:()=>this.guardar(id)}]);
+  document.getElementById('modalBox').style.maxWidth='820px';
+  if (p && p.barcode) setTimeout(() => this._renderBarcode(p.barcode), 100);
+},
 
   formHTML(p) {
     const unidades=['UND','KG','LT','G','ML','MTR','CM','CAJ','DOC','PQT','BLS','ROL'];
@@ -542,9 +547,22 @@ const ProductosModule = {
           <div class="form-group"><label class="form-label">Código <span style="font-size:10px;color:var(--gray-400);font-weight:600;">(opcional - se genera automático)</span></label>
             <input class="form-control" id="fp_codigo" placeholder="PROD001" value="${p.codigo||''}"/></div>
           <div class="form-group"><label class="form-label">Código de Barras</label>
-            <input class="form-control" id="fp_barcode" placeholder="Escanea con lector o escribe..." value="${p.barcode||''}" 
-            onkeydown="ProductosModule._onBarcodeKey(event)" 
-            oninput="ProductosModule._onBarcodeInput(this.value)"/></div>
+            <div style="display:flex;gap:6px;">
+              <input class="form-control" id="fp_barcode" placeholder="Escanea con lector o escribe..." value="${p.barcode||''}" 
+              onkeydown="ProductosModule._onBarcodeKey(event)" 
+              oninput="ProductosModule._onBarcodeInput(this.value)" style="flex:1;"/>
+              <button type="button" class="btn btn-outline" style="padding:9px 12px;white-space:nowrap;"
+                onclick="ProductosModule._generarBarcode()" title="Generar código de barras">
+                <i class="fas fa-magic"></i>
+              </button>
+            </div>
+            <div id="barcodePreviewWrap" style="display:${p.barcode?'flex':'none'};align-items:center;gap:10px;margin-top:8px;background:var(--gray-50);border-radius:8px;padding:8px;">
+              <svg id="barcodeSVG" style="max-width:220px;"></svg>
+              <button type="button" class="btn btn-outline btn-sm" onclick="ProductosModule._descargarBarcode()">
+                <i class="fas fa-download"></i> Descargar
+              </button>
+            </div>
+          </div>
           <div class="form-group" style="grid-column:1/-1"><label class="form-label">Nombre <span class="required">*</span></label>
             <input class="form-control" id="fp_nombre" placeholder="Nombre del producto" value="${p.nombre||''}"/></div>
           <div class="form-group"><label class="form-label">Categoría</label>
@@ -849,6 +867,75 @@ const ProductosModule = {
       input.style.borderColor = '';
       input.style.background  = '';
     }
+  },
+
+  _generarBarcode() {
+    const input = document.getElementById('fp_barcode');
+    if (!input) return;
+    let valor = input.value.trim();
+    if (!valor) {
+      valor = this._generarEAN13();
+      input.value = valor;
+      this._onBarcodeInput(valor);
+    }
+    this._renderBarcode(valor);
+  },
+
+  _generarEAN13() {
+    let codigo = '200'; // prefijo interno MAGAMA
+    for (let i = 0; i < 9; i++) codigo += Math.floor(Math.random() * 10);
+    let suma = 0;
+    for (let i = 0; i < 12; i++) suma += parseInt(codigo[i]) * (i % 2 === 0 ? 1 : 3);
+    const digitoVerificador = (10 - (suma % 10)) % 10;
+    return codigo + digitoVerificador;
+  },
+
+  _renderBarcode(valor) {
+    if (typeof JsBarcode === 'undefined') {
+      App.toast('Librería de código de barras no cargada', 'error');
+      return;
+    }
+    try {
+      JsBarcode('#barcodeSVG', valor, {
+        format: 'CODE128',
+        lineColor: '#000',
+        width: 2,
+        height: 50,
+        displayValue: true,
+        fontSize: 14,
+        margin: 6
+      });
+      const wrap = document.getElementById('barcodePreviewWrap');
+      if (wrap) wrap.style.display = 'flex';
+    } catch (e) {
+      App.toast('Código inválido para generar barras', 'error');
+    }
+  },
+
+  _descargarBarcode() {
+    const svg = document.getElementById('barcodeSVG');
+    if (!svg || !svg.innerHTML) { App.toast('Primero genera el código de barras', 'warning'); return; }
+    const svgData = new XMLSerializer().serializeToString(svg);
+    const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+    const url = URL.createObjectURL(svgBlob);
+    const img = new Image();
+    img.onload = function () {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0);
+      URL.revokeObjectURL(url);
+      const pngUrl = canvas.toDataURL('image/png');
+      const codigo = document.getElementById('fp_codigo')?.value || 'producto';
+      const a = document.createElement('a');
+      a.href = pngUrl;
+      a.download = 'barcode_' + codigo + '.png';
+      a.click();
+    };
+    img.src = url;
   },
 
   // ─── IMAGEN: MÉTODOS ───
