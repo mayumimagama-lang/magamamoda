@@ -491,8 +491,31 @@ ${catalogo}`;
   }
 };
 
+// ── Solo mostrar el asistente cuando el usuario esté logueado (mainApp visible) ──
+function magamaIA_sync() {
+  const mainApp = document.getElementById('mainApp');
+  if (!mainApp) return;
+  const logueado = !mainApp.classList.contains('hidden');
+
+  if (logueado) {
+    if (!document.getElementById('magamaIA-root')) GeminiAI.init();
+    const root = document.getElementById('magamaIA-root');
+    if (root) root.style.display = '';
+  } else {
+    const root = document.getElementById('magamaIA-root');
+    if (root) root.style.display = 'none';
+  }
+}
+
+function magamaIA_iniciarObservador() {
+  const mainApp = document.getElementById('mainApp');
+  if (!mainApp) { setTimeout(magamaIA_iniciarObservador, 300); return; }
+  magamaIA_sync(); // estado inicial
+  new MutationObserver(magamaIA_sync).observe(mainApp, { attributes: true, attributeFilter: ['class'] });
+}
+
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => GeminiAI.init());
+  document.addEventListener('DOMContentLoaded', magamaIA_iniciarObservador);
 } else {
-  GeminiAI.init();
+  magamaIA_iniciarObservador();
 }
