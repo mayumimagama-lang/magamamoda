@@ -87,7 +87,7 @@ const VentasModule = {
         {l:'En Período',      v:filtered.length,                sub:filtered.length+' comprobantes',    c:'#16a34a',bg:'#f0fdf4',i:'fa-file-invoice'},
         {l:'Anulados', v:filtered.filter(function(v){return v.estado==='ANULADO';}).length, sub:'comprobantes anulados', c:'#dc2626',bg:'#fef2f2',i:'fa-ban'},
         {l:'Aceptados SUNAT', v:filtered.filter(function(v){return v.estado==='ACEPTADO';}).length, sub:'S/ '+tAcep.toFixed(2), c:'#16a34a',bg:'#f0fdf4',i:'fa-check-circle'},
-        {l:'Por Enviar',      v:filtered.filter(function(v){return v.estado==='NO_ENVIADO';}).length, sub:'pendientes SUNAT', c:'#d97706',bg:'#fffbeb',i:'fa-clock'},
+        {l:'Por Enviar',      v:filtered.filter(function(v){return v.estado==='NO_ENVIADO' && (v.tipo==='BOL'||v.tipo==='FAC');}).length, sub:'pendientes SUNAT', c:'#d97706',bg:'#fffbeb',i:'fa-clock'},
       ].map(function(k){
         return '<div style="padding:14px 16px;background:white;border-radius:12px;border:1.5px solid var(--gray-200);display:flex;align-items:center;gap:12px;">' +
           '<div style="width:38px;height:38px;border-radius:10px;background:'+k.bg+';color:'+k.c+';display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;"><i class="fas '+k.i+'"></i></div>' +
@@ -123,7 +123,10 @@ const VentasModule = {
           ANULADO:  {bg:'#fef2f2',c:'#dc2626',l:'✗ Anulado'},
           NO_ENVIADO:{bg:'#fffbeb',c:'#d97706',l:'⏳ Por enviar'},
         };
-        var est = estMap[v.estado] || estMap.NO_ENVIADO;
+        var esNVA = v.tipo==='N. VENTA';
+        var est = esNVA && v.estado==='NO_ENVIADO'
+          ? {bg:'var(--gray-100)',c:'var(--gray-500)',l:'— No aplica'}
+          : (estMap[v.estado] || estMap.NO_ENVIADO);
         return '<tr onmouseover="this.style.background=\'var(--gray-50)\'" onmouseout="this.style.background=\'white\'">' +
           '<td style="padding:11px 14px;">' +
             '<div style="font-size:13px;font-weight:700;color:var(--gray-800);">'+self.formatFecha(v.fecha)+'</div>' +
@@ -1139,12 +1142,16 @@ const VentasModule = {
             }
           }]
         },
-        'cac:LegalMonetaryTotal': {
-          'cbc:LineExtensionAmount': {'_attributes':{'currencyID':'PEN'},'_text':totalPagar},
-          'cbc:TaxInclusiveAmount':  {'_attributes':{'currencyID':'PEN'},'_text':totalPagar},
-          'cbc:PayableAmount':       {'_attributes':{'currencyID':'PEN'},'_text':totalPagar}
-        },
-        'cac:InvoiceLine': invoiceLines
+        'cac:PaymentTerms': {
+        'cbc:ID': {'_text': 'FormaPago'},
+        'cbc:PaymentMeansID': {'_text': p.formaPago || 'Contado'}
+      },
+      'cac:LegalMonetaryTotal': {
+        'cbc:LineExtensionAmount': {'_attributes':{'currencyID':'PEN'},'_text': totalPagar},
+        'cbc:TaxInclusiveAmount':  {'_attributes':{'currencyID':'PEN'},'_text': totalPagar},
+        'cbc:PayableAmount':       {'_attributes':{'currencyID':'PEN'},'_text': totalPagar}
+      },
+      'cac:InvoiceLine': invoiceLines
       }
     };
   },
@@ -1187,7 +1194,8 @@ const VentasModule = {
       docCli:       numDocCli,
       nombreCli:    nombreCli,
       schemeCli:    schemeIdCli,
-      items:        compactItems
+      items:        compactItems,
+      formaPago:    'Contado'
     });
     var res = await fetch(gasUrl + '?' + params.toString());
     if(!res.ok) throw new Error('HTTP ' + res.status);
