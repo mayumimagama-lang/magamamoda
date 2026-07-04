@@ -1203,14 +1203,14 @@ body.dark-mode .modal-overlay:has(.modal-fullscreen) {
   gap: 14px;
 }
 @media (min-width: 992px) {
-  .modal-fullscreen .prod-form-layout {
+  .prod-form-layout {
     display: grid;
     grid-template-columns: 300px 1fr;
     grid-template-rows: auto auto auto;
     gap: 16px;
     align-items: start;
   }
-  .modal-fullscreen .prod-form-layout > .form-section:nth-child(1) {
+  .prod-form-layout > .form-section:nth-child(1) {
     grid-column: 1;
     grid-row: 1 / 4;
     height: 100%;
