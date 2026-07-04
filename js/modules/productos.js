@@ -597,16 +597,20 @@ const ProductosModule = {
             <input class="form-control" id="fp_codigo" placeholder="PROD001" value="${p.codigo||''}"/></div>
           <div class="form-group"><label class="form-label">Código de Barras</label>
             <div style="display:flex;gap:6px;">
-              <input class="form-control" id="fp_barcode" placeholder="Escribe, escanea o genera automáticamente..." value="${p.barcode||''}" 
+              <input class="form-control" id="fp_barcode" placeholder="Clic en 'Escanear' y pasa el lector..." value="${p.barcode||''}" 
               onkeydown="ProductosModule._onBarcodeKey(event)" 
               oninput="ProductosModule._onBarcodeInput(this.value);ProductosModule._bcRenderPreviewFormulario(this.value)" style="flex:1;"/>
+              <button type="button" class="btn btn-primary" id="btnEscanearBarcode" style="padding:9px 14px;white-space:nowrap;"
+                onclick="ProductosModule._activarModoEscaneo()" title="Activar lector de código de barras">
+                <i class="fas fa-barcode"></i> Escanear
+              </button>
               <button type="button" class="btn btn-outline" style="padding:9px 12px;white-space:nowrap;"
-                onclick="ProductosModule.abrirGeneradorBarcode()" title="Generador profesional de códigos de barra">
-                <i class="fas fa-magic"></i> Generar
+                onclick="ProductosModule.abrirGeneradorBarcode()" title="Generador profesional / crear manualmente">
+                <i class="fas fa-magic"></i>
               </button>
             </div>
-            <div style="font-size:11px;color:var(--gray-400);margin-top:4px;">
-              Escribe tu propio código, escanéalo con lector, o usa "Generar" para crear uno automático
+            <div id="escaneoStatus" style="font-size:11px;color:var(--gray-400);margin-top:4px;">
+              Clic en <strong>"Escanear"</strong> y pasa el código con tu lector, o escribe/pega el código manualmente
             </div>
             <div id="barcodePreviewWrap" style="display:${p.barcode?'flex':'none'};align-items:center;gap:10px;margin-top:8px;background:var(--gray-50);border-radius:8px;padding:8px;">
               <svg id="barcodeSVG" style="max-width:220px;"></svg>
@@ -878,6 +882,32 @@ const ProductosModule = {
     if(stock===0)  return '<span style="'+base+'background:#fef2f2;color:#dc2626;"><i class="fas fa-times"></i> 0</span>';
     if(stock<=min) return '<span style="'+base+'background:#fef3c7;color:#d97706;"><i class="fas fa-exclamation"></i> '+stock+'</span>';
     return                '<span style="'+base+'background:#dcfce7;color:#16a34a;"><i class="fas fa-check"></i> '+stock+'</span>';
+  },
+
+  _activarModoEscaneo() {
+    const input = document.getElementById('fp_barcode');
+    const status = document.getElementById('escaneoStatus');
+    const btn = document.getElementById('btnEscanearBarcode');
+    if (!input) return;
+    input.value = '';
+    input.focus();
+    input.style.borderColor = '#2563eb';
+    input.style.boxShadow = '0 0 0 3px rgba(37,99,235,0.15)';
+    if (status) {
+      status.innerHTML = '<i class="fas fa-circle" style="color:#2563eb;font-size:8px;margin-right:5px;animation:pulse 1s infinite;"></i><strong style="color:#2563eb;">Modo escaneo activo</strong> — pasa el código con el lector ahora';
+    }
+    if (btn) {
+      btn.innerHTML = '<i class="fas fa-check"></i> Listo';
+      btn.classList.remove('btn-primary');
+      btn.classList.add('btn-success');
+      setTimeout(() => {
+        btn.innerHTML = '<i class="fas fa-barcode"></i> Escanear';
+        btn.classList.remove('btn-success');
+        btn.classList.add('btn-primary');
+      }, 2000);
+    }
+    const wrap = document.getElementById('barcodePreviewWrap');
+    if (wrap) wrap.style.display = 'none';
   },
 
   // ─── BARCODE SCANNER ───
