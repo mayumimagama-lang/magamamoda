@@ -5,6 +5,8 @@
 let urlImagenTemporal = "";
 
 const ProductosModule = {
+  modoForm:        false,
+  productoEditId:  null,
   searchTerm:      '',
   currentPage:     1,
   itemsPerPage:    10,
@@ -21,6 +23,7 @@ const ProductosModule = {
 
   // ─── RENDER ───
   render() {
+    if (this.modoForm) return this.renderFormPage();
     App.setTabs2('Productos / Servicios', 'INVENTARIO');
     const filtered  = this.getFiltered();
     const paged     = this.getPaged(filtered);
@@ -476,21 +479,44 @@ const ProductosModule = {
 
   // ─── FORMULARIO ───
   nuevo() {
-  App.showModal('Nuevo Producto', this.formHTML({}), [{text:'Guardar',cls:'btn-success',cb:()=>this.guardar()}]);
-  const box = document.getElementById('modalBox');
-  box.classList.add('modal-fullscreen');
-  box.style.maxWidth = '';
-  box.style.width = '';
-},
-editar(id) {
-  const p = DB.productos.find(x=>x.id===id);
-  App.showModal('Editar Producto', this.formHTML(p||{}), [{text:'Guardar Cambios',cls:'btn-primary',cb:()=>this.guardar(id)}]);
-  const box = document.getElementById('modalBox');
-  box.classList.add('modal-fullscreen');
-  box.style.maxWidth = '';
-  box.style.width = '';
-  if (p && p.barcode) setTimeout(() => this._renderBarcode(p.barcode), 100);
-},
+    this.modoForm = true;
+    this.productoEditId = null;
+    App.renderPage();
+  },
+  editar(id) {
+    this.modoForm = true;
+    this.productoEditId = id;
+    App.renderPage();
+  },
+  volver() {
+    this.modoForm = false;
+    this.productoEditId = null;
+    App.renderPage();
+  },
+
+  renderFormPage() {
+    const isEdit = !!this.productoEditId;
+    const p = isEdit ? (DB.productos.find(x=>x.id===this.productoEditId) || {}) : {};
+    App.setTabs2('Productos / Servicios', isEdit ? 'Editar Producto' : 'Nuevo Producto');
+    if (p.barcode) setTimeout(() => this._renderBarcode(p.barcode), 60);
+    return `
+      <div class="page-header">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <button class="btn btn-outline btn-sm" onclick="ProductosModule.volver()" title="Volver">
+            <i class="fas fa-arrow-left"></i>
+          </button>
+          <h2 class="page-title">
+            <i class="fas fa-boxes" style="color:var(--accent);margin-right:8px;"></i>${isEdit ? 'Editar Producto' : 'Nuevo Producto'}
+          </h2>
+        </div>
+        <div class="page-actions">
+          <button class="btn btn-outline" onclick="ProductosModule.volver()"><i class="fas fa-times"></i> Cancelar</button>
+          <button class="btn btn-success" onclick="ProductosModule.guardar(${isEdit ? this.productoEditId : 'undefined'})"><i class="fas fa-save"></i> Guardar</button>
+        </div>
+      </div>
+      ${this.formHTML(p)}
+    `;
+  },
 
   formHTML(p) {
     const unidades=['UND','KG','LT','G','ML','MTR','CM','CAJ','DOC','PQT','BLS','ROL'];
@@ -660,7 +686,7 @@ editar(id) {
     // ← SHEETS
     if(id){ SupabaseDB.actualizarProducto(DB.productos.find(x=>x.id===id)); }
     else  { SupabaseDB.agregarProducto(DB.productos[DB.productos.length-1]); }
-    App.closeModal();App.renderPage();
+    this.volver();
   },
 
   // ─── DUPLICAR ───
