@@ -1161,6 +1161,52 @@ body.dark-mode #loginPass::placeholder {
   .toast-container { left: 10px; right: 10px; bottom: 10px; }
 }
 
+/* ========== MODAL FULLSCREEN (formularios grandes) ========== */
+.modal-box.modal-fullscreen {
+  border-radius: var(--radius-lg);
+}
+@media (min-width: 769px) {
+  .modal-box.modal-fullscreen {
+    width: 96vw;
+    max-width: 1500px;
+    height: 94vh;
+    max-height: 94vh;
+  }
+  .modal-box.modal-fullscreen .modal-body {
+    padding: 22px 30px;
+  }
+  .modal-box.modal-fullscreen .modal-header {
+    padding: 18px 30px;
+  }
+  .modal-box.modal-fullscreen .modal-header h3 {
+    font-size: 19px;
+  }
+  .modal-box.modal-fullscreen .modal-footer {
+    padding: 16px 30px;
+  }
+}
+
+/* Layout de 2 columnas para el formulario de producto en fullscreen */
+.prod-form-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+@media (min-width: 992px) {
+  .modal-fullscreen .prod-form-layout {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    grid-template-rows: auto auto auto;
+    gap: 16px;
+    align-items: start;
+  }
+  .modal-fullscreen .prod-form-layout > .form-section:nth-child(1) {
+    grid-column: 1;
+    grid-row: 1 / 4;
+    height: 100%;
+  }
+}
+
 /* ========== IMAGEN PRODUCTO HOVER ========== */
 .data-table img {
   transition: transform 0.2s ease, box-shadow 0.2s ease;
