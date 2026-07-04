@@ -587,15 +587,12 @@ const ProductosModule = {
               onkeydown="ProductosModule._onBarcodeKey(event)" 
               oninput="ProductosModule._onBarcodeInput(this.value)" style="flex:1;"/>
               <button type="button" class="btn btn-outline" style="padding:9px 12px;white-space:nowrap;"
-                onclick="ProductosModule._generarBarcode()" title="Generar código de barras">
-                <i class="fas fa-magic"></i>
+                onclick="ProductosModule.abrirGeneradorBarcode()" title="Generador profesional de códigos de barra">
+                <i class="fas fa-barcode"></i>
               </button>
             </div>
             <div id="barcodePreviewWrap" style="display:${p.barcode?'flex':'none'};align-items:center;gap:10px;margin-top:8px;background:var(--gray-50);border-radius:8px;padding:8px;">
               <svg id="barcodeSVG" style="max-width:220px;"></svg>
-              <button type="button" class="btn btn-outline btn-sm" onclick="ProductosModule._descargarBarcode()">
-                <i class="fas fa-download"></i> Descargar
-              </button>
             </div>
           </div>
           <div class="form-group" style="grid-column:1/-1"><label class="form-label">Nombre <span class="required">*</span></label>
@@ -904,25 +901,292 @@ const ProductosModule = {
     }
   },
 
-  _generarBarcode() {
-    const input = document.getElementById('fp_barcode');
-    if (!input) return;
-    let valor = input.value.trim();
-    if (!valor) {
-      valor = this._generarEAN13();
-      input.value = valor;
-      this._onBarcodeInput(valor);
-    }
-    this._renderBarcode(valor);
+  // ─── GENERADOR PROFESIONAL DE CÓDIGOS DE BARRA ───
+  _bcState: {
+    formato: 'CODE128', valor: 'MAGAMA-001', lineWidth: 2, height: 80,
+    colorBarras: '#000000', colorFondo: '#ffffff', mostrarTexto: true,
+    empresa: '', producto: '', precio: ''
   },
 
-  _generarEAN13() {
-    let codigo = '200'; // prefijo interno MAGAMA
-    for (let i = 0; i < 9; i++) codigo += Math.floor(Math.random() * 10);
-    let suma = 0;
-    for (let i = 0; i < 12; i++) suma += parseInt(codigo[i]) * (i % 2 === 0 ? 1 : 3);
-    const digitoVerificador = (10 - (suma % 10)) % 10;
-    return codigo + digitoVerificador;
+  abrirGeneradorBarcode() {
+    const s = this._bcState;
+    const actual = document.getElementById('fp_barcode')?.value?.trim();
+    if (actual) s.valor = actual;
+
+    const formatos = [
+      { key:'CODE128', label:'CODE 128', sub:'Universal',  icon:'fa-barcode' },
+      { key:'CODE39',  label:'CODE 39',  sub:'Alfanum.',    icon:'fa-barcode' },
+      { key:'EAN13',   label:'EAN-13',   sub:'13 dígitos',  icon:'fa-barcode' },
+      { key:'EAN8',    label:'EAN-8',    sub:'8 dígitos',   icon:'fa-barcode' },
+      { key:'UPC',     label:'UPC-A',    sub:'12 dígitos',  icon:'fa-barcode' },
+      { key:'QR',      label:'QR Code',  sub:'2D',          icon:'fa-qrcode' },
+    ];
+
+    const html = `
+      <div class="bc-modal-grid">
+        <div>
+          <div class="bc-format-grid">
+            ${formatos.map(f => `
+              <div class="bc-format-card ${s.formato===f.key?'active':''}" id="bcFmt_${f.key}" onclick="ProductosModule._bcSetFormato('${f.key}')">
+                <i class="fas ${f.icon}"></i>
+                <div class="bc-fmt-name">${f.label}</div>
+                <div class="bc-fmt-sub">${f.sub}</div>
+              </div>`).join('')}
+          </div>
+
+          <div class="form-group mb-3">
+            <label class="form-label">Valor del Código</label>
+            <input class="form-control" id="bcValor" value="${s.valor}" oninput="ProductosModule._bcOnChange()" placeholder="Ej: MAGAMA-001"/>
+          </div>
+
+          <div id="bcAparienciaWrap">
+            <div class="form-section-title" style="margin-top:4px;"><i class="fas fa-sliders-h" style="color:var(--accent);margin-right:6px;"></i>Apariencia</div>
+            <div class="form-group mb-3">
+              <label class="form-label">Ancho de línea</label>
+              <div class="bc-slider-row">
+                <input type="range" id="bcLineWidth" min="1" max="4" step="1" value="${s.lineWidth}" oninput="ProductosModule._bcOnChange()"/>
+                <span class="bc-slider-val" id="bcLineWidthVal">${s.lineWidth}px</span>
+              </div>
+            </div>
+            <div class="form-group mb-3">
+              <label class="form-label">Alto</label>
+              <div class="bc-slider-row">
+                <input type="range" id="bcHeight" min="40" max="140" step="10" value="${s.height}" oninput="ProductosModule._bcOnChange()"/>
+                <span class="bc-slider-val" id="bcHeightVal">${s.height}px</span>
+              </div>
+            </div>
+            <div class="bc-color-row mb-3">
+              <div class="bc-color-group">
+                <label>Color Barras</label>
+                <input type="color" id="bcColorBarras" value="${s.colorBarras}" oninput="ProductosModule._bcOnChange()"/>
+              </div>
+              <div class="bc-color-group">
+                <label>Color Fondo</label>
+                <input type="color" id="bcColorFondo" value="${s.colorFondo}" oninput="ProductosModule._bcOnChange()"/>
+              </div>
+            </div>
+            <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:var(--gray-700);cursor:pointer;margin-bottom:16px;">
+              <input type="checkbox" id="bcMostrarTexto" ${s.mostrarTexto?'checked':''} onchange="ProductosModule._bcOnChange()" style="width:16px;height:16px;"/>
+              Mostrar texto bajo barras
+            </label>
+          </div>
+
+          <div class="form-section-title"><i class="fas fa-tag" style="color:#16a34a;margin-right:6px;"></i>Etiqueta (opcional)</div>
+          <div class="form-group mb-3">
+            <label class="form-label">Empresa</label>
+            <input class="form-control" id="bcEmpresa" value="${s.empresa}" oninput="ProductosModule._bcOnChange()" placeholder="${(DB.empresa && DB.empresa.nombre) || ''}"/>
+          </div>
+          <div class="form-group mb-3">
+            <label class="form-label">Producto</label>
+            <input class="form-control" id="bcProducto" value="${s.producto}" oninput="ProductosModule._bcOnChange()" placeholder="Nombre del producto..."/>
+          </div>
+          <div class="form-group mb-3">
+            <label class="form-label">Precio (S/)</label>
+            <input class="form-control" id="bcPrecio" value="${s.precio}" oninput="ProductosModule._bcOnChange()" placeholder="0.00"/>
+          </div>
+          <button type="button" class="btn btn-outline w-full" onclick="ProductosModule._bcCargarDesdeProducto()">
+            <i class="fas fa-bolt"></i> Cargar desde producto
+          </button>
+        </div>
+
+        <div>
+          <div class="bc-preview-panel"><canvas id="bcCanvas"></canvas></div>
+          <div id="bcStatus" class="bc-status-ok"><i class="fas fa-check-circle"></i> Código válido — listo para descargar</div>
+
+          <div style="display:flex;gap:10px;margin-top:16px;">
+            <button type="button" class="btn btn-primary" style="flex:1;" onclick="ProductosModule._bcDescargarPNG()">
+              <i class="fas fa-download"></i> Descargar PNG
+            </button>
+            <button type="button" class="btn" style="flex:1;background:#7c3aed;color:white;" onclick="ProductosModule._bcImprimir()">
+              <i class="fas fa-print"></i> Imprimir
+            </button>
+          </div>
+          <button type="button" class="btn btn-outline w-full" style="margin-top:10px;" onclick="ProductosModule._bcCopiarTexto()">
+            <i class="fas fa-copy"></i> Copiar texto al portapapeles
+          </button>
+
+          <div style="background:var(--gray-50);border-radius:10px;padding:14px;margin-top:16px;font-size:12px;color:var(--gray-600);line-height:1.8;">
+            <div style="font-weight:800;margin-bottom:6px;"><i class="fas fa-info-circle" style="color:var(--accent);margin-right:6px;"></i>Guía de formatos</div>
+            <div><strong>CODE 128:</strong> Cualquier texto · máx recomendado 20 caracteres</div>
+            <div><strong>CODE 39:</strong> A-Z, 0-9, guiones, puntos, espacio</div>
+            <div><strong>EAN-13:</strong> Exactamente 12 o 13 dígitos</div>
+            <div><strong>EAN-8:</strong> Exactamente 7 u 8 dígitos</div>
+            <div><strong>UPC-A:</strong> Exactamente 11 o 12 dígitos</div>
+            <div><strong>QR Code:</strong> Texto, URL o datos</div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    App.showModal('📊 Generador Profesional de Códigos de Barra', html, [
+      { text:'✅ Usar este código', cls:'btn-success', cb:()=>this._bcUsarCodigo() },
+      { text:'Cerrar', cls:'btn-outline', cb:()=>App.closeModal() }
+    ]);
+    document.getElementById('modalBox').style.maxWidth = '980px';
+    setTimeout(() => this._bcRender(), 50);
+  },
+
+  _bcSetFormato(fmt) {
+    this._bcState.formato = fmt;
+    document.querySelectorAll('.bc-format-card').forEach(el => el.classList.remove('active'));
+    document.getElementById('bcFmt_' + fmt)?.classList.add('active');
+    const wrap = document.getElementById('bcAparienciaWrap');
+    if (wrap) wrap.style.display = fmt === 'QR' ? 'none' : 'block';
+    this._bcRender();
+  },
+
+  _bcOnChange() {
+    const s = this._bcState;
+    s.valor        = document.getElementById('bcValor')?.value || '';
+    s.lineWidth    = parseInt(document.getElementById('bcLineWidth')?.value) || 2;
+    s.height       = parseInt(document.getElementById('bcHeight')?.value) || 80;
+    s.colorBarras  = document.getElementById('bcColorBarras')?.value || '#000000';
+    s.colorFondo   = document.getElementById('bcColorFondo')?.value || '#ffffff';
+    s.mostrarTexto = document.getElementById('bcMostrarTexto')?.checked ?? true;
+    s.empresa      = document.getElementById('bcEmpresa')?.value || '';
+    s.producto     = document.getElementById('bcProducto')?.value || '';
+    s.precio       = document.getElementById('bcPrecio')?.value || '';
+    const lwv = document.getElementById('bcLineWidthVal'); if (lwv) lwv.textContent = s.lineWidth + 'px';
+    const hv  = document.getElementById('bcHeightVal');    if (hv)  hv.textContent  = s.height + 'px';
+    this._bcRender();
+  },
+
+  _bcCargarDesdeProducto() {
+    const nombre = document.getElementById('fp_nombre')?.value || '';
+    const precio = document.getElementById('fp_precio_venta')?.value || '';
+    const codigo = document.getElementById('fp_codigo')?.value || document.getElementById('fp_barcode')?.value || '';
+    if (codigo) document.getElementById('bcValor').value = codigo;
+    document.getElementById('bcProducto').value = nombre;
+    document.getElementById('bcPrecio').value = precio;
+    if (!document.getElementById('bcEmpresa').value) document.getElementById('bcEmpresa').value = (DB.empresa && DB.empresa.nombre) || '';
+    App.toast('Datos cargados desde el producto', 'success');
+    this._bcOnChange();
+  },
+
+  _bcValidar(formato, valor) {
+    if (!valor) return { ok:false, msg:'Ingresa un valor para el código' };
+    const soloDigitos = /^\d+$/.test(valor);
+    if (formato === 'EAN13' && !(soloDigitos && (valor.length===12 || valor.length===13))) return { ok:false, msg:'EAN-13 requiere 12 o 13 dígitos numéricos' };
+    if (formato === 'EAN8'  && !(soloDigitos && (valor.length===7  || valor.length===8)))  return { ok:false, msg:'EAN-8 requiere 7 u 8 dígitos numéricos' };
+    if (formato === 'UPC'   && !(soloDigitos && (valor.length===11 || valor.length===12))) return { ok:false, msg:'UPC-A requiere 11 o 12 dígitos numéricos' };
+    if (formato === 'CODE39' && !/^[A-Z0-9\-. $\/+%]+$/.test(valor)) return { ok:false, msg:'CODE 39 solo acepta A-Z, 0-9, - . $ / + % y espacio' };
+    return { ok:true, msg:'Código válido — listo para descargar' };
+  },
+
+  _bcRender() {
+    const s = this._bcState;
+    const canvas = document.getElementById('bcCanvas');
+    const statusEl = document.getElementById('bcStatus');
+    if (!canvas) return;
+
+    const valorFinal = (s.formato === 'CODE39') ? s.valor.toUpperCase() : s.valor;
+    const val = this._bcValidar(s.formato, valorFinal);
+
+    if (!val.ok) {
+      statusEl.className = 'bc-status-err';
+      statusEl.innerHTML = '<i class="fas fa-exclamation-triangle"></i> ' + val.msg;
+      canvas.width = 300; canvas.height = 120;
+      canvas.getContext('2d').clearRect(0,0,300,120);
+      return;
+    }
+    statusEl.className = 'bc-status-ok';
+    statusEl.innerHTML = '<i class="fas fa-check-circle"></i> ' + val.msg;
+
+    if (s.formato === 'QR') {
+      if (typeof QRCode === 'undefined') { App.toast('Librería QR no cargada', 'error'); return; }
+      QRCode.toCanvas(canvas, valorFinal, { width: 240, margin: 1 }, (err) => {
+        if (err) return;
+        this._bcComponerConEtiqueta(canvas);
+      });
+      return;
+    }
+
+    if (typeof JsBarcode === 'undefined') { App.toast('Librería de código de barras no cargada', 'error'); return; }
+    try {
+      JsBarcode(canvas, valorFinal, {
+        format: s.formato,
+        lineColor: s.colorBarras,
+        background: s.colorFondo,
+        width: s.lineWidth,
+        height: s.height,
+        displayValue: s.mostrarTexto,
+        fontSize: 14,
+        margin: 10
+      });
+      this._bcComponerConEtiqueta(canvas);
+    } catch (e) {
+      statusEl.className = 'bc-status-err';
+      statusEl.innerHTML = '<i class="fas fa-exclamation-triangle"></i> No se pudo generar: valor inválido para este formato';
+    }
+  },
+
+  _bcComponerConEtiqueta(canvas) {
+    const s = this._bcState;
+    if (!s.empresa && !s.producto && !s.precio) return;
+    const codeDataUrl = canvas.toDataURL('image/png');
+    const img = new Image();
+    img.onload = () => {
+      const padding = 14, lineH = 20;
+      let lineas = [];
+      if (s.empresa)  lineas.push({ txt:s.empresa,  bold:true,  size:14 });
+      if (s.producto) lineas.push({ txt:s.producto, bold:false, size:12 });
+      if (s.precio)   lineas.push({ txt:'S/ ' + parseFloat(s.precio || 0).toFixed(2), bold:true, size:14 });
+      const extraH = lineas.length ? (lineas.length * lineH + padding) : 0;
+      canvas.width  = img.width;
+      canvas.height = img.height + extraH;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = s.colorFondo || '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0);
+      let y = img.height + padding;
+      ctx.textAlign = 'center';
+      lineas.forEach(l => {
+        ctx.font = (l.bold ? '800 ' : '400 ') + l.size + 'px Nunito, sans-serif';
+        ctx.fillStyle = '#111827';
+        ctx.fillText(l.txt, canvas.width / 2, y);
+        y += lineH;
+      });
+    };
+    img.src = codeDataUrl;
+  },
+
+  _bcDescargarPNG() {
+    const canvas = document.getElementById('bcCanvas');
+    if (!canvas) return;
+    const a = document.createElement('a');
+    a.href = canvas.toDataURL('image/png');
+    a.download = 'codigo_barra_' + (this._bcState.valor || 'producto') + '.png';
+    a.click();
+    App.toast('✅ Código descargado', 'success');
+  },
+
+  _bcImprimir() {
+    const canvas = document.getElementById('bcCanvas');
+    if (!canvas) return;
+    const dataUrl = canvas.toDataURL('image/png');
+    const w = window.open('', '_blank', 'width=500,height=500');
+    if (!w) { App.toast('Activa ventanas emergentes', 'warning'); return; }
+    w.document.write('<html><head><title>Imprimir código</title></head><body style="display:flex;align-items:center;justify-content:center;height:100vh;margin:0;"><img src="' + dataUrl + '" style="max-width:90%;"/></body></html>');
+    w.document.close();
+    setTimeout(() => w.print(), 300);
+  },
+
+  _bcCopiarTexto() {
+    const valor = this._bcState.valor || '';
+    if (!valor) { App.toast('No hay texto para copiar', 'warning'); return; }
+    navigator.clipboard.writeText(valor).then(() => {
+      App.toast('📋 Texto copiado al portapapeles', 'success');
+    }).catch(() => App.toast('No se pudo copiar', 'error'));
+  },
+
+  _bcUsarCodigo() {
+    const valor = this._bcState.valor || '';
+    if (!valor) { App.toast('Genera un código válido primero', 'warning'); return; }
+    const input = document.getElementById('fp_barcode');
+    if (input) { input.value = valor; this._onBarcodeInput(valor); }
+    App.closeModal();
+    App.toast('Código de barras asignado al producto', 'success');
+    setTimeout(() => this._renderBarcode(valor), 100);
   },
 
   _renderBarcode(valor) {
@@ -945,32 +1209,6 @@ const ProductosModule = {
     } catch (e) {
       App.toast('Código inválido para generar barras', 'error');
     }
-  },
-
-  _descargarBarcode() {
-    const svg = document.getElementById('barcodeSVG');
-    if (!svg || !svg.innerHTML) { App.toast('Primero genera el código de barras', 'warning'); return; }
-    const svgData = new XMLSerializer().serializeToString(svg);
-    const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
-    const url = URL.createObjectURL(svgBlob);
-    const img = new Image();
-    img.onload = function () {
-      const canvas = document.createElement('canvas');
-      canvas.width = img.width;
-      canvas.height = img.height;
-      const ctx = canvas.getContext('2d');
-      ctx.fillStyle = '#fff';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(img, 0, 0);
-      URL.revokeObjectURL(url);
-      const pngUrl = canvas.toDataURL('image/png');
-      const codigo = document.getElementById('fp_codigo')?.value || 'producto';
-      const a = document.createElement('a');
-      a.href = pngUrl;
-      a.download = 'barcode_' + codigo + '.png';
-      a.click();
-    };
-    img.src = url;
   },
 
   // ─── IMAGEN: MÉTODOS ───
