@@ -1265,3 +1265,8 @@ body.dark-mode .bc-format-card { background:#1a2235; border-color:#2a3a52; }
 body.dark-mode .bc-format-card:hover { background:#1e2a3d; }
 body.dark-mode .bc-format-card.active { background:#0c2040; border-color:#7eb3ff; }
 body.dark-mode .bc-preview-panel { background:#111827; border-color:#2a3a52; }
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
