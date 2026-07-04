@@ -153,6 +153,8 @@ const VentasModule = {
           '<td style="padding:11px 14px;">' +
             '<div style="display:flex;gap:4px;">' +
               '<button onclick="VentasModule.verDetalle('+v.id+')" title="Ver detalle" style="width:30px;height:30px;border-radius:7px;border:none;background:#eff6ff;color:#2563eb;cursor:pointer;font-size:12px;"><i class="fas fa-eye"></i></button>' +
+              (v.estado==='NO_ENVIADO' ?
+                '<button onclick="VentasModule.editarVenta('+v.id+')" title="Editar" style="width:30px;height:30px;border-radius:7px;border:none;background:#fffbeb;color:#d97706;cursor:pointer;font-size:12px;"><i class="fas fa-edit"></i></button>' : '') +
               '<button onclick="VentasModule.imprimir('+v.id+')" title="Imprimir" style="width:30px;height:30px;border-radius:7px;border:none;background:#f5f3ff;color:#7c3aed;cursor:pointer;font-size:12px;"><i class="fas fa-print"></i></button>' +
               (v.estado!=='ACEPTADO'&&v.estado!=='ANULADO' ?
                 '<button onclick="VentasModule.enviarSunat('+v.id+')" title="Enviar SUNAT" style="width:30px;height:30px;border-radius:7px;border:none;background:#f0fdf4;color:#16a34a;cursor:pointer;font-size:12px;"><i class="fas fa-paper-plane"></i></button>' : '') +
@@ -262,9 +264,50 @@ const VentasModule = {
     this.descGlobal      = 0;
     this.mayoristaModo   = false;
     this._convertingFromId = null;
+    this._editingId = null;
     this._montoCombinadoA = 0;
     this._montoCombinadoB = 0;
     this.modoVista       = 'comprobante';
+    App.renderPage();
+  },
+
+  editarVenta(id) {
+    var v = (DB.ventas||[]).find(function(x){ return Number(x.id)===Number(id); });
+    if (!v) { App.toast('Comprobante no encontrado','error'); return; }
+    if (v.estado !== 'NO_ENVIADO') {
+      App.toast('Solo se pueden editar comprobantes "Por Enviar" (no aceptados ni anulados)','warning');
+      return;
+    }
+    this._searchResults = null;
+    this.currentItems = (v.items||[]).map(function(it){
+      var p = (DB.productos||[]).find(function(x){ return x.id===it.prod_id; });
+      return {
+        prod_id: it.prod_id,
+        codigo:  p ? p.codigo : '',
+        nombre:  it.nombre,
+        imagen:  p ? (p.imagen||'') : '',
+        unidad:  p ? (p.unidad||'UND') : 'UND',
+        precio:  it.precio,
+        qty:     it.qty,
+        dcto:    0,
+        total:   it.total
+      };
+    });
+    var cli = (DB.clientes||[]).find(function(c){ return c.id===v.cliente_id; });
+    this.selectedCliente = cli || (DB.clientes||[]).find(function(c){ return c.doc==='00000000'; });
+    this.serieActual     = v.serie;
+    this.tipoComprobante = v.tipo_comprobante || (v.tipo==='BOL'?'BOLETA DE VENTA ELECTRONICA':v.tipo==='FAC'?'FACTURA ELECTRONICA':'NOTA DE VENTA');
+    this.metodoPago      = (v.metodo_pago||'EFECTIVO').split('(')[0].trim() || 'EFECTIVO';
+    if (['EFECTIVO','TARJETA','YAPE','COMBINADO'].indexOf(this.metodoPago) === -1) this.metodoPago = 'EFECTIVO';
+    this.montoPago       = v.monto_pago || v.total;
+    this.descGlobal      = 0;
+    this.mayoristaModo   = false;
+    this._convertingFromId = null;
+    this._editingId      = id;
+    this._montoCombinadoA = 0;
+    this._montoCombinadoB = 0;
+    this.modoVista       = 'comprobante';
+    App.toast('✏️ Editando '+v.serie+'-'+v.numero+' — se restaurará el stock de la versión anterior al guardar','info');
     App.renderPage();
   },
 
@@ -372,13 +415,13 @@ const VentasModule = {
       '<div style="display:flex;align-items:center;gap:12px;">' +
         '<button onclick="VentasModule.modoVista=\'lista\';App.renderPage();" style="background:white;color:var(--gray-700);border:1.5px solid var(--gray-200);border-radius:8px;padding:8px 16px;font-weight:700;cursor:pointer;font-size:13px;"><i class="fas fa-arrow-left" style="margin-right:6px;"></i>Regresar</button>' +
         '<div style="width:2px;height:26px;background:var(--gray-200);"></div>' +
-        '<div><div style="font-size:18px;font-weight:900;color:var(--gray-900);">Nuevo Comprobante</div>' +
-          '<div style="font-size:11px;color:var(--gray-400);">'+serie+' · N° '+nextNum+' · '+hoy+(usuario?' · <strong>'+usuario.usuario+'</strong>':'')+'</div></div>' +
+        '<div><div style="font-size:18px;font-weight:900;color:var(--gray-900);">'+(self._editingId?'Editar Comprobante':'Nuevo Comprobante')+'</div>' +
+          '<div style="font-size:11px;color:var(--gray-400);">'+serie+' · N° '+nextNum+' · '+hoy+(usuario?' · <strong>'+usuario.usuario+'</strong>':'')+(self._editingId?' · <span style="color:#d97706;font-weight:700;">Modo edición</span>':'')+'</div></div>' +
       '</div>' +
       '<div style="display:flex;gap:8px;">' +
         '<button onclick="VentasModule.limpiarLista()" style="background:white;color:var(--gray-600);border:1.5px solid var(--gray-200);border-radius:8px;padding:8px 16px;font-weight:700;cursor:pointer;font-size:13px;"><i class="fas fa-eraser" style="margin-right:5px;"></i>Limpiar</button>' +
         '<button onclick="VentasModule.vistaPrevia()" style="background:white;color:var(--gray-600);border:1.5px solid var(--gray-200);border-radius:8px;padding:8px 16px;font-weight:700;cursor:pointer;font-size:13px;"><i class="fas fa-eye" style="margin-right:5px;"></i>Vista Previa</button>' +
-        '<button onclick="VentasModule.procesar()" style="background:linear-gradient(135deg,#15803d,#16a34a);color:white;border:none;border-radius:8px;padding:8px 26px;font-weight:900;cursor:pointer;font-size:15px;box-shadow:0 4px 12px rgba(22,163,74,0.3);"><i class="fas fa-check" style="margin-right:6px;"></i>PROCESAR</button>' +
+        '<button onclick="VentasModule.procesar()" style="background:linear-gradient(135deg,#15803d,#16a34a);color:white;border:none;border-radius:8px;padding:8px 26px;font-weight:900;cursor:pointer;font-size:15px;box-shadow:0 4px 12px rgba(22,163,74,0.3);"><i class="fas fa-check" style="margin-right:6px;"></i>'+(self._editingId?'GUARDAR CAMBIOS':'PROCESAR')+'</button>' +
       '</div>' +
     '</div>' +
     '<div style="display:flex;flex-direction:column;gap:14px;">' +
@@ -800,6 +843,7 @@ const VentasModule = {
   // ─────────────────────────────────────────────────────────
   procesar() {
     if(!this.currentItems.length){App.toast('Agrega al menos un producto','error');return;}
+    if (this._editingId) { this._guardarEdicion(); return; }
     if(!this.selectedCliente){
       var pub=(DB.clientes||[]).find(function(c){return c.doc==='00000000';});
       if(pub) this.selectedCliente=pub;
@@ -876,6 +920,71 @@ const VentasModule = {
     this._montoCombinadoA=0; this._montoCombinadoB=0; this.mayoristaModo=false;
     this.modoVista='lista'; App.renderPage();
     this.verDetalle(venta.id);
+  },
+
+  _guardarEdicion() {
+    var id = this._editingId;
+    var idx = (DB.ventas||[]).findIndex(function(x){ return Number(x.id)===Number(id); });
+    if (idx < 0) { App.toast('Comprobante no encontrado','error'); this._editingId=null; this.modoVista='lista'; App.renderPage(); return; }
+    var vOriginal = DB.ventas[idx];
+    if (vOriginal.estado !== 'NO_ENVIADO') {
+      App.toast('Este comprobante ya no está en estado editable','error');
+      this._editingId = null; this.modoVista='lista'; App.renderPage(); return;
+    }
+    if (!this.selectedCliente) {
+      var pub = (DB.clientes||[]).find(function(c){ return c.doc==='00000000'; });
+      if (pub) this.selectedCliente = pub; else { App.toast('Selecciona un cliente','error'); return; }
+    }
+    var total = this.getTotal();
+    if (this.metodoPago==='EFECTIVO' && this.montoPago>0 && this.montoPago<total) {
+      App.toast('Monto insuficiente — faltan S/ '+(total-this.montoPago).toFixed(2),'error'); return;
+    }
+    var monto, metodoFinal;
+    if (this.metodoPago==='COMBINADO') {
+      var mA=this._montoCombinadoA||0, mB=this._montoCombinadoB||0;
+      if (mA<=0 && mB<=0) { App.toast('Ingresa los montos del pago combinado','error'); return; }
+      monto = mA+mB;
+      if (monto<total-0.005) { App.toast('Monto insuficiente. Faltan S/ '+(total-monto).toFixed(2),'error'); return; }
+      var tipoA = this._subMetodoCombinado==='YAPE+EFECTIVO'?'YAPE':'TARJETA';
+      metodoFinal = tipoA+'(S/'+mA.toFixed(2)+') + EFECTIVO(S/'+mB.toFixed(2)+')';
+    } else {
+      monto = this.montoPago>0 ? this.montoPago : total;
+      metodoFinal = this.metodoPago;
+    }
+
+    // 1) Devolver al stock las cantidades de la versión ANTERIOR de la venta
+    (vOriginal.items||[]).forEach(function(item){
+      var pi = (DB.productos||[]).findIndex(function(p){ return p.id===item.prod_id; });
+      if (pi>=0) DB.productos[pi].stock = (DB.productos[pi].stock||0) + item.qty;
+    });
+
+    // 2) Descontar del stock las cantidades de la versión NUEVA (editada)
+    this.currentItems.forEach(function(item){
+      var pi = (DB.productos||[]).findIndex(function(p){ return p.id===item.prod_id; });
+      if (pi>=0) DB.productos[pi].stock = Math.max(0, (DB.productos[pi].stock||0) - item.qty);
+    });
+
+    // 3) Actualizar la venta manteniendo id, fecha, hora, serie y numero originales
+    DB.ventas[idx] = Object.assign({}, vOriginal, {
+      cliente_id: this.selectedCliente.id,
+      items: this.currentItems.map(function(i){ return {prod_id:i.prod_id, nombre:i.nombre, qty:i.qty, precio:i.precio, total:i.total}; }),
+      subtotal: total, total: total,
+      tipo_comprobante: this.tipoComprobante,
+      metodo_pago: metodoFinal, monto_pago: monto, vuelto: Math.max(0, monto-total)
+    });
+
+    Storage.guardarVentas();
+    Storage.guardarProductos();
+    SupabaseDB.actualizarVenta(DB.ventas[idx]);
+    this.currentItems.forEach(function(item){
+      var pi = (DB.productos||[]).findIndex(function(p){ return p.id===item.prod_id; });
+      if (pi>=0) SupabaseDB.actualizarProducto(DB.productos[pi]);
+    });
+
+    App.toast('✅ '+vOriginal.serie+'-'+vOriginal.numero+' actualizado correctamente','success');
+    this._editingId = null; this._montoCombinadoA=0; this._montoCombinadoB=0; this.mayoristaModo=false;
+    this.modoVista = 'lista';
+    App.renderPage();
   },
 
   // ─────────────────────────────────────────────────────────
@@ -1455,6 +1564,9 @@ const VentasModule = {
     var AZUL='#2563eb', VERDE='#16a34a', MORADO='#7c3aed', GRIS='#64748b', ROJO='#dc2626', TEAL='#0891b2';
     var b = [];
 
+    if (v.estado==='NO_ENVIADO') {
+      b.push(btn('Editar Comprobante','fas fa-edit','#d97706',"App.closeModal();VentasModule.editarVenta("+v.id+");"));
+    }
     b.push(btn('Enviar por correo','fas fa-envelope',AZUL,"VentasModule._enviarCorreo("+v.id+")"));
     b.push(btn('Enviar por WhatsApp','fab fa-whatsapp',VERDE,"VentasModule._enviarWADetalle("+v.id+")"));
     b.push(btn('Visualizar PDF','fas fa-file-pdf',AZUL,"VentasModule.imprimir("+v.id+");App.closeModal();"));
