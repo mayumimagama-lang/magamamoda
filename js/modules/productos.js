@@ -475,13 +475,16 @@ const ProductosModule = {
   },
 
   // ─── FORMULARIO ───
-  nuevo() { App.showModal('Nuevo Producto',this.formHTML({}),[{text:'Guardar',cls:'btn-success',cb:()=>this.guardar()}]); document.getElementById('modalBox').style.maxWidth='820px'; },
+  nuevo() {
+    App.showModal('Nuevo Producto', this.formHTML({}), [{text:'Guardar',cls:'btn-success',cb:()=>this.guardar()}]);
+    document.getElementById('modalBox').classList.add('modal-fullscreen');
+  },
   editar(id) {
-  const p = DB.productos.find(x=>x.id===id);
-  App.showModal('Editar Producto', this.formHTML(p||{}), [{text:'Guardar Cambios',cls:'btn-primary',cb:()=>this.guardar(id)}]);
-  document.getElementById('modalBox').style.maxWidth='820px';
-  if (p && p.barcode) setTimeout(() => this._renderBarcode(p.barcode), 100);
-},
+    const p = DB.productos.find(x=>x.id===id);
+    App.showModal('Editar Producto', this.formHTML(p||{}), [{text:'Guardar Cambios',cls:'btn-primary',cb:()=>this.guardar(id)}]);
+    document.getElementById('modalBox').classList.add('modal-fullscreen');
+    if (p && p.barcode) setTimeout(() => this._renderBarcode(p.barcode), 100);
+  },
 
   formHTML(p) {
     const unidades=['UND','KG','LT','G','ML','MTR','CM','CAJ','DOC','PQT','BLS','ROL'];
@@ -491,7 +494,7 @@ const ProductosModule = {
     const utilInit   = (pv-pc).toFixed(2);
     const imgActual  = p.imagen || p.imagen_url || '';
     return `
-    <div style="display:flex;flex-direction:column;gap:14px;">
+    <div class="prod-form-layout">
       <!-- Imagen del producto -->
       <div class="form-section">
         <div class="form-section-title"><i class="fas fa-image" style="color:var(--accent);margin-right:6px;"></i>Imagen del Producto</div>
