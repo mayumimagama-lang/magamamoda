@@ -1138,14 +1138,50 @@ const ProductosModule = {
     return { ok:true, msg:'Código válido — listo para descargar' };
   },
 
+  _bcCalcCheckDigit(baseDigits) {
+    let sum = 0;
+    const len = baseDigits.length;
+    for (let i = 0; i < len; i++) {
+      const weight = ((len - i) % 2 === 1) ? 3 : 1;
+      sum += parseInt(baseDigits[i]) * weight;
+    }
+    return (10 - (sum % 10)) % 10;
+  },
+
+  _bcNormalizarConChecksum(formato, valor) {
+    const soloDigitos = valor.replace(/\D/g, '');
+    let baseLen = null;
+    if (formato === 'EAN13') baseLen = 12;
+    else if (formato === 'EAN8') baseLen = 7;
+    else if (formato === 'UPC')  baseLen = 11;
+    else return valor; // CODE128 / CODE39 / QR no llevan checksum visible
+
+    if (soloDigitos.length !== baseLen && soloDigitos.length !== baseLen + 1) {
+      return valor; // longitud incorrecta, dejar que _bcValidar marque el error
+    }
+    const base = soloDigitos.substring(0, baseLen);
+    const dv = this._bcCalcCheckDigit(base);
+    return base + dv;
+  },
+
   _bcRender() {
     const s = this._bcState;
     const canvas = document.getElementById('bcCanvas');
     const statusEl = document.getElementById('bcStatus');
     if (!canvas) return;
 
-    const valorFinal = (s.formato === 'CODE39') ? s.valor.toUpperCase() : s.valor;
-    const val = this._bcValidar(s.formato, valorFinal);
+    let valorFinal = (s.formato === 'CODE39') ? s.valor.toUpperCase() : s.valor;
+
+    // Normaliza y fija el dígito verificador correcto para formatos numéricos con checksum
+    const normalizado = this._bcNormalizarConChecksum(s.formato, valorFinal);
+    if (normalizado !== valorFinal) {
+      valorFinal = normalizado;
+      s.valor = normalizado;
+      const inputEl = document.getElementById('bcValor');
+      if (inputEl) inputEl.value = normalizado;
+    }
+
+    const val = this._bcValidar(s.formato, valorFinal); 
 
     if (!val.ok) {
       statusEl.className = 'bc-status-err';
