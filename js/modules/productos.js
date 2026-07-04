@@ -476,15 +476,21 @@ const ProductosModule = {
 
   // ─── FORMULARIO ───
   nuevo() {
-    App.showModal('Nuevo Producto', this.formHTML({}), [{text:'Guardar',cls:'btn-success',cb:()=>this.guardar()}]);
-    document.getElementById('modalBox').classList.add('modal-fullscreen');
-  },
-  editar(id) {
-    const p = DB.productos.find(x=>x.id===id);
-    App.showModal('Editar Producto', this.formHTML(p||{}), [{text:'Guardar Cambios',cls:'btn-primary',cb:()=>this.guardar(id)}]);
-    document.getElementById('modalBox').classList.add('modal-fullscreen');
-    if (p && p.barcode) setTimeout(() => this._renderBarcode(p.barcode), 100);
-  },
+  App.showModal('Nuevo Producto', this.formHTML({}), [{text:'Guardar',cls:'btn-success',cb:()=>this.guardar()}]);
+  const box = document.getElementById('modalBox');
+  box.classList.add('modal-fullscreen');
+  box.style.maxWidth = '';
+  box.style.width = '';
+},
+editar(id) {
+  const p = DB.productos.find(x=>x.id===id);
+  App.showModal('Editar Producto', this.formHTML(p||{}), [{text:'Guardar Cambios',cls:'btn-primary',cb:()=>this.guardar(id)}]);
+  const box = document.getElementById('modalBox');
+  box.classList.add('modal-fullscreen');
+  box.style.maxWidth = '';
+  box.style.width = '';
+  if (p && p.barcode) setTimeout(() => this._renderBarcode(p.barcode), 100);
+},
 
   formHTML(p) {
     const unidades=['UND','KG','LT','G','ML','MTR','CM','CAJ','DOC','PQT','BLS','ROL'];
