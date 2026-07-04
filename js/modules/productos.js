@@ -402,7 +402,10 @@ const ProductosModule = {
               <span style="background:${p.igv?'#dbeafe':'#dcfce7'};color:${p.igv?'#1d4ed8':'#15803d'};font-size:12px;font-weight:700;padding:4px 12px;border-radius:8px;">${p.igv?'IGV 18%':'Sin IGV'}</span>
             </div>
             ${p.descripcion?`<div style="font-size:14px;color:var(--gray-500);line-height:1.5;margin-bottom:8px;">${p.descripcion}</div>`:''}
-            ${p.barcode?`<div style="font-size:12px;color:var(--gray-400);margin-bottom:8px;"><i class="fas fa-barcode" style="margin-right:5px;"></i>${p.barcode}</div>`:''}
+            ${p.barcode?`
+            <div style="background:white;border:1px solid var(--gray-200);border-radius:10px;padding:12px;margin-bottom:8px;display:inline-flex;align-items:center;">
+              <svg id="verBarcodeSVG"></svg>
+            </div>`:''}
             <span style="padding:6px 16px;border-radius:20px;font-size:13px;font-weight:800;background:${sBg};color:${sClr};display:inline-block;">
               ${agotado?'✗ Sin Stock':stockBajo?'⚠ Stock Bajo':'✓ En Stock'} · ${p.stock} ${p.unidad}
             </span>
@@ -475,6 +478,17 @@ const ProductosModule = {
       { text:'📊 Historial Ventas', cls:'btn-outline',  cb: () => { App.closeModal(); this.verHistorial(id); } },
     ]);
     document.getElementById('modalBox').style.maxWidth = '1100px';
+
+    if (p.barcode && typeof JsBarcode !== 'undefined') {
+      setTimeout(() => {
+        try {
+          JsBarcode('#verBarcodeSVG', p.barcode, {
+            format: 'CODE128', lineColor: '#000', width: 2, height: 50,
+            displayValue: true, fontSize: 13, margin: 8
+          });
+        } catch(e) {}
+      }, 80);
+    }
   },
 
   // ─── FORMULARIO ───
@@ -583,13 +597,16 @@ const ProductosModule = {
             <input class="form-control" id="fp_codigo" placeholder="PROD001" value="${p.codigo||''}"/></div>
           <div class="form-group"><label class="form-label">Código de Barras</label>
             <div style="display:flex;gap:6px;">
-              <input class="form-control" id="fp_barcode" placeholder="Escanea con lector o escribe..." value="${p.barcode||''}" 
+              <input class="form-control" id="fp_barcode" placeholder="Escribe, escanea o genera automáticamente..." value="${p.barcode||''}" 
               onkeydown="ProductosModule._onBarcodeKey(event)" 
-              oninput="ProductosModule._onBarcodeInput(this.value)" style="flex:1;"/>
+              oninput="ProductosModule._onBarcodeInput(this.value);ProductosModule._bcRenderPreviewFormulario(this.value)" style="flex:1;"/>
               <button type="button" class="btn btn-outline" style="padding:9px 12px;white-space:nowrap;"
                 onclick="ProductosModule.abrirGeneradorBarcode()" title="Generador profesional de códigos de barra">
-                <i class="fas fa-barcode"></i>
+                <i class="fas fa-magic"></i> Generar
               </button>
+            </div>
+            <div style="font-size:11px;color:var(--gray-400);margin-top:4px;">
+              Escribe tu propio código, escanéalo con lector, o usa "Generar" para crear uno automático
             </div>
             <div id="barcodePreviewWrap" style="display:${p.barcode?'flex':'none'};align-items:center;gap:10px;margin-top:8px;background:var(--gray-50);border-radius:8px;padding:8px;">
               <svg id="barcodeSVG" style="max-width:220px;"></svg>
@@ -911,7 +928,13 @@ const ProductosModule = {
   abrirGeneradorBarcode() {
     const s = this._bcState;
     const actual = document.getElementById('fp_barcode')?.value?.trim();
-    if (actual) s.valor = actual;
+    if (actual) {
+      s.valor = actual;
+    } else {
+      // Genera un código único automático basado en el código del producto
+      const codigoProd = document.getElementById('fp_codigo')?.value?.trim();
+      s.valor = this._bcGenerarUnico(codigoProd);
+    }
 
     const formatos = [
       { key:'CODE128', label:'CODE 128', sub:'Universal',  icon:'fa-barcode' },
@@ -1024,6 +1047,18 @@ const ProductosModule = {
     ]);
     document.getElementById('modalBox').style.maxWidth = '980px';
     setTimeout(() => this._bcRender(), 50);
+  },
+
+  _bcGenerarUnico(codigoProd) {
+    // Si hay código de producto (ej. PROD352), lo usamos como base
+    if (codigoProd) return 'MAGAMA-' + codigoProd;
+    // Si no, generamos un EAN-13 real y único con dígito verificador
+    let codigo = '200';
+    for (let i = 0; i < 9; i++) codigo += Math.floor(Math.random() * 10);
+    let suma = 0;
+    for (let i = 0; i < 12; i++) suma += parseInt(codigo[i]) * (i % 2 === 0 ? 1 : 3);
+    const dv = (10 - (suma % 10)) % 10;
+    return codigo + dv;
   },
 
   _bcSetFormato(fmt) {
@@ -1209,6 +1244,17 @@ const ProductosModule = {
     } catch (e) {
       App.toast('Código inválido para generar barras', 'error');
     }
+  },
+
+  _bcRenderPreviewFormulario(valor) {
+    valor = (valor || '').trim();
+    if (!valor) {
+      const wrap = document.getElementById('barcodePreviewWrap');
+      if (wrap) wrap.style.display = 'none';
+      return;
+    }
+    clearTimeout(this._bcPreviewTimer);
+    this._bcPreviewTimer = setTimeout(() => this._renderBarcode(valor), 400);
   },
 
   // ─── IMAGEN: MÉTODOS ───
