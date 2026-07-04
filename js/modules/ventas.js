@@ -587,6 +587,7 @@ const VentasModule = {
     this.descGlobal = Math.min(100,Math.max(0,parseFloat(val)||0));
     var self=this;
     this.currentItems.forEach(function(item){item.dcto=self.descGlobal;item.total=item.qty*item.precio*(1-self.descGlobal/100);});
+    this._autoSyncMontoEdicion();
     this.updateVuelto();
   },
 
@@ -608,22 +609,22 @@ const VentasModule = {
     var qty=Math.max(1,parseInt(val)||1);
     this.currentItems[idx].qty=qty;
     this.currentItems[idx].total=qty*this.currentItems[idx].precio*(1-(this.currentItems[idx].dcto||0)/100);
-    this._checkMayorista(); App.renderPage();
+    this._checkMayorista(); this._autoSyncMontoEdicion(); App.renderPage();
   },
   updateDcto(idx,val) {
     var dcto=Math.min(100,Math.max(0,parseFloat(val)||0));
     this.currentItems[idx].dcto=dcto;
     this.currentItems[idx].total=this.currentItems[idx].qty*this.currentItems[idx].precio*(1-dcto/100);
-    App.renderPage();
+    this._autoSyncMontoEdicion(); App.renderPage();
   },
   updateNombre(idx,val) { if(val&&val.trim()) this.currentItems[idx].nombre=val.trim(); },
   updatePrecio(idx,val) {
     var precio=Math.max(0,parseFloat(val)||0); if(!precio)return;
     this.currentItems[idx].precio=precio;
     this.currentItems[idx].total=this.currentItems[idx].qty*precio*(1-(this.currentItems[idx].dcto||0)/100);
-    App.renderPage();
+    this._autoSyncMontoEdicion(); App.renderPage();
   },
-  removeItem(idx) { this.currentItems.splice(idx,1); this._checkMayorista(); App.renderPage(); },
+  removeItem(idx) { this.currentItems.splice(idx,1); this._checkMayorista(); this._autoSyncMontoEdicion(); App.renderPage(); },
   limpiarLista() {
     if(!this.currentItems.length||confirm('¿Limpiar todos los productos del ticket?')){
       this.currentItems=[]; this.descGlobal=0; this.mayoristaModo=false; App.renderPage();
@@ -642,6 +643,12 @@ const VentasModule = {
       item.total=item.qty*item.precio*(1-(item.dcto||0)/100);
     });
     if(cambio){if(debe)App.toast('🏷️ Precio mayorista aplicado automáticamente','info');else App.toast('↩️ Precio unitario restaurado','info');}
+  },
+
+  _autoSyncMontoEdicion() {
+    if (!this._editingId) return;
+    if (this.metodoPago === 'COMBINADO') return; // el usuario controla esos montos manualmente
+    this.montoPago = this.getTotal();
   },
 
   // ─────────────────────────────────────────────────────────
@@ -756,7 +763,7 @@ const VentasModule = {
     } else {
       this.currentItems.push({prod_id:p.id,codigo:p.codigo,nombre:p.nombre,imagen:p.imagen||'',unidad:p.unidad||'UND',precio:p.precio_venta,qty:1,dcto:this.descGlobal||0,total:p.precio_venta*(1-(this.descGlobal||0)/100)});
     }
-    this._searchResults=null; this._checkMayorista();
+    this._searchResults=null; this._checkMayorista(); this._autoSyncMontoEdicion();
     App.toast(p.nombre+' agregado ✓','success'); App.closeModal(); App.renderPage();
     setTimeout(function(){var inp=document.getElementById('prodBuscadorComp');if(inp)inp.value='';},50);
   },
