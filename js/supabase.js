@@ -399,6 +399,123 @@ const SupabaseDB = {
     }
   },
 
+  async cargarHistorialCaja() {
+    try {
+      const { data, error } = await db.from('historial_caja').select('*').order('id', { ascending: false });
+      if (error) throw error;
+      DB.historialCaja = data || [];
+      console.log('✅ ' + DB.historialCaja.length + ' cierres de caja cargados desde Supabase');
+      return { ok: true };
+    } catch(e) {
+      console.warn('⚠️ Error cargando historial de caja:', e);
+      return { ok: false };
+    }
+  },
+
+  async guardarHistorialCaja(snap) {
+    try {
+      const { error } = await db.from('historial_caja').upsert([{
+        id:               snap.id,
+        fecha:            snap.fecha            || '',
+        hora_apertura:    snap.hora_apertura     || '',
+        hora_cierre:      snap.hora_cierre       || '',
+        responsable:      snap.responsable       || '',
+        monto_inicial:    snap.monto_inicial     || 0,
+        venta_efectivo:   snap.venta_efectivo    || 0,
+        venta_yape:       snap.venta_yape        || 0,
+        venta_tarjeta:    snap.venta_tarjeta     || 0,
+        venta_combinado:  snap.venta_combinado   || 0,
+        venta_total:      snap.venta_total       || 0,
+        num_ventas:       snap.num_ventas        || 0,
+        ingresos:         snap.ingresos          || 0,
+        egresos:          snap.egresos           || 0,
+        balance_efectivo: snap.balance_efectivo  || 0,
+        balance_total:    snap.balance_total     || 0,
+        monto_contado:    snap.monto_contado     || 0,
+        diferencia:       snap.diferencia        || 0,
+        observaciones:    snap.observaciones     || ''
+      }]);
+      if (error) throw error;
+      console.log('✅ Historial de caja guardado en Supabase');
+      return { ok: true };
+    } catch(e) {
+      console.warn('⚠️ Error guardando historial de caja:', e);
+      return { ok: false };
+    }
+  },
+
+  async cargarKardex() {
+    try {
+      const { data, error } = await db.from('kardex').select('*').order('id', { ascending: false }).limit(500);
+      if (error) throw error;
+      if (data && data.length > 0) DB.kardex = data;
+      console.log('✅ ' + (data||[]).length + ' movimientos de kardex cargados desde Supabase');
+      return { ok: true };
+    } catch(e) {
+      console.warn('⚠️ Error cargando kardex:', e);
+      return { ok: false };
+    }
+  },
+
+  async guardarKardex(entries) {
+    try {
+      const rows = entries.map(function(k){
+        return {
+          id: k.id,
+          fecha: k.fecha || '',
+          hora: k.hora || '',
+          prod_id: k.prod_id,
+          tipo: k.tipo || '',
+          concepto: k.concepto || '',
+          cantidad: k.cantidad || 0,
+          stock_anterior: k.stock_anterior || 0,
+          stock_nuevo: k.stock_nuevo || 0,
+          usuario: k.usuario || ''
+        };
+      });
+      const { error } = await db.from('kardex').upsert(rows);
+      if (error) throw error;
+      console.log('✅ ' + rows.length + ' movimiento(s) de kardex guardados en Supabase');
+      return { ok: true };
+    } catch(e) {
+      console.warn('⚠️ Error guardando kardex:', e);
+      return { ok: false };
+    }
+  },
+
+  // Igual que actualizarProducto() pero para varios productos en UNA sola llamada,
+  // sin disparar cargarProductos() por cada uno (evita recargas redundantes en cascada).
+  async actualizarProductosBatch(productos) {
+    try {
+      if (!productos || !productos.length) return { ok: true };
+      const rows = productos.map(function(p){
+        return {
+          id:               p.id,
+          codigo:           p.codigo           || '',
+          nombre:           p.nombre           || '',
+          categoria:        p.categoria        || 'General',
+          descripcion:      p.descripcion      || '',
+          precio_venta:     p.precio_venta     || 0,
+          precio_compra:    p.precio_compra    || 0,
+          precio_mayorista: p.precio_mayorista || 0,
+          stock:            p.stock            || 0,
+          stock_minimo:     p.stock_minimo     || 10,
+          unidad:           p.unidad           || 'UND',
+          igv:              p.igv              ?? true,
+          imagen_url:       p.imagen_url || p.imagen || '',
+          barcode:          p.barcode          || ''
+        };
+      });
+      const { error } = await db.from('productos').upsert(rows);
+      if (error) throw error;
+      console.log('✅ ' + rows.length + ' producto(s) sincronizados en Supabase (batch)');
+      return { ok: true };
+    } catch(e) {
+      console.warn('⚠️ Error sincronizando productos en batch:', e);
+      return { ok: false };
+    }
+  },
+
   // ============================================================
   // AUTH
   // ============================================================
