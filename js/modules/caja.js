@@ -20,8 +20,12 @@ const CajaModule = {
     if (!DB.movimientosCaja) DB.movimientosCaja = [];
     return DB.movimientosCaja;
   },
+  _getHistorial() {
+    if (!DB.historialCaja) DB.historialCaja = [];
+    return DB.historialCaja;
+  },
   _ventasHoy() {
-    return DB.ventas.filter(function(v){ return v.fecha === CajaModule._fechaHoy(); });
+    return DB.ventas.filter(function(v){ return v.fecha === CajaModule._fechaHoy() && v.estado !== 'ANULADO'; });
   },
 
   // ── Calcular balance actual ──
@@ -410,10 +414,40 @@ const CajaModule = {
 
       App.showModal('🔒 Cierre de Caja', resumenHTML, [
         { text:'🔒 Confirmar Cierre', cls:'btn-danger', cb: function() {
+          var montoContado = parseFloat(document.getElementById('montoContado')?.value) || 0;
+          var obsCierre    = document.getElementById('obsCierre')?.value?.trim() || '';
+
           if (!DB.cajas[0].id) DB.cajas[0].id = Date.now();
           DB.cajas[0].estado = 'CERRADA';
           DB.cajas[0].hora_cierre = CajaModule._horaAhora();
-          DB.cajas[0].monto_contado = parseFloat(document.getElementById('montoContado')?.value) || 0;
+          DB.cajas[0].monto_contado = montoContado;
+
+          // ── Guardar snapshot histórico ANTES de que se sobrescriba con la próxima apertura ──
+          var snapshot = {
+            id: Date.now(),
+            fecha: CajaModule._fechaHoy(),
+            hora_apertura: caja.hora_apertura || '',
+            hora_cierre: CajaModule._horaAhora(),
+            responsable: caja.responsable || (DB.usuarioActual ? DB.usuarioActual.usuario : ''),
+            monto_inicial: bal.montoInicial,
+            venta_efectivo: bal.ventaEfectivo,
+            venta_yape: bal.ventaYape,
+            venta_tarjeta: bal.ventaTarjeta,
+            venta_combinado: bal.ventaCombinado,
+            venta_total: bal.ventaTotal,
+            num_ventas: bal.numVentas,
+            ingresos: bal.ingresos,
+            egresos: bal.egresos,
+            balance_efectivo: bal.balanceEfectivo,
+            balance_total: bal.balanceTotal,
+            monto_contado: montoContado,
+            diferencia: montoContado - bal.balanceEfectivo,
+            observaciones: obsCierre
+          };
+          CajaModule._getHistorial().push(snapshot);
+          Storage.guardarHistorialCaja();
+          SupabaseDB.guardarHistorialCaja(snapshot);
+
           Storage.guardarCajas();
           SupabaseDB.guardarCaja(DB.cajas[0]);
           App.toast('🔒 Caja cerrada correctamente', 'warning');
