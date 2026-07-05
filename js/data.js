@@ -263,6 +263,7 @@ const Storage = {
     notasCredito:    'erp_jumila_notascredito',
     cajas:           'erp_jumila_cajas',
     movimientosCaja: 'erp_jumila_movimientos_caja',
+    historialCaja:   'erp_jumila_historial_caja',
   },
 
   cargar() {
@@ -307,6 +308,9 @@ const Storage = {
      const mc = localStorage.getItem(this.KEYS.movimientosCaja);
      if (mc) DB.movimientosCaja = JSON.parse(mc);
 
+     const hc = localStorage.getItem(this.KEYS.historialCaja);
+     if (hc) DB.historialCaja = JSON.parse(hc);
+
     } catch(e) {
       console.warn('Error al cargar localStorage:', e);
     }
@@ -334,6 +338,7 @@ const Storage = {
   guardarNotasCredito()    { return this.guardar(this.KEYS.notasCredito, DB.notasCredito || []); },
   guardarCajas()           { return this.guardar(this.KEYS.cajas,          DB.cajas || []); },
   guardarMovimientosCaja() { return this.guardar(this.KEYS.movimientosCaja, DB.movimientosCaja || []); },
+  guardarHistorialCaja()   { return this.guardar(this.KEYS.historialCaja,   DB.historialCaja || []); },
 
   limpiarTodo() {
     Object.values(this.KEYS).forEach(k => localStorage.removeItem(k));
@@ -346,3 +351,7 @@ Storage.cargar();
 // ── Cargar desde Supabase al iniciar ──
 SupabaseDB.cargarProductos();
 SupabaseDB.cargarVentas();
+SupabaseDB.cargarCaja();
+SupabaseDB.cargarMovimientosCaja();
+SupabaseDB.cargarHistorialCaja();
+SupabaseDB.cargarKardex();
