@@ -128,21 +128,27 @@ const KardexModule = {
   // Called automatically when products are sold/purchased
   registrar(items, tipo, concepto) {
     const ahora=new Date();
-    items.forEach(item=>{
+    const nuevos = [];
+    items.forEach((item, idx)=>{
       const p=DB.productos.find(x=>x.id===item.prod_id);
       if (!p) return;
       const stockAnterior = tipo==='SALIDA' ? p.stock + item.qty : p.stock;
       const stockNuevo = tipo==='SALIDA' ? p.stock : p.stock + item.qty;
-      DB.kardex.push({
-        id:DB.kardex.length+1,
+      const entry = {
+        id: Date.now() + idx,
         fecha:ahora.toISOString().split('T')[0],
         hora:ahora.toTimeString().slice(0,8),
         prod_id:item.prod_id, tipo, concepto,
         cantidad: tipo==='SALIDA'? -item.qty : item.qty,
         stock_anterior:stockAnterior, stock_nuevo:stockNuevo,
-        usuario:'FREDDY'
-      });
+        usuario: (DB.usuarioActual && DB.usuarioActual.usuario) || 'FREDDY'
+      };
+      DB.kardex.push(entry);
+      nuevos.push(entry);
     });
+    if (typeof SupabaseDB !== 'undefined' && nuevos.length) {
+      SupabaseDB.guardarKardex(nuevos);
+    }
   },
 
   registrarManual() {
@@ -181,11 +187,17 @@ const KardexModule = {
         const antes=DB.productos[pi].stock;
         if (tipo==='SALIDA') DB.productos[pi].stock=Math.max(0,antes-cant);
         else DB.productos[pi].stock=antes+cant;
-        DB.kardex.push({
-          id:DB.kardex.length+1, fecha:new Date().toISOString().split('T')[0],
+        const entry = {
+          id:Date.now(), fecha:new Date().toISOString().split('T')[0],
           hora:new Date().toTimeString().slice(0,8), prod_id:prodId, tipo, concepto,
-          cantidad:tipo==='SALIDA'?-cant:cant, stock_anterior:antes, stock_nuevo:DB.productos[pi].stock, usuario:'FREDDY'
-        });
+          cantidad:tipo==='SALIDA'?-cant:cant, stock_anterior:antes, stock_nuevo:DB.productos[pi].stock,
+          usuario: (DB.usuarioActual && DB.usuarioActual.usuario) || 'FREDDY'
+        };
+        DB.kardex.push(entry);
+        Storage.guardarKardex && Storage.guardarKardex();
+        Storage.guardarProductos();
+        if (typeof SupabaseDB !== 'undefined') SupabaseDB.guardarKardex([entry]);
+        SupabaseDB.actualizarProducto(DB.productos[pi]);
         App.toast('Movimiento registrado','success'); App.closeModal(); App.renderPage();
       }}
     ]);
