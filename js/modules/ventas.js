@@ -278,6 +278,11 @@ const VentasModule = {
       App.toast('Solo se pueden editar comprobantes "Por Enviar" (no aceptados ni anulados)','warning');
       return;
     }
+    var cajaCerrada = (DB.historialCaja||[]).some(function(h){ return h.fecha === v.fecha; });
+    if (cajaCerrada) {
+      App.toast('No se puede editar: la caja del '+this.formatFecha(v.fecha)+' ya fue cerrada (arqueo realizado)','error');
+      return;
+    }
     this._searchResults = null;
     this.currentItems = (v.items||[]).map(function(it){
       var p = (DB.productos||[]).find(function(x){ return x.id===it.prod_id; });
@@ -297,15 +302,25 @@ const VentasModule = {
     this.selectedCliente = cli || (DB.clientes||[]).find(function(c){ return c.doc==='00000000'; });
     this.serieActual     = v.serie;
     this.tipoComprobante = v.tipo_comprobante || (v.tipo==='BOL'?'BOLETA DE VENTA ELECTRONICA':v.tipo==='FAC'?'FACTURA ELECTRONICA':'NOTA DE VENTA');
-    this.metodoPago      = (v.metodo_pago||'EFECTIVO').split('(')[0].trim() || 'EFECTIVO';
-    if (['EFECTIVO','TARJETA','YAPE','COMBINADO'].indexOf(this.metodoPago) === -1) this.metodoPago = 'EFECTIVO';
-    this.montoPago       = v.monto_pago || v.total;
+    var mp = v.metodo_pago || 'EFECTIVO';
+if (mp.indexOf('+') > -1) {
+  this.metodoPago = 'COMBINADO';
+  var partA = mp.split('+')[0];
+  var partB = mp.split('+')[1] || '';
+  this._subMetodoCombinado = partA.indexOf('YAPE') > -1 ? 'YAPE+EFECTIVO' : 'TARJETA+EFECTIVO';
+  var matchA = partA.match(/S\/\s*([\d.]+)/);
+  var matchB = partB.match(/S\/\s*([\d.]+)/);
+  this._montoCombinadoA = matchA ? parseFloat(matchA[1]) : 0;
+  this._montoCombinadoB = matchB ? parseFloat(matchB[1]) : 0;
+} else {
+  this.metodoPago = mp.split('(')[0].trim() || 'EFECTIVO';
+  if (['EFECTIVO','TARJETA','YAPE'].indexOf(this.metodoPago) === -1) this.metodoPago = 'EFECTIVO';
+}
+this.montoPago       = v.monto_pago || v.total;
     this.descGlobal      = 0;
     this.mayoristaModo   = false;
     this._convertingFromId = null;
     this._editingId      = id;
-    this._montoCombinadoA = 0;
-    this._montoCombinadoB = 0;
     this.modoVista       = 'comprobante';
     App.toast('✏️ Editando '+v.serie+'-'+v.numero+' — se restaurará el stock de la versión anterior al guardar','info');
     App.renderPage();
@@ -893,6 +908,14 @@ const VentasModule = {
       var _oi=(DB.ventas||[]).findIndex(function(x){return Number(x.id)===Number(_oid);});
       if(_oi>=0 && DB.ventas[_oi].estado!=='ANULADO'){
         DB.ventas[_oi].estado='ANULADO';
+        if (typeof KardexModule !== 'undefined' && (DB.ventas[_oi].items||[]).length) {
+          KardexModule.registrar(
+            DB.ventas[_oi].items.map(function(it){ return {prod_id:it.prod_id, qty:it.qty}; }),
+            'ENTRADA',
+            'Anulación por conversión a '+serie+'-'+numero
+          );
+          Storage.guardarKardex && Storage.guardarKardex();
+        }
         (DB.ventas[_oi].items||[]).forEach(function(item){
           var pi=(DB.productos||[]).findIndex(function(p){return p.id===item.prod_id;});
           if(pi>=0) DB.productos[pi].stock=(DB.productos[pi].stock||0)+item.qty;
@@ -911,11 +934,28 @@ const VentasModule = {
       if(pi>=0) DB.productos[pi].stock=Math.max(0,(DB.productos[pi].stock||0)-item.qty);
     });
 
+    if (typeof KardexModule !== 'undefined') {
+      KardexModule.registrar(
+        venta.items.map(function(i){ return {prod_id:i.prod_id, qty:i.qty}; }),
+        'SALIDA',
+        'Venta '+serie+'-'+numero
+      );
+      Storage.guardarKardex && Storage.guardarKardex();
+    }
+
     DB.ventas.unshift(venta);
     Storage.guardarVentas();
     Storage.guardarProductos();
     Storage.guardarSequences && Storage.guardarSequences();
     SupabaseDB.guardarVenta(venta);
+
+    // ── Sincronizar stock descontado a Supabase en UNA sola llamada (crítico para multi-dispositivo) ──
+    var productosAfectadosVenta = [];
+    this.currentItems.forEach(function(item){
+      var pi=(DB.productos||[]).findIndex(function(p){return p.id===item.prod_id;});
+      if(pi>=0) productosAfectadosVenta.push(DB.productos[pi]);
+    });
+    SupabaseDB.actualizarProductosBatch(productosAfectadosVenta);
 
     App.toast('✅ '+serie+'-'+numero+' procesado — Vuelto: S/ '+venta.vuelto.toFixed(2),'success');
     venta.items.forEach(function(item){
@@ -959,17 +999,55 @@ const VentasModule = {
       metodoFinal = this.metodoPago;
     }
 
-    // 1) Devolver al stock las cantidades de la versión ANTERIOR de la venta
+    // 1) Devolver al stock las cantidades de la versión ANTERIOR de la venta (simulado, no aplicado aún)
+    var stockSimulado = {};
+    (vOriginal.items||[]).forEach(function(item){
+      var p = (DB.productos||[]).find(function(x){ return x.id===item.prod_id; });
+      if (p) stockSimulado[item.prod_id] = (stockSimulado[item.prod_id] !== undefined ? stockSimulado[item.prod_id] : p.stock) + item.qty;
+    });
+
+    // 2) Validar que haya stock suficiente para la versión NUEVA (editada) contra el stock ya liberado
+    var errores = [];
+    this.currentItems.forEach(function(item){
+      var p = (DB.productos||[]).find(function(x){ return x.id===item.prod_id; });
+      if (!p) return;
+      var disponible = stockSimulado[item.prod_id] !== undefined ? stockSimulado[item.prod_id] : p.stock;
+      if (item.qty > disponible) {
+        errores.push(p.nombre+' (disponible: '+disponible+', solicitado: '+item.qty+')');
+      }
+    });
+    if (errores.length) {
+      App.toast('Stock insuficiente: '+errores.join(', '), 'error');
+      return;
+    }
+
+    // 3) Registrar en Kardex ANTES de aplicar el aumento (para que el snapshot quede correcto)
+    if (typeof KardexModule !== 'undefined' && (vOriginal.items||[]).length) {
+      KardexModule.registrar(
+        vOriginal.items.map(function(i){ return {prod_id:i.prod_id, qty:i.qty}; }),
+        'ENTRADA',
+        'Edición '+vOriginal.serie+'-'+vOriginal.numero+' — devolución versión anterior'
+      );
+    }
+    // Aplicar de verdad: devolver stock original
     (vOriginal.items||[]).forEach(function(item){
       var pi = (DB.productos||[]).findIndex(function(p){ return p.id===item.prod_id; });
       if (pi>=0) DB.productos[pi].stock = (DB.productos[pi].stock||0) + item.qty;
     });
 
-    // 2) Descontar del stock las cantidades de la versión NUEVA (editada)
+    // 4) Aplicar de verdad: descontar stock de la versión editada + registrar en Kardex
     this.currentItems.forEach(function(item){
       var pi = (DB.productos||[]).findIndex(function(p){ return p.id===item.prod_id; });
       if (pi>=0) DB.productos[pi].stock = Math.max(0, (DB.productos[pi].stock||0) - item.qty);
     });
+    if (typeof KardexModule !== 'undefined') {
+      KardexModule.registrar(
+        this.currentItems.map(function(i){ return {prod_id:i.prod_id, qty:i.qty}; }),
+        'SALIDA',
+        'Edición '+vOriginal.serie+'-'+vOriginal.numero+' — nueva versión aplicada'
+      );
+      Storage.guardarKardex && Storage.guardarKardex();
+    }
 
     // 3) Actualizar la venta manteniendo id, fecha, hora, serie y numero originales
     DB.ventas[idx] = Object.assign({}, vOriginal, {
@@ -983,10 +1061,19 @@ const VentasModule = {
     Storage.guardarVentas();
     Storage.guardarProductos();
     SupabaseDB.actualizarVenta(DB.ventas[idx]);
-    this.currentItems.forEach(function(item){
-      var pi = (DB.productos||[]).findIndex(function(p){ return p.id===item.prod_id; });
-      if (pi>=0) SupabaseDB.actualizarProducto(DB.productos[pi]);
+
+    // ── Sincronizar TODOS los productos afectados en UNA sola llamada (versión nueva + versión anterior) ──
+    // Un producto puede haber sido quitado por completo durante la edición; su stock
+    // igual cambió (se le devolvió lo vendido) y también debe sincronizarse.
+    var idsAfectados = {};
+    (vOriginal.items||[]).forEach(function(item){ idsAfectados[item.prod_id] = true; });
+    this.currentItems.forEach(function(item){ idsAfectados[item.prod_id] = true; });
+    var productosAfectadosEdicion = [];
+    Object.keys(idsAfectados).forEach(function(prodId){
+      var pi = (DB.productos||[]).findIndex(function(p){ return p.id === Number(prodId); });
+      if (pi>=0) productosAfectadosEdicion.push(DB.productos[pi]);
     });
+    SupabaseDB.actualizarProductosBatch(productosAfectadosEdicion);
 
     App.toast('✅ '+vOriginal.serie+'-'+vOriginal.numero+' actualizado correctamente','success');
     this._editingId = null; this._montoCombinadoA=0; this._montoCombinadoB=0; this.mayoristaModo=false;
@@ -1260,7 +1347,7 @@ const VentasModule = {
         },
         'cac:PaymentTerms': {
         'cbc:ID': {'_text': 'FormaPago'},
-        'cbc:PaymentMeansID': {'_text': p.formaPago || 'Contado'}
+        'cbc:PaymentMeansID': {'_text': venta.formaPago || 'Contado'}
       },
       'cac:LegalMonetaryTotal': {
         'cbc:LineExtensionAmount': {'_attributes':{'currencyID':'PEN'},'_text': totalPagar},
@@ -1343,6 +1430,11 @@ const VentasModule = {
   anular(id) {
     var v=(DB.ventas||[]).find(function(x){return Number(x.id)===Number(id);});
     if(!v)return;
+    var cajaCerrada = (DB.historialCaja||[]).some(function(h){ return h.fecha === v.fecha; });
+    if (cajaCerrada) {
+      App.toast('No se puede anular: la caja del '+this.formatFecha(v.fecha)+' ya fue cerrada (arqueo realizado)','error');
+      return;
+    }
     var cli=(DB.clientes||[]).find(function(c){return c.id===v.cliente_id;});
     App.showModal('🚫 Anular Comprobante',
       '<div style="text-align:center;padding:10px;">' +
@@ -1361,15 +1453,25 @@ const VentasModule = {
         var i=(DB.ventas||[]).findIndex(function(x){return Number(x.id)===Number(id);});
         if(i>=0){
           DB.ventas[i].estado='ANULADO';
+          if (typeof KardexModule !== 'undefined' && (DB.ventas[i].items||[]).length) {
+            KardexModule.registrar(
+              DB.ventas[i].items.map(function(it){ return {prod_id:it.prod_id, qty:it.qty}; }),
+              'ENTRADA',
+              'Anulación '+DB.ventas[i].serie+'-'+DB.ventas[i].numero
+            );
+            Storage.guardarKardex && Storage.guardarKardex();
+          }
           (DB.ventas[i].items||[]).forEach(function(item){
             var pi=(DB.productos||[]).findIndex(function(p){return p.id===item.prod_id;});
             if(pi>=0) DB.productos[pi].stock=(DB.productos[pi].stock||0)+item.qty;
           });
           Storage.guardarVentas(); Storage.guardarProductos();
-         (DB.ventas[i].items||[]).forEach(function(item){
-         var pi=(DB.productos||[]).findIndex(function(p){return p.id===item.prod_id;});
-        if(pi>=0) SupabaseDB.actualizarProducto(DB.productos[pi]);
-      });
+          var productosAfectadosAnulacion = [];
+          (DB.ventas[i].items||[]).forEach(function(item){
+            var pi=(DB.productos||[]).findIndex(function(p){return p.id===item.prod_id;});
+            if(pi>=0) productosAfectadosAnulacion.push(DB.productos[pi]);
+          });
+          SupabaseDB.actualizarProductosBatch(productosAfectadosAnulacion);
           SupabaseDB.actualizarVenta(DB.ventas[i]);
         }
         App.toast('Comprobante anulado y stock devuelto','warning');
@@ -1621,6 +1723,11 @@ const VentasModule = {
 
   convertirCPE(id) {
     var v=(DB.ventas||[]).find(function(x){return Number(x.id)===Number(id);}); if(!v)return;
+    var cajaCerrada = (DB.historialCaja||[]).some(function(h){ return h.fecha === v.fecha; });
+    if (cajaCerrada) {
+      App.toast('No se puede convertir: la caja del '+this.formatFecha(v.fecha)+' ya fue cerrada (arqueo realizado)','error');
+      return;
+    }
     App.closeModal();
     this.nuevaVenta();
     this.currentItems=(v.items||[]).map(function(it){
