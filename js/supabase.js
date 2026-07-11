@@ -517,6 +517,75 @@ const SupabaseDB = {
   },
 
   // ============================================================
+  // EMPRESA
+  // ============================================================
+
+  async cargarEmpresa() {
+    try {
+      const { data, error } = await db.from('empresa').select('*').eq('id', 1).maybeSingle();
+      if (error) throw error;
+      if (data) {
+        Object.assign(DB.empresa, {
+          nombre:      data.nombre      || DB.empresa.nombre,
+          ruc:         data.ruc         || DB.empresa.ruc,
+          sucursal:    data.sucursal    || DB.empresa.sucursal,
+          direccion:   data.direccion   || DB.empresa.direccion,
+          telefono:    data.telefono    || '',
+          email:       data.email       || '',
+          whatsapp:    data.whatsapp    || '',
+          web:         data.web         || '',
+          logo:        data.logo        || '',
+          moneda:      data.moneda      || 'SOLES',
+          tipoCambio:  data.tipo_cambio || DB.empresa.tipoCambio,
+          simbolo:     data.simbolo     || 'S/',
+          pais:        data.pais        || 'PE',
+          igv:         data.igv         ?? 18,
+          igvDefault:  data.igv_default || 'incluido',
+          decimales:   data.decimales   ?? 2,
+          autoprint:   data.autoprint   !== false
+        });
+        Storage.guardarEmpresa();
+        console.log('✅ Datos de empresa cargados desde Supabase');
+      }
+      return { ok: true };
+    } catch(e) {
+      console.warn('⚠️ Error cargando empresa:', e);
+      return { ok: false };
+    }
+  },
+
+  async actualizarEmpresa(e) {
+    try {
+      const { error } = await db.from('empresa').upsert([{
+        id:           1,
+        nombre:       e.nombre       || '',
+        ruc:          e.ruc          || '',
+        sucursal:     e.sucursal     || '',
+        direccion:    e.direccion    || '',
+        telefono:     e.telefono     || '',
+        email:        e.email        || '',
+        whatsapp:     e.whatsapp     || '',
+        web:          e.web          || '',
+        logo:         e.logo         || '',
+        moneda:       e.moneda       || 'SOLES',
+        tipo_cambio:  e.tipoCambio   || 3.467,
+        simbolo:      e.simbolo      || 'S/',
+        pais:         e.pais         || 'PE',
+        igv:          e.igv          ?? 18,
+        igv_default:  e.igvDefault   || 'incluido',
+        decimales:    e.decimales    ?? 2,
+        autoprint:    e.autoprint    !== false
+      }]);
+      if (error) throw error;
+      console.log('✅ Empresa actualizada en Supabase');
+      return { ok: true };
+    } catch(e) {
+      console.warn('⚠️ Error actualizando empresa:', e);
+      return { ok: false };
+    }
+  },
+
+  // ============================================================
   // AUTH
   // ============================================================
 
