@@ -1002,7 +1002,6 @@ document.addEventListener('DOMContentLoaded', function() {
     if (u) {
   DB.usuarioActual = u;
   App._loadDB();
-  SheetsSync.cargarProductos();
   SupabaseDB.cargarClientes();
   SupabaseDB.cargarCotizaciones();
   SupabaseDB.cargarVentas();
@@ -1028,8 +1027,6 @@ document.addEventListener('DOMContentLoaded', function() {
   // 1. Restaurar datos guardados (productos, ventas, etc.)
   App._loadDB();
 
-  // 2. Cargar productos desde Google Sheets
-  SheetsSync.cargarProductos();
   SupabaseDB.cargarVentas();
   SupabaseDB.cargarClientes();
   SupabaseDB.cargarCotizaciones();
