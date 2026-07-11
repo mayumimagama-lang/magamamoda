@@ -156,13 +156,14 @@ const ConfiguracionModule = {
     if(f.size>2097152){App.toast('El logo no debe superar 2MB','error');return;}
     var r=new FileReader(); r.onload=function(e){
       DB.empresa.logo=e.target.result; Storage.guardarEmpresa();
+      SupabaseDB.actualizarEmpresa(DB.empresa);
       var p=document.getElementById('logoPreview');
       if(p) p.innerHTML='<img src="'+e.target.result+'" style="width:100%;height:100%;object-fit:contain;">';
       App.toast('✅ Logo actualizado','success');
     }; r.readAsDataURL(f);
   },
 
-  _quitarLogo() { DB.empresa.logo=''; Storage.guardarEmpresa(); App.toast('Logo eliminado','warning'); App.renderPage(); },
+  _quitarLogo() { DB.empresa.logo=''; Storage.guardarEmpresa(); SupabaseDB.actualizarEmpresa(DB.empresa); App.toast('Logo eliminado','warning'); App.renderPage(); },
 
   _guardarEmpresa() {
     var n=(document.getElementById('cfg_nombre')?.value||'').trim();
@@ -171,14 +172,18 @@ const ConfiguracionModule = {
       sucursal:(document.getElementById('cfg_sucursal')?.value||'').trim(), direccion:(document.getElementById('cfg_dir')?.value||'').trim(),
       telefono:(document.getElementById('cfg_tel')?.value||'').trim(), email:(document.getElementById('cfg_mail')?.value||'').trim(),
       whatsapp:(document.getElementById('cfg_wa')?.value||'').trim(), web:(document.getElementById('cfg_web')?.value||'').trim() });
-    Storage.guardarEmpresa(); App.toast('✅ Datos de empresa guardados','success');
+    Storage.guardarEmpresa();
+    SupabaseDB.actualizarEmpresa(DB.empresa);
+    App.toast('✅ Datos de empresa guardados','success');
   },
 
   _guardarMoneda() {
     Object.assign(DB.empresa, { moneda:document.getElementById('cfg_moneda')?.value||'SOLES',
       tipoCambio:parseFloat(document.getElementById('cfg_tc')?.value)||3.467,
       simbolo:(document.getElementById('cfg_sim')?.value||'S/').trim(), pais:document.getElementById('cfg_pais')?.value||'PE' });
-    Storage.guardarEmpresa(); App.toast('✅ Moneda guardada','success');
+    Storage.guardarEmpresa();
+    SupabaseDB.actualizarEmpresa(DB.empresa);
+    App.toast('✅ Moneda guardada','success');
   },
 
   // ── 2. USUARIOS ─────────────────────────────────────────
