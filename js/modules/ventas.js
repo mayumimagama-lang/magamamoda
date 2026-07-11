@@ -1220,6 +1220,116 @@ this.montoPago       = v.monto_pago || v.total;
     var v=(DB.ventas||[]).find(function(x){return Number(x.id)===Number(id);}); if(v) this.imprimirComprobante(v);
   },
 
+  visualizarPDF(id) {
+  var v = (DB.ventas||[]).find(function(x){return Number(x.id)===Number(id);});
+  if (!v) return;
+  if (typeof TicketsModule !== 'undefined' && TicketsModule._getCfg) {
+    TicketsModule._getCfg();
+    var html = TicketsModule._generarTicketHTML(TicketsModule.cfg, v);
+    var w = window.open('', '_blank', 'width=380,height=600');
+    if (!w) { App.toast('Activa ventanas emergentes para ver el comprobante', 'warning'); return; }
+    w.document.write(html);
+    w.document.close();
+  } else {
+    App.toast('No se pudo generar la vista previa', 'error');
+  }
+},
+
+descargarPDF(id) {
+  var v = (DB.ventas||[]).find(function(x){return Number(x.id)===Number(id);});
+  if (!v) { App.toast('Comprobante no encontrado','error'); return; }
+  if (typeof window.jspdf === 'undefined') { App.toast('Librería PDF no cargada. Recarga la página (Ctrl+Shift+R).','error'); return; }
+
+  var cli = (DB.clientes||[]).find(function(c){return c.id===v.cliente_id;});
+  var doc = new window.jspdf.jsPDF({ unit:'mm', format:'a4' });
+  var pageW = 210, marginX = 15, y = 20;
+
+  // ── Encabezado empresa ──
+  doc.setFont('helvetica','bold'); doc.setFontSize(16); doc.setTextColor(30,58,95);
+  doc.text(DB.empresa.nombre || 'MAGAMA', marginX, y);
+  doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(90,90,90);
+  y += 6; doc.text('RUC: ' + (DB.empresa.ruc || ''), marginX, y);
+  y += 5; doc.text(DB.empresa.direccion || '', marginX, y);
+  y += 5; doc.text('Sucursal: ' + (DB.empresa.sucursal || ''), marginX, y);
+
+  // ── Caja tipo de comprobante ──
+  var tc = v.tipo==='BOL' ? [37,99,235] : v.tipo==='FAC' ? [124,58,237] : [234,88,12];
+  doc.setDrawColor(tc[0],tc[1],tc[2]); doc.setLineWidth(0.6);
+  doc.rect(pageW-75, 15, 60, 22);
+  doc.setFont('helvetica','bold'); doc.setFontSize(11); doc.setTextColor(tc[0],tc[1],tc[2]);
+  doc.text(v.tipo_comprobante || '', pageW-45, 22, {align:'center'});
+  doc.setFontSize(14); doc.text(v.serie + ' - ' + v.numero, pageW-45, 29, {align:'center'});
+  doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(120,120,120);
+  doc.text('Fecha: ' + v.fecha + '  ' + v.hora, pageW-45, 34, {align:'center'});
+
+  y = 46;
+  doc.setDrawColor(220,220,220); doc.line(marginX, y, pageW-marginX, y);
+  y += 8;
+
+  // ── Cliente ──
+  doc.setFont('helvetica','bold'); doc.setFontSize(10); doc.setTextColor(40,40,40);
+  doc.text('CLIENTE', marginX, y);
+  y += 6;
+  doc.setFont('helvetica','normal'); doc.setFontSize(10);
+  doc.text((cli ? cli.nombre : 'PÚBLICO EN GENERAL'), marginX, y);
+  y += 5;
+  doc.setFontSize(9); doc.setTextColor(110,110,110);
+  doc.text((cli ? (cli.tipo + ': ' + cli.doc) : 'DNI: 00000000'), marginX, y);
+  y += 10;
+
+  // ── Tabla de productos ──
+  var rows = (v.items||[]).map(function(it){
+    return [it.nombre, String(it.qty), 'S/ ' + it.precio.toFixed(2), 'S/ ' + it.total.toFixed(2)];
+  });
+  doc.autoTable({
+    startY: y,
+    head: [['Descripción','Cant.','P. Unit.','Total']],
+    body: rows,
+    theme: 'grid',
+    headStyles: { fillColor:[30,58,95], textColor:255, fontStyle:'bold', fontSize:9 },
+    bodyStyles: { fontSize:9, textColor:50 },
+    columnStyles: { 1:{halign:'center',cellWidth:20}, 2:{halign:'right',cellWidth:30}, 3:{halign:'right',cellWidth:30} },
+    margin: { left: marginX, right: marginX }
+  });
+
+  var finalY = doc.lastAutoTable.finalY + 8;
+
+  // ── Totales ──
+  doc.setFont('helvetica','normal'); doc.setFontSize(10); doc.setTextColor(80,80,80);
+  doc.text('Subtotal:', pageW-70, finalY);
+  doc.text('S/ ' + v.total.toFixed(2), pageW-marginX, finalY, {align:'right'});
+  finalY += 6;
+  doc.text('IGV (Exonerado):', pageW-70, finalY);
+  doc.text('S/ 0.00', pageW-marginX, finalY, {align:'right'});
+  finalY += 5;
+  doc.setDrawColor(200,200,200); doc.line(pageW-70, finalY, pageW-marginX, finalY);
+  finalY += 8;
+
+  doc.setFillColor(30,58,95);
+  doc.rect(pageW-70, finalY-7, 55, 11, 'F');
+  doc.setTextColor(255,255,255); doc.setFont('helvetica','bold'); doc.setFontSize(11);
+  doc.text('TOTAL', pageW-67, finalY-0.5);
+  doc.setFontSize(13);
+  doc.text('S/ ' + v.total.toFixed(2), pageW-marginX-2, finalY-0.5, {align:'right'});
+
+  finalY += 14;
+
+  // ── Método de pago ──
+  doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(90,90,90);
+  doc.text('Método de pago: ' + v.metodo_pago, marginX, finalY);
+  finalY += 5;
+  doc.text('Monto recibido: S/ ' + (v.monto_pago||v.total).toFixed(2), marginX, finalY);
+  finalY += 5;
+  doc.text('Vuelto: S/ ' + (v.vuelto||0).toFixed(2), marginX, finalY);
+
+  // ── Pie de página ──
+  doc.setFontSize(8); doc.setTextColor(150,150,150);
+  doc.text('¡Gracias por su compra! · ' + (DB.empresa.nombre||''), pageW/2, 285, {align:'center'});
+
+  doc.save(v.serie + '-' + v.numero + '.pdf');
+  App.toast('📄 PDF descargado: ' + v.serie + '-' + v.numero,'success');
+},
+
   // ─────────────────────────────────────────────────────────
   // ENVIAR SUNAT
   // ─────────────────────────────────────────────────────────
@@ -1678,9 +1788,9 @@ this.montoPago       = v.monto_pago || v.total;
     }
     b.push(btn('Enviar por correo','fas fa-envelope',AZUL,"VentasModule._enviarCorreo("+v.id+")"));
     b.push(btn('Enviar por WhatsApp','fab fa-whatsapp',VERDE,"VentasModule._enviarWADetalle("+v.id+")"));
-    b.push(btn('Visualizar PDF','fas fa-file-pdf',AZUL,"VentasModule.imprimir("+v.id+");App.closeModal();"));
+    b.push(btn('Visualizar PDF','fas fa-file-pdf',AZUL,"VentasModule.visualizarPDF("+v.id+");"));
     b.push(btn('Imprimir','fas fa-print',AZUL,"VentasModule.imprimir("+v.id+");App.closeModal();"));
-    b.push(btn('Descargar PDF','fas fa-download',AZUL,"VentasModule.imprimir("+v.id+");App.closeModal();"));
+    b.push(btn('Descargar PDF','fas fa-download',AZUL,"VentasModule.descargarPDF("+v.id+");"));
     b.push(btn('Guía de Remisión','fas fa-truck',GRIS,"App.toast('Guías de Remisión — próximamente','info')"));
     b.push(btn('Nota de Crédito','fas fa-file-invoice',MORADO,"App.closeModal();App.navigate('notascredito');"));
     b.push(btn('Nota de Débito','fas fa-file-invoice-dollar',MORADO,"App.closeModal();App.navigate('notascredito');"));
