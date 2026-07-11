@@ -487,7 +487,7 @@ const InventarioModule = {
         if (idxProd !== -1) {
           DB.productos[idxProd].stock = stockNuevo;
           Storage.guardarProductos();
-          SheetsSync.actualizarProducto(DB.productos[idxProd]);
+          SupabaseDB.actualizarProducto(DB.productos[idxProd]);
         }
 
         // Registrar en Kardex
