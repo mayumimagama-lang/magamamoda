@@ -1003,6 +1003,7 @@ document.addEventListener('DOMContentLoaded', function() {
   DB.usuarioActual = u;
   App._loadDB();
   SupabaseDB.cargarClientes();
+  SupabaseDB.cargarEmpresa();
   SupabaseDB.cargarCotizaciones();
   SupabaseDB.cargarVentas();
   SupabaseDB.cargarAgenda();
@@ -1029,6 +1030,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   SupabaseDB.cargarVentas();
   SupabaseDB.cargarClientes();
+  SupabaseDB.cargarEmpresa();
   SupabaseDB.cargarCotizaciones();
   SupabaseDB.cargarAgenda();
   SupabaseDB.cargarCaja();
