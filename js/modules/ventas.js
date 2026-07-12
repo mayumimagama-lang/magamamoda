@@ -1235,96 +1235,170 @@ this.montoPago       = v.monto_pago || v.total;
   }
 },
 
-descargarPDF(id) {
+async descargarPDF(id) {
   var v = (DB.ventas||[]).find(function(x){return Number(x.id)===Number(id);});
   if (!v) { App.toast('Comprobante no encontrado','error'); return; }
   if (typeof window.jspdf === 'undefined') { App.toast('Librería PDF no cargada. Recarga la página (Ctrl+Shift+R).','error'); return; }
 
+  var e = DB.empresa || {};
   var cli = (DB.clientes||[]).find(function(c){return c.id===v.cliente_id;});
   var doc = new window.jspdf.jsPDF({ unit:'mm', format:'a4' });
-  var pageW = 210, marginX = 15, y = 20;
-
-  // ── Encabezado empresa ──
-  doc.setFont('helvetica','bold'); doc.setFontSize(16); doc.setTextColor(30,58,95);
-  doc.text(DB.empresa.nombre || 'MAGAMA', marginX, y);
-  doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(90,90,90);
-  y += 6; doc.text('RUC: ' + (DB.empresa.ruc || ''), marginX, y);
-  y += 5; doc.text(DB.empresa.direccion || '', marginX, y);
-  y += 5; doc.text('Sucursal: ' + (DB.empresa.sucursal || ''), marginX, y);
-
-  // ── Caja tipo de comprobante ──
+  var pageW = 210, pageH = 297, marginX = 15;
   var tc = v.tipo==='BOL' ? [37,99,235] : v.tipo==='FAC' ? [124,58,237] : [234,88,12];
-  doc.setDrawColor(tc[0],tc[1],tc[2]); doc.setLineWidth(0.6);
-  doc.rect(pageW-75, 15, 60, 22);
-  doc.setFont('helvetica','bold'); doc.setFontSize(11); doc.setTextColor(tc[0],tc[1],tc[2]);
-  doc.text(v.tipo_comprobante || '', pageW-45, 22, {align:'center'});
-  doc.setFontSize(14); doc.text(v.serie + ' - ' + v.numero, pageW-45, 29, {align:'center'});
-  doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(120,120,120);
-  doc.text('Fecha: ' + v.fecha + '  ' + v.hora, pageW-45, 34, {align:'center'});
 
-  y = 46;
-  doc.setDrawColor(220,220,220); doc.line(marginX, y, pageW-marginX, y);
-  y += 8;
+  App.toast('⏳ Generando PDF...','info');
 
-  // ── Cliente ──
-  doc.setFont('helvetica','bold'); doc.setFontSize(10); doc.setTextColor(40,40,40);
-  doc.text('CLIENTE', marginX, y);
+  // ── Generar QR de verificación ──
+  var qrDataUrl = null;
+  try {
+    var qrCanvas = document.createElement('canvas');
+    var verifyUrl = (e.web ? 'https://' + e.web.replace(/^https?:\/\//,'') : 'https://magama.pe') + '/verificar/' + v.serie + '-' + v.numero;
+    await new Promise(function(resolve){
+      QRCode.toCanvas(qrCanvas, verifyUrl, { width: 160, margin: 1 }, function(err){ resolve(); });
+    });
+    qrDataUrl = qrCanvas.toDataURL('image/png');
+  } catch(err) {}
+
+  var y = 18;
+
+  // ── Logo + encabezado empresa ──
+  var logoW = 0;
+  if (e.logo) {
+    try { doc.addImage(e.logo, 'PNG', marginX, 14, 24, 24); logoW = 28; } catch(err) {}
+  }
+  var textX = marginX + logoW;
+  doc.setFont('helvetica','bold'); doc.setFontSize(17); doc.setTextColor(20,30,50);
+  doc.text(e.nombre || 'MI EMPRESA', textX, y);
   y += 6;
-  doc.setFont('helvetica','normal'); doc.setFontSize(10);
-  doc.text((cli ? cli.nombre : 'PÚBLICO EN GENERAL'), marginX, y);
+  doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(90,90,90);
+  var linea2 = (e.nombre||'') + (e.direccion ? ' » ' + e.direccion : '');
+  doc.text(linea2, textX, y, { maxWidth: 105 });
   y += 5;
-  doc.setFontSize(9); doc.setTextColor(110,110,110);
-  doc.text((cli ? (cli.tipo + ': ' + cli.doc) : 'DNI: 00000000'), marginX, y);
+  if (e.sucursal) { doc.setFontSize(8.5); doc.setTextColor(120,120,120); doc.text(e.sucursal, textX, y); }
+
+  // ── Caja superior derecha: RUC / tipo / serie-numero ──
+  var boxX = pageW - 78, boxW = 63;
+  doc.setDrawColor(30,30,30); doc.setLineWidth(0.5);
+  doc.rect(boxX, 12, boxW, 11);
+  doc.setFont('helvetica','bold'); doc.setFontSize(13); doc.setTextColor(20,20,20);
+  doc.text(e.ruc || '—', boxX + boxW/2, 19.5, { align:'center' });
+
+  doc.setFillColor(230,230,230);
+  doc.rect(boxX, 23, boxW, 15, 'F');
+  doc.setDrawColor(30,30,30);
+  doc.rect(boxX, 23, boxW, 15);
+  doc.setFont('helvetica','bold'); doc.setFontSize(9.5); doc.setTextColor(30,30,30);
+  var tipoLines = doc.splitTextToSize((v.tipo_comprobante||'').toUpperCase(), boxW - 6);
+  doc.text(tipoLines, boxX + boxW/2, 29.5, { align:'center' });
+
+  doc.setDrawColor(30,30,30);
+  doc.rect(boxX, 38, boxW, 11);
+  doc.setFont('helvetica','bold'); doc.setFontSize(13);
+  doc.text(v.serie + ' - ' + v.numero, boxX + boxW/2, 45.5, { align:'center' });
+
+  y = 55;
+  doc.setDrawColor(200,200,200); doc.setLineWidth(0.2);
+  doc.line(marginX, y, pageW-marginX, y);
+  y += 7;
+
+  // ── Datos cliente (izq) / fechas (der) ──
+  doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(30,30,30);
+  function campo(label, valor, x, yy) {
+    doc.setFont('helvetica','bold'); doc.text(label + ' : ', x, yy);
+    var w = doc.getTextWidth(label + ' : ');
+    doc.setFont('helvetica','normal'); doc.text(valor || '-', x + w, yy);
+  }
+  campo('RUC/DNI', cli ? cli.doc : '00000000', marginX, y);
+  campo('F. EMISIÓN', v.fecha, pageW-90, y);
+  y += 5.5;
+  campo('CLIENTE', cli ? cli.nombre : 'PÚBLICO EN GENERAL', marginX, y);
+  campo('F. VENCIMIENTO', '-', pageW-90, y);
+  y += 5.5;
+  campo('DIRECCIÓN', (cli && cli.direccion) || '-', marginX, y);
+  campo('MONEDA', DB.empresa.moneda || 'SOLES', pageW-90, y);
   y += 10;
 
   // ── Tabla de productos ──
   var rows = (v.items||[]).map(function(it){
-    return [it.nombre, String(it.qty), 'S/ ' + it.precio.toFixed(2), 'S/ ' + it.total.toFixed(2)];
+    return [it.qty.toFixed(2), it.nombre, 'S/ ' + it.precio.toFixed(2), 'S/ ' + it.total.toFixed(2)];
   });
   doc.autoTable({
     startY: y,
-    head: [['Descripción','Cant.','P. Unit.','Total']],
+    head: [['Cant.','Descripción','P. Unit.','Total']],
     body: rows,
-    theme: 'grid',
-    headStyles: { fillColor:[30,58,95], textColor:255, fontStyle:'bold', fontSize:9 },
-    bodyStyles: { fontSize:9, textColor:50 },
-    columnStyles: { 1:{halign:'center',cellWidth:20}, 2:{halign:'right',cellWidth:30}, 3:{halign:'right',cellWidth:30} },
-    margin: { left: marginX, right: marginX }
+    theme: 'plain',
+    headStyles: { fillColor:[15,15,15], textColor:255, fontStyle:'bold', fontSize:9 },
+    bodyStyles: { fontSize:9.5, textColor:40, cellPadding:2.5, minCellHeight: 25 },
+    columnStyles: {
+      0:{halign:'right',cellWidth:18},
+      1:{cellWidth:'auto'},
+      2:{halign:'right',cellWidth:32,textColor:[200,90,20]},
+      3:{halign:'right',cellWidth:32,fontStyle:'bold'}
+    },
+    margin: { left: marginX, right: marginX },
+    didDrawPage: function(data) {}
   });
 
-  var finalY = doc.lastAutoTable.finalY + 8;
+  var finalY = doc.lastAutoTable.finalY;
 
-  // ── Totales ──
-  doc.setFont('helvetica','normal'); doc.setFontSize(10); doc.setTextColor(80,80,80);
-  doc.text('Subtotal:', pageW-70, finalY);
-  doc.text('S/ ' + v.total.toFixed(2), pageW-marginX, finalY, {align:'right'});
-  finalY += 6;
-  doc.text('IGV (Exonerado):', pageW-70, finalY);
-  doc.text('S/ 0.00', pageW-marginX, finalY, {align:'right'});
-  finalY += 5;
-  doc.setDrawColor(200,200,200); doc.line(pageW-70, finalY, pageW-marginX, finalY);
-  finalY += 8;
+  // ── Fila: monto en letras + totales ──
+  var boxH = 20;
+  doc.setDrawColor(30,30,30); doc.setLineWidth(0.4);
+  doc.rect(marginX, finalY, pageW-marginX*2-70, boxH);
+  doc.rect(pageW-marginX-70, finalY, 70, boxH);
+  doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setTextColor(30,30,30);
+  var letras = VentasModule._numeroALetras(v.total);
+  doc.text(letras, marginX+4, finalY+9, { maxWidth: pageW-marginX*2-78 });
 
-  doc.setFillColor(30,58,95);
-  doc.rect(pageW-70, finalY-7, 55, 11, 'F');
-  doc.setTextColor(255,255,255); doc.setFont('helvetica','bold'); doc.setFontSize(11);
-  doc.text('TOTAL', pageW-67, finalY-0.5);
-  doc.setFontSize(13);
-  doc.text('S/ ' + v.total.toFixed(2), pageW-marginX-2, finalY-0.5, {align:'right'});
+  var tX = pageW-marginX-66;
+  doc.setFontSize(8.5);
+  doc.text('EXONERADO', tX, finalY+6);
+  doc.text('S/', tX+38, finalY+6);
+  doc.text(v.total.toFixed(2), pageW-marginX-3, finalY+6, { align:'right' });
+  doc.text('IGV', tX, finalY+11.5);
+  doc.text('S/', tX+38, finalY+11.5);
+  doc.text('0.00', pageW-marginX-3, finalY+11.5, { align:'right' });
+  doc.setFontSize(9.5);
+  doc.text('TOTAL', tX, finalY+17.5);
+  doc.text('S/', tX+38, finalY+17.5);
+  doc.text(v.total.toFixed(2), pageW-marginX-3, finalY+17.5, { align:'right' });
 
-  finalY += 14;
+  finalY += boxH + 10;
 
-  // ── Método de pago ──
-  doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(90,90,90);
-  doc.text('Método de pago: ' + v.metodo_pago, marginX, finalY);
-  finalY += 5;
-  doc.text('Monto recibido: S/ ' + (v.monto_pago||v.total).toFixed(2), marginX, finalY);
-  finalY += 5;
-  doc.text('Vuelto: S/ ' + (v.vuelto||0).toFixed(2), marginX, finalY);
+  // ── Usuario / método de pago / respuesta ──
+  doc.setFont('helvetica','normal'); doc.setFontSize(9);
+  campo('USUARIO', (v.cajero||'-') + ' - ' + v.fecha + ' - ' + v.hora, marginX, finalY);
+  finalY += 5.5;
+  campo('MÉTODOS DE PAGO', v.metodo_pago, marginX, finalY);
+  finalY += 5.5;
+  var estadoTxt = v.estado === 'ACEPTADO' ? 'ACEPTADO' : v.estado === 'ANULADO' ? 'ANULADO' : 'POR ENVIAR';
+  campo('RESPUESTA SUNAT', estadoTxt, marginX, finalY);
+  finalY += 10;
+
+  // ── Autorización + QR ──
+  doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(70,70,70);
+  var lineasAuth = [
+    'Representación impresa de ' + (v.tipo_comprobante || 'comprobante de venta'),
+    (e.web ? 'Para consultar el comprobante visite ' + e.web : ''),
+    'Código: ' + v.serie + '-' + v.numero + '-' + v.id
+  ].filter(Boolean);
+  doc.text(lineasAuth, marginX, finalY, { lineHeightFactor: 1.6 });
+
+  if (qrDataUrl) {
+    try { doc.addImage(qrDataUrl, 'PNG', pageW-marginX-28, finalY-14, 28, 28); } catch(err) {}
+  }
+
+  finalY += 26;
 
   // ── Pie de página ──
-  doc.setFontSize(8); doc.setTextColor(150,150,150);
-  doc.text('¡Gracias por su compra! · ' + (DB.empresa.nombre||''), pageW/2, 285, {align:'center'});
+  doc.setFont('helvetica','bold'); doc.setFontSize(10); doc.setTextColor(tc[0],tc[1],tc[2]);
+  doc.text('¡GRACIAS POR SU PREFERENCIA!', pageW/2, finalY, { align:'center' });
+  finalY += 8;
+  doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setTextColor(30,30,30);
+  doc.text(e.nombre || '', pageW/2, finalY, { align:'center' });
+  finalY += 4.5;
+  doc.setFont('helvetica','normal'); doc.setFontSize(7.5); doc.setTextColor(140,140,140);
+  doc.text('Comprobante generado por ' + (e.nombre||''), pageW/2, finalY, { align:'center' });
 
   doc.save(v.serie + '-' + v.numero + '.pdf');
   App.toast('📄 PDF descargado: ' + v.serie + '-' + v.numero,'success');
