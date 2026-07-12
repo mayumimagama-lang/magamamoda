@@ -1226,11 +1226,82 @@ this.montoPago       = v.monto_pago || v.total;
     var v=(DB.ventas||[]).find(function(x){return Number(x.id)===Number(id);}); if(v) this.imprimirComprobante(v);
   },
 
+async _buildTicketPDF(v) {
+  var e = DB.empresa || {};
+  var cli = (DB.clientes||[]).find(function(c){return c.id===v.cliente_id;});
+  var pageW = 80, marginX = 4;
+  var itemsCount = (v.items||[]).length;
+  var estimatedHeight = 95 + (itemsCount * 8) + 25;
+
+  var doc = new window.jspdf.jsPDF({ unit:'mm', format:[pageW, estimatedHeight], compress:true });
+
+  var y = 8;
+  doc.setFont('courier','bold'); doc.setFontSize(11); doc.setTextColor(20,20,20);
+  doc.text(e.nombre || 'MI EMPRESA', pageW/2, y, { align:'center' });
+  y += 5;
+  doc.setFont('courier','normal'); doc.setFontSize(8); doc.setTextColor(60,60,60);
+  doc.text('RUC: ' + (e.ruc||''), pageW/2, y, { align:'center' });
+  y += 4;
+  if (e.direccion) {
+    var dirLines = doc.splitTextToSize(e.direccion, pageW - marginX*2);
+    doc.text(dirLines, pageW/2, y, { align:'center' });
+    y += dirLines.length * 3.5;
+  }
+  y += 2;
+  doc.setDrawColor(150,150,150); doc.setLineWidth(0.2);
+  doc.line(marginX, y, pageW-marginX, y);
+  y += 4;
+
+  doc.setFont('courier','bold'); doc.setFontSize(9); doc.setTextColor(20,20,20);
+  doc.text((v.tipo_comprobante||'').toUpperCase(), pageW/2, y, { align:'center' });
+  y += 4;
+  doc.text(v.serie + ' - ' + v.numero, pageW/2, y, { align:'center' });
+  y += 4;
+  doc.line(marginX, y, pageW-marginX, y);
+  y += 4;
+
+  doc.setFont('courier','normal'); doc.setFontSize(8);
+  doc.text('Fecha: ' + v.fecha + ' ' + v.hora, marginX, y);
+  y += 4;
+  doc.text('Cliente: ' + (cli ? cli.nombre : 'PUBLICO EN GENERAL'), marginX, y);
+  y += 4;
+  doc.line(marginX, y, pageW-marginX, y);
+  y += 4;
+
+  (v.items||[]).forEach(function(it){
+    var nombreLines = doc.splitTextToSize(it.nombre, pageW - marginX*2);
+    doc.text(nombreLines, marginX, y);
+    y += nombreLines.length * 3.5;
+    doc.text(it.qty + ' x S/' + it.precio.toFixed(2), marginX, y);
+    doc.text('S/ ' + it.total.toFixed(2), pageW-marginX, y, { align:'right' });
+    y += 4.5;
+  });
+
+  doc.line(marginX, y, pageW-marginX, y);
+  y += 5;
+  doc.setFont('courier','bold'); doc.setFontSize(10);
+  doc.text('TOTAL:', marginX, y);
+  doc.text('S/ ' + v.total.toFixed(2), pageW-marginX, y, { align:'right' });
+  y += 6;
+
+  doc.setFont('courier','normal'); doc.setFontSize(8);
+  doc.text('Metodo: ' + v.metodo_pago, marginX, y);
+  y += 4;
+  doc.text('Recibido: S/ ' + (v.monto_pago||v.total).toFixed(2), marginX, y);
+  y += 4;
+  doc.text('Vuelto: S/ ' + (v.vuelto||0).toFixed(2), marginX, y);
+  y += 6;
+
+  doc.setFont('courier','bold'); doc.setFontSize(9);
+  doc.text('GRACIAS POR SU COMPRA!', pageW/2, y, { align:'center' });
+
+  return doc;
+},
 
 async _buildComprobantePDF(v) {
   var e = DB.empresa || {};
   var cli = (DB.clientes||[]).find(function(c){return c.id===v.cliente_id;});
-  var doc = new window.jspdf.jsPDF({ unit:'mm', format:'a4' });
+  var doc = new window.jspdf.jsPDF({ unit:'mm', format:'a4', compress:true });
   var pageW = 210, pageH = 297, marginX = 15;
   var tc = v.tipo==='BOL' ? [37,99,235] : v.tipo==='FAC' ? [124,58,237] : [234,88,12];
 
@@ -1240,7 +1311,7 @@ async _buildComprobantePDF(v) {
     var qrCanvas = document.createElement('canvas');
     var verifyUrl = (e.web ? 'https://' + e.web.replace(/^https?:\/\//,'') : 'https://magama.pe') + '/verificar/' + v.serie + '-' + v.numero;
     await new Promise(function(resolve){
-      QRCode.toCanvas(qrCanvas, verifyUrl, { width: 160, margin: 1 }, function(err){ resolve(); });
+      QRCode.toCanvas(qrCanvas, verifyUrl, { width: 120, margin: 1 }, function(err){ resolve(); });
     });
     qrDataUrl = qrCanvas.toDataURL('image/png');
   } catch(err) {}
@@ -1824,23 +1895,34 @@ async visualizarPDF(id) {
     this.currentPage=1; this._filtroRapido=''; App.renderPage();
   },
 
-  _enviarWATicket(id) {
+  async _enviarWATicket(id) {
     var el  = document.getElementById('wa_tel_detalle');
     var num = el ? el.value.replace(/\D/g,'') : '';
     if (!num || num.length !== 9) { App.toast('Ingresa los 9 dígitos del WhatsApp', 'error'); return; }
     var v = (DB.ventas||[]).find(function(x){ return Number(x.id)===Number(id); });
     if (!v) return;
-    App.closeModal();
-    if (typeof TicketsModule !== 'undefined' && TicketsModule._abrirWhatsApp) {
-      TicketsModule._abrirWhatsApp('51'+num, v);
-      var cfg     = TicketsModule._getCfg();
-      var waAdmin = (cfg.whatsappAdmin || (DB.empresa&&DB.empresa.whatsapp) || '').replace(/\D/g,'');
-      if (waAdmin) setTimeout(function(){ TicketsModule._abrirWhatsApp('51'+waAdmin, v); }, 1200);
-    } else {
-      var msg = '\ud83e\uddfe *'+DB.empresa.nombre+'*\n'+v.tipo+': '+v.serie+'-'+v.numero+'\nTotal: S/ '+v.total.toFixed(2)+'\n\u00a1Gracias por su compra!';
-      window.open('https://wa.me/51'+num+'?text='+encodeURIComponent(msg), '_blank');
+    if (typeof window.jspdf === 'undefined') { App.toast('Librería PDF no cargada. Recarga la página (Ctrl+Shift+R).','error'); return; }
+
+    App.toast('⏳ Generando ticket...', 'info');
+    try {
+      var doc = await this._buildTicketPDF(v);
+      var blob = doc.output('blob');
+      var nombreArchivo = v.serie + '-' + v.numero + '-ticket.pdf';
+      var res = await SupabaseDB.subirComprobantePDF(blob, nombreArchivo);
+      if (!res.ok || !res.url) { App.toast('❌ No se pudo subir el ticket a Supabase', 'error'); return; }
+
+      App.closeModal();
+      var msg = '🧾 *' + (DB.empresa.nombre||'MAGAMA') + '*\n' +
+        v.tipo + ': ' + v.serie + '-' + v.numero + '\n' +
+        'Total: S/ ' + v.total.toFixed(2) + '\n\n' +
+        '📎 Descarga tu ticket aquí:\n' + res.url + '\n\n' +
+        '¡Gracias por su compra!';
+      window.open('https://wa.me/51' + num + '?text=' + encodeURIComponent(msg), '_blank');
+      App.toast('✅ Ticket enviado por WhatsApp', 'success');
+    } catch(e) {
+      console.error(e);
+      App.toast('❌ Error generando/subiendo el ticket', 'error');
     }
-    App.toast('\u2705 Abriendo WhatsApp...', 'success');
   },
 
   async _enviarWAPDF(id) {
