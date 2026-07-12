@@ -1220,33 +1220,13 @@ this.montoPago       = v.monto_pago || v.total;
     var v=(DB.ventas||[]).find(function(x){return Number(x.id)===Number(id);}); if(v) this.imprimirComprobante(v);
   },
 
-  visualizarPDF(id) {
-  var v = (DB.ventas||[]).find(function(x){return Number(x.id)===Number(id);});
-  if (!v) return;
-  if (typeof TicketsModule !== 'undefined' && TicketsModule._getCfg) {
-    TicketsModule._getCfg();
-    var html = TicketsModule._generarTicketHTML(TicketsModule.cfg, v);
-    var w = window.open('', '_blank', 'width=380,height=600');
-    if (!w) { App.toast('Activa ventanas emergentes para ver el comprobante', 'warning'); return; }
-    w.document.write(html);
-    w.document.close();
-  } else {
-    App.toast('No se pudo generar la vista previa', 'error');
-  }
-},
 
-async descargarPDF(id) {
-  var v = (DB.ventas||[]).find(function(x){return Number(x.id)===Number(id);});
-  if (!v) { App.toast('Comprobante no encontrado','error'); return; }
-  if (typeof window.jspdf === 'undefined') { App.toast('Librería PDF no cargada. Recarga la página (Ctrl+Shift+R).','error'); return; }
-
+async _buildComprobantePDF(v) {
   var e = DB.empresa || {};
   var cli = (DB.clientes||[]).find(function(c){return c.id===v.cliente_id;});
   var doc = new window.jspdf.jsPDF({ unit:'mm', format:'a4' });
   var pageW = 210, pageH = 297, marginX = 15;
   var tc = v.tipo==='BOL' ? [37,99,235] : v.tipo==='FAC' ? [124,58,237] : [234,88,12];
-
-  App.toast('⏳ Generando PDF...','info');
 
   // ── Generar QR de verificación ──
   var qrDataUrl = null;
@@ -1335,8 +1315,7 @@ async descargarPDF(id) {
       2:{halign:'right',cellWidth:32,textColor:[200,90,20]},
       3:{halign:'right',cellWidth:32,fontStyle:'bold'}
     },
-    margin: { left: marginX, right: marginX },
-    didDrawPage: function(data) {}
+    margin: { left: marginX, right: marginX }
   });
 
   var finalY = doc.lastAutoTable.finalY;
@@ -1365,7 +1344,7 @@ async descargarPDF(id) {
 
   finalY += boxH + 10;
 
-  // ── Usuario / método de pago / respuesta ──
+  // ── Usuario / método de pago ──
   doc.setFont('helvetica','normal'); doc.setFontSize(9);
   campo('USUARIO', (v.cajero||'-') + ' - ' + v.fecha + ' - ' + v.hora, marginX, finalY);
   finalY += 5.5;
@@ -1397,8 +1376,28 @@ async descargarPDF(id) {
   doc.setFont('helvetica','normal'); doc.setFontSize(7.5); doc.setTextColor(140,140,140);
   doc.text('Comprobante generado por ' + (e.nombre||''), pageW/2, finalY, { align:'center' });
 
+  return doc;
+},
+
+async descargarPDF(id) {
+  var v = (DB.ventas||[]).find(function(x){return Number(x.id)===Number(id);});
+  if (!v) { App.toast('Comprobante no encontrado','error'); return; }
+  if (typeof window.jspdf === 'undefined') { App.toast('Librería PDF no cargada. Recarga la página (Ctrl+Shift+R).','error'); return; }
+  App.toast('⏳ Generando PDF...','info');
+  var doc = await this._buildComprobantePDF(v);
   doc.save(v.serie + '-' + v.numero + '.pdf');
   App.toast('📄 PDF descargado: ' + v.serie + '-' + v.numero,'success');
+},
+
+async visualizarPDF(id) {
+  var v = (DB.ventas||[]).find(function(x){return Number(x.id)===Number(id);});
+  if (!v) { App.toast('Comprobante no encontrado','error'); return; }
+  if (typeof window.jspdf === 'undefined') { App.toast('Librería PDF no cargada. Recarga la página (Ctrl+Shift+R).','error'); return; }
+  App.toast('⏳ Generando vista previa...','info');
+  var doc = await this._buildComprobantePDF(v);
+  var blobUrl = doc.output('bloburl');
+  var w = window.open(blobUrl, '_blank');
+  if (!w) { App.toast('Activa ventanas emergentes para ver el comprobante', 'warning'); return; }
 },
 
   // ─────────────────────────────────────────────────────────
@@ -1851,30 +1850,24 @@ async descargarPDF(id) {
         '<i class="'+icon+'"></i>'+label+'</button>';
     }
 
-    var AZUL='#2563eb', VERDE='#16a34a', MORADO='#7c3aed', GRIS='#64748b', ROJO='#dc2626', TEAL='#0891b2';
+    var AZUL='#2563eb', VERDE='#16a34a', GRIS='#64748b', ROJO='#dc2626';
     var b = [];
 
     if (v.estado==='NO_ENVIADO') {
       b.push(btn('Editar Comprobante','fas fa-edit','#d97706',"App.closeModal();VentasModule.editarVenta("+v.id+");"));
     }
     b.push(btn('Enviar por correo','fas fa-envelope',AZUL,"VentasModule._enviarCorreo("+v.id+")"));
-    b.push(btn('Enviar por WhatsApp','fab fa-whatsapp',VERDE,"VentasModule._enviarWADetalle("+v.id+")"));
     b.push(btn('Visualizar PDF','fas fa-file-pdf',AZUL,"VentasModule.visualizarPDF("+v.id+");"));
     b.push(btn('Imprimir','fas fa-print',AZUL,"VentasModule.imprimir("+v.id+");App.closeModal();"));
     b.push(btn('Descargar PDF','fas fa-download',AZUL,"VentasModule.descargarPDF("+v.id+");"));
-    b.push(btn('Guía de Remisión','fas fa-truck',GRIS,"App.toast('Guías de Remisión — próximamente','info')"));
-    b.push(btn('Nota de Crédito','fas fa-file-invoice',MORADO,"App.closeModal();App.navigate('notascredito');"));
-    b.push(btn('Nota de Débito','fas fa-file-invoice-dollar',MORADO,"App.closeModal();App.navigate('notascredito');"));
+    b.push(btn('Descargar XML','fas fa-code',GRIS,"VentasModule._descargarSunat("+v.id+",'xml')"));
     if (aceptadoSunat) {
-      b.push(btn('Descargar XML','fas fa-code',GRIS,"VentasModule._descargarSunat("+v.id+",'xml')"));
       b.push(btn('Descargar CDR','fas fa-file-contract',GRIS,"VentasModule._descargarSunat("+v.id+",'cdr')"));
     }
     if (esBolFac && v.estado!=='ACEPTADO' && noAnulado) {
       b.push(btn('Enviar a SUNAT','fas fa-paper-plane',VERDE,"App.closeModal();VentasModule.enviarSunat("+v.id+");"));
     }
-    b.push(btn('Nuevo','fas fa-plus-circle',VERDE,"App.closeModal();VentasModule.nuevaVenta();"));
     if (noAnulado) b.push(btn('Anular','fas fa-ban',ROJO,"App.closeModal();VentasModule.anular("+v.id+");"));
-    b.push(btn('Listado','fas fa-list',TEAL,"App.closeModal();VentasModule.modoVista='lista';App.renderPage();"));
     b.push(btn('Convertir a Nuevo CPE','fas fa-exchange-alt',AZUL,"VentasModule.convertirCPE("+v.id+")"));
 
     return '<div style="margin-top:16px;padding-top:14px;border-top:2px solid var(--gray-200);">' +
@@ -1899,6 +1892,16 @@ async descargarPDF(id) {
   },
 
   _descargarSunat(id, tipo) {
+    App.toast('La descarga de '+(tipo||'').toUpperCase()+' desde SUNAT necesita un paso extra en el proxy. Te lo armo aparte cuando quieras.','info');
+  },
+
+  _descargarSunat(id, tipo) {
+    var v = (DB.ventas||[]).find(function(x){return Number(x.id)===Number(id);});
+    if (!v) { App.toast('Comprobante no encontrado','error'); return; }
+    if (!(v.estado==='ACEPTADO' && v.sunat_documentId)) {
+      App.toast('⚠️ Primero tienes que enviar a la SUNAT','warning');
+      return;
+    }
     App.toast('La descarga de '+(tipo||'').toUpperCase()+' desde SUNAT necesita un paso extra en el proxy. Te lo armo aparte cuando quieras.','info');
   },
 
