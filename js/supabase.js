@@ -43,6 +43,7 @@ const SupabaseDB = {
       console.warn('⚠️ Error cargando productos:', e);
       return { ok: false };
     }
+    
   },
 
   // Agregar producto
@@ -670,6 +671,24 @@ const SupabaseDB = {
       const found = this._resolverUsuario(usuario);
       return { ok: true, usuario: found };
     } catch(e) {
+      return { ok: false };
+    }
+  },
+
+  // ============================================================
+  // COMPROBANTES (PDF por WhatsApp)
+  // ============================================================
+
+  async subirComprobantePDF(blob, nombreArchivo) {
+    try {
+      const { data, error } = await db.storage
+        .from('comprobantes')
+        .upload(nombreArchivo, blob, { contentType: 'application/pdf', upsert: true });
+      if (error) throw error;
+      const { data: urlData } = db.storage.from('comprobantes').getPublicUrl(nombreArchivo);
+      return { ok: true, url: urlData.publicUrl };
+    } catch(e) {
+      console.warn('⚠️ Error subiendo comprobante:', e);
       return { ok: false };
     }
   }
