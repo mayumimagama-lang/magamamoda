@@ -1165,15 +1165,21 @@ this.montoPago       = v.monto_pago || v.total;
           '<i class="fab fa-whatsapp" style="font-size:17px;color:#16a34a;"></i>' +
           '<span style="font-size:11px;font-weight:800;color:#15803d;text-transform:uppercase;">Enviar comprobante por WhatsApp</span>' +
         '</div>' +
-        '<div style="display:flex;align-items:center;gap:7px;">' +
+        '<div style="display:flex;align-items:center;gap:7px;margin-bottom:8px;">' +
           '<span style="padding:8px 10px;background:#dcfce7;border:2px solid #bbf7d0;border-radius:8px;font-size:13px;font-weight:800;color:#16a34a;white-space:nowrap;">+51</span>' +
           '<input type="tel" id="wa_tel_detalle" placeholder="987 654 321" maxlength="9" ' +
             'value="'+(cli&&cli.telefono?cli.telefono.replace(/\D/g,''):'')+'" ' +
             'oninput="this.value=this.value.replace(/\\D/g,\'\')" ' +
             'style="flex:1;padding:8px 12px;border:2px solid #bbf7d0;border-radius:8px;font-size:15px;font-weight:700;outline:none;letter-spacing:1px;"/>' +
-          '<button onclick="VentasModule._enviarWADetalle('+v.id+')" ' +
-            'style="padding:8px 16px;background:#16a34a;color:white;border:none;border-radius:8px;font-size:13px;font-weight:800;cursor:pointer;white-space:nowrap;">' +
-            '<i class="fab fa-whatsapp" style="margin-right:4px;"></i>Enviar' +
+        '</div>' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">' +
+          '<button onclick="VentasModule._enviarWATicket('+v.id+')" ' +
+            'style="padding:9px 10px;background:white;color:#16a34a;border:2px solid #16a34a;border-radius:8px;font-size:12px;font-weight:800;cursor:pointer;">' +
+            '<i class="fas fa-receipt" style="margin-right:5px;"></i>Enviar Ticket' +
+          '</button>' +
+          '<button onclick="VentasModule._enviarWAPDF('+v.id+')" ' +
+            'style="padding:9px 10px;background:#16a34a;color:white;border:none;border-radius:8px;font-size:12px;font-weight:800;cursor:pointer;">' +
+            '<i class="fas fa-file-pdf" style="margin-right:5px;"></i>Enviar PDF' +
           '</button>' +
         '</div>' +
         '<p style="font-size:10px;color:var(--gray-400);margin:5px 0 0;">' +
@@ -1818,7 +1824,7 @@ async visualizarPDF(id) {
     this.currentPage=1; this._filtroRapido=''; App.renderPage();
   },
 
-  _enviarWADetalle(id) {
+  _enviarWATicket(id) {
     var el  = document.getElementById('wa_tel_detalle');
     var num = el ? el.value.replace(/\D/g,'') : '';
     if (!num || num.length !== 9) { App.toast('Ingresa los 9 dígitos del WhatsApp', 'error'); return; }
@@ -1835,6 +1841,36 @@ async visualizarPDF(id) {
       window.open('https://wa.me/51'+num+'?text='+encodeURIComponent(msg), '_blank');
     }
     App.toast('\u2705 Abriendo WhatsApp...', 'success');
+  },
+
+  async _enviarWAPDF(id) {
+    var el  = document.getElementById('wa_tel_detalle');
+    var num = el ? el.value.replace(/\D/g,'') : '';
+    if (!num || num.length !== 9) { App.toast('Ingresa los 9 dígitos del WhatsApp', 'error'); return; }
+    var v = (DB.ventas||[]).find(function(x){ return Number(x.id)===Number(id); });
+    if (!v) return;
+    if (typeof window.jspdf === 'undefined') { App.toast('Librería PDF no cargada. Recarga la página (Ctrl+Shift+R).','error'); return; }
+
+    App.toast('⏳ Generando y subiendo PDF...', 'info');
+    try {
+      var doc = await this._buildComprobantePDF(v);
+      var blob = doc.output('blob');
+      var nombreArchivo = v.serie + '-' + v.numero + '.pdf';
+      var res = await SupabaseDB.subirComprobantePDF(blob, nombreArchivo);
+      if (!res.ok || !res.url) { App.toast('❌ No se pudo subir el PDF a Supabase', 'error'); return; }
+
+      App.closeModal();
+      var msg = '🧾 *' + (DB.empresa.nombre||'MAGAMA') + '*\n' +
+        v.tipo_comprobante + ': ' + v.serie + '-' + v.numero + '\n' +
+        'Total: S/ ' + v.total.toFixed(2) + '\n\n' +
+        '📎 Descarga tu comprobante aquí:\n' + res.url + '\n\n' +
+        '¡Gracias por su compra!';
+      window.open('https://wa.me/51' + num + '?text=' + encodeURIComponent(msg), '_blank');
+      App.toast('✅ PDF enviado por WhatsApp', 'success');
+    } catch(e) {
+      console.error(e);
+      App.toast('❌ Error generando/subiendo el PDF', 'error');
+    }
   },
 
   // ─────────────────────────────────────────────────────────
