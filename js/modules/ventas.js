@@ -1370,9 +1370,6 @@ async descargarPDF(id) {
   campo('USUARIO', (v.cajero||'-') + ' - ' + v.fecha + ' - ' + v.hora, marginX, finalY);
   finalY += 5.5;
   campo('MÉTODOS DE PAGO', v.metodo_pago, marginX, finalY);
-  finalY += 5.5;
-  var estadoTxt = v.estado === 'ACEPTADO' ? 'ACEPTADO' : v.estado === 'ANULADO' ? 'ANULADO' : 'POR ENVIAR';
-  campo('RESPUESTA SUNAT', estadoTxt, marginX, finalY);
   finalY += 10;
 
   // ── Autorización + QR ──
