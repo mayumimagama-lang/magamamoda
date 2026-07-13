@@ -119,10 +119,11 @@ const VentasModule = {
         var tipoColor = v.tipo==='BOL'?'#2563eb':v.tipo==='FAC'?'#7c3aed':'#ea580c';
         var tipoLabel = v.tipo==='BOL'?'BOLETA':v.tipo==='FAC'?'FACTURA':'N. VENTA';
         var estMap = {
-          ACEPTADO: {bg:'#f0fdf4',c:'#16a34a',l:'✓ Aceptado'},
-          ANULADO:  {bg:'#fef2f2',c:'#dc2626',l:'✗ Anulado'},
-          NO_ENVIADO:{bg:'#fffbeb',c:'#d97706',l:'⏳ Por enviar'},
-        };
+  ACEPTADO: {bg:'#f0fdf4',c:'#16a34a',l:'✓ Aceptado'},
+  ENVIADO:  {bg:'#eff6ff',c:'#2563eb',l:'📤 Enviado (verificar)'},
+  ANULADO:  {bg:'#fef2f2',c:'#dc2626',l:'✗ Anulado'},
+  NO_ENVIADO:{bg:'#fffbeb',c:'#d97706',l:'⏳ Por enviar'},
+};
         var esNVA = v.tipo==='N. VENTA';
         var est = esNVA && v.estado==='NO_ENVIADO'
           ? {bg:'var(--gray-100)',c:'var(--gray-500)',l:'— No aplica'}
@@ -1115,7 +1116,7 @@ this.montoPago       = v.monto_pago || v.total;
     if(!v)return;
     var cli=(DB.clientes||[]).find(function(c){return c.id===v.cliente_id;});
     var tipoColor=v.tipo==='BOL'?'#2563eb':v.tipo==='FAC'?'#7c3aed':'#ea580c';
-    var estMap={ACEPTADO:{bg:'#f0fdf4',c:'#16a34a'},ANULADO:{bg:'#fef2f2',c:'#dc2626'},NO_ENVIADO:{bg:'#fffbeb',c:'#d97706'}};
+    var estMap={ACEPTADO:{bg:'#f0fdf4',c:'#16a34a'},ENVIADO:{bg:'#eff6ff',c:'#2563eb'},ANULADO:{bg:'#fef2f2',c:'#dc2626'},NO_ENVIADO:{bg:'#fffbeb',c:'#d97706'}};
     var est=estMap[v.estado]||estMap.NO_ENVIADO;
 
     var itemsHtml=(v.items||[]).map(function(i){
@@ -1305,33 +1306,54 @@ async _buildComprobantePDF(v) {
   var pageW = 210, pageH = 297, marginX = 15;
   var tc = v.tipo==='BOL' ? [37,99,235] : v.tipo==='FAC' ? [124,58,237] : [234,88,12];
 
-  // ── Generar QR de verificación ──
+  // ── Generar QR de verificación (con aviso si falla, ya no se traga el error) ──
   var qrDataUrl = null;
   try {
-    var qrCanvas = document.createElement('canvas');
-    var verifyUrl = (e.web ? 'https://' + e.web.replace(/^https?:\/\//,'') : 'https://magama.pe') + '/verificar/' + v.serie + '-' + v.numero;
-    await new Promise(function(resolve){
-      QRCode.toCanvas(qrCanvas, verifyUrl, { width: 120, margin: 1 }, function(err){ resolve(); });
-    });
-    qrDataUrl = qrCanvas.toDataURL('image/png');
-  } catch(err) {}
+    if (typeof QRCode === 'undefined') {
+      console.warn('QRCode no está cargado — revisa que el script de la librería esté incluido en index.html');
+    } else {
+      var qrCanvas = document.createElement('canvas');
+      var verifyUrl = (e.web ? 'https://' + e.web.replace(/^https?:\/\//,'') : 'https://magamamoda.com') + '/verificar/' + v.serie + '-' + v.numero;
+      await new Promise(function(resolve){
+        QRCode.toCanvas(qrCanvas, verifyUrl, { width: 140, margin: 1 }, function(err){
+          if (err) console.warn('Error generando QR:', err);
+          resolve();
+        });
+      });
+      qrDataUrl = qrCanvas.toDataURL('image/png');
+    }
+  } catch(err) { console.warn('Excepción generando QR:', err); }
 
-  var y = 18;
+  var y = 16;
 
   // ── Logo + encabezado empresa ──
   var logoW = 0;
   if (e.logo) {
-    try { doc.addImage(e.logo, 'PNG', marginX, 14, 24, 24); logoW = 28; } catch(err) {}
+    try { doc.addImage(e.logo, 'PNG', marginX, 12, 26, 26); logoW = 32; } catch(err) {}
   }
   var textX = marginX + logoW;
-  doc.setFont('helvetica','bold'); doc.setFontSize(17); doc.setTextColor(20,30,50);
+  var textMaxW = 108 - logoW;
+
+  doc.setFont('helvetica','bold'); doc.setFontSize(15); doc.setTextColor(20,30,50);
   doc.text(e.nombre || 'MI EMPRESA', textX, y);
-  y += 6;
-  doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(90,90,90);
-  var linea2 = (e.nombre||'') + (e.direccion ? ' » ' + e.direccion : '');
-  doc.text(linea2, textX, y, { maxWidth: 105 });
   y += 5;
-  if (e.sucursal) { doc.setFontSize(8.5); doc.setTextColor(120,120,120); doc.text(e.sucursal, textX, y); }
+
+  doc.setFont('helvetica','normal'); doc.setFontSize(8.5); doc.setTextColor(70,70,70);
+  var direccionLinea = (e.sucursal ? e.sucursal + ' » ' : '') + (e.direccion || '');
+  var dirLines = doc.splitTextToSize(direccionLinea, textMaxW);
+  doc.text(dirLines, textX, y);
+  y += dirLines.length * 3.6 + 1;
+
+  if (e.lema) {
+    doc.setFont('helvetica','italic'); doc.setFontSize(8); doc.setTextColor(100,100,100);
+    var lemaLines = doc.splitTextToSize('"' + e.lema + '"', textMaxW);
+    doc.text(lemaLines, textX, y);
+    y += lemaLines.length * 3.6 + 1;
+  }
+
+  doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(90,90,90);
+  if (e.email) { doc.text('EMAIL: ' + e.email, textX, y); y += 3.6; }
+  if (e.telefono || e.whatsapp) { doc.text('CONTACTO: ' + (e.telefono || e.whatsapp), textX, y); y += 3.6; }
 
   // ── Caja superior derecha: RUC / tipo / serie-numero ──
   var boxX = pageW - 78, boxW = 63;
@@ -1353,7 +1375,7 @@ async _buildComprobantePDF(v) {
   doc.setFont('helvetica','bold'); doc.setFontSize(13);
   doc.text(v.serie + ' - ' + v.numero, boxX + boxW/2, 45.5, { align:'center' });
 
-  y = 55;
+  y = Math.max(y + 4, 55);
   doc.setDrawColor(200,200,200); doc.setLineWidth(0.2);
   doc.line(marginX, y, pageW-marginX, y);
   y += 7;
@@ -1364,16 +1386,26 @@ async _buildComprobantePDF(v) {
     doc.setFont('helvetica','bold'); doc.text(label + ' : ', x, yy);
     var w = doc.getTextWidth(label + ' : ');
     doc.setFont('helvetica','normal'); doc.text(valor || '-', x + w, yy);
+    return w;
   }
+  function campoWrap(label, valor, x, yy, maxW) {
+    doc.setFont('helvetica','bold'); doc.text(label + ' : ', x, yy);
+    var w = doc.getTextWidth(label + ' : ');
+    doc.setFont('helvetica','normal');
+    var lines = doc.splitTextToSize(valor || '-', maxW - w);
+    doc.text(lines, x + w, yy);
+    return lines.length;
+  }
+
   campo('RUC/DNI', cli ? cli.doc : '00000000', marginX, y);
   campo('F. EMISIÓN', v.fecha, pageW-90, y);
   y += 5.5;
   campo('CLIENTE', cli ? cli.nombre : 'PÚBLICO EN GENERAL', marginX, y);
-  campo('F. VENCIMIENTO', '-', pageW-90, y);
+  campo('F. VENCIMIENTO', v.fecha, pageW-90, y);
   y += 5.5;
-  campo('DIRECCIÓN', (cli && cli.direccion) || '-', marginX, y);
-  campo('MONEDA', DB.empresa.moneda || 'SOLES', pageW-90, y);
-  y += 10;
+  var dirCliLines = campoWrap('DIRECCIÓN', (cli && cli.direccion) || '-', marginX, y, 110);
+  campo('MONEDA', DB.empresa.moneda === 'DOLARES' ? 'DÓLARES' : 'SOLES', pageW-90, y);
+  y += (dirCliLines * 4.5) + 6;
 
   // ── Tabla de productos ──
   var rows = (v.items||[]).map(function(it){
@@ -1419,18 +1451,31 @@ async _buildComprobantePDF(v) {
   doc.text('S/', tX+38, finalY+17.5);
   doc.text(v.total.toFixed(2), pageW-marginX-3, finalY+17.5, { align:'right' });
 
-  finalY += boxH + 10;
+  finalY += boxH + 9;
 
-  // ── Usuario / método de pago ──
-  doc.setFont('helvetica','normal'); doc.setFontSize(9);
+  // ── Usuario / método de pago / estado SUNAT ──
+  doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(30,30,30);
   campo('USUARIO', (v.cajero||'-') + ' - ' + v.fecha + ' - ' + v.hora, marginX, finalY);
   finalY += 5.5;
   campo('MÉTODOS DE PAGO', v.metodo_pago, marginX, finalY);
-  finalY += 10;
+  finalY += 5.5;
+
+  if (v.tipo === 'BOL' || v.tipo === 'FAC') {
+    var estLabel = {ACEPTADO:'ACEPTADO', ENVIADO:'ENVIADO (PENDIENTE DE CONFIRMACIÓN)', ANULADO:'ANULADO', NO_ENVIADO:'POR ENVIAR'}[v.estado] || v.estado;
+    var estColor = v.estado==='ACEPTADO' ? [22,163,74] : v.estado==='ANULADO' ? [220,38,38] : [217,119,6];
+    doc.setFont('helvetica','bold'); doc.text('RESPUESTA SUNAT : ', marginX, finalY);
+    var wLbl = doc.getTextWidth('RESPUESTA SUNAT : ');
+    doc.setTextColor(estColor[0],estColor[1],estColor[2]);
+    doc.text(estLabel, marginX + wLbl, finalY);
+    doc.setTextColor(30,30,30);
+    finalY += 5.5;
+  }
+  finalY += 4;
 
   // ── Autorización + QR ──
   doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(70,70,70);
   var lineasAuth = [
+    e.resolucion ? ('Autorizado mediante resolución N° ' + e.resolucion + '/SUNAT') : '',
     'Representación impresa de ' + (v.tipo_comprobante || 'comprobante de venta'),
     (e.web ? 'Para consultar el comprobante visite ' + e.web : ''),
     'Código: ' + v.serie + '-' + v.numero + '-' + v.id
@@ -1438,15 +1483,18 @@ async _buildComprobantePDF(v) {
   doc.text(lineasAuth, marginX, finalY, { lineHeightFactor: 1.6 });
 
   if (qrDataUrl) {
-    try { doc.addImage(qrDataUrl, 'PNG', pageW-marginX-28, finalY-14, 28, 28); } catch(err) {}
+    try { doc.addImage(qrDataUrl, 'PNG', pageW-marginX-30, finalY-16, 30, 30); } catch(err) {}
   }
 
-  finalY += 26;
+  finalY += 28;
 
   // ── Pie de página ──
+  doc.setDrawColor(220,220,220); doc.setLineWidth(0.2);
+  doc.line(marginX, finalY, pageW-marginX, finalY);
+  finalY += 6;
   doc.setFont('helvetica','bold'); doc.setFontSize(10); doc.setTextColor(tc[0],tc[1],tc[2]);
   doc.text('¡GRACIAS POR SU PREFERENCIA!', pageW/2, finalY, { align:'center' });
-  finalY += 8;
+  finalY += 7;
   doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setTextColor(30,30,30);
   doc.text(e.nombre || '', pageW/2, finalY, { align:'center' });
   finalY += 4.5;
@@ -1454,27 +1502,6 @@ async _buildComprobantePDF(v) {
   doc.text('Comprobante generado por ' + (e.nombre||''), pageW/2, finalY, { align:'center' });
 
   return doc;
-},
-
-async descargarPDF(id) {
-  var v = (DB.ventas||[]).find(function(x){return Number(x.id)===Number(id);});
-  if (!v) { App.toast('Comprobante no encontrado','error'); return; }
-  if (typeof window.jspdf === 'undefined') { App.toast('Librería PDF no cargada. Recarga la página (Ctrl+Shift+R).','error'); return; }
-  App.toast('⏳ Generando PDF...','info');
-  var doc = await this._buildComprobantePDF(v);
-  doc.save(v.serie + '-' + v.numero + '.pdf');
-  App.toast('📄 PDF descargado: ' + v.serie + '-' + v.numero,'success');
-},
-
-async visualizarPDF(id) {
-  var v = (DB.ventas||[]).find(function(x){return Number(x.id)===Number(id);});
-  if (!v) { App.toast('Comprobante no encontrado','error'); return; }
-  if (typeof window.jspdf === 'undefined') { App.toast('Librería PDF no cargada. Recarga la página (Ctrl+Shift+R).','error'); return; }
-  App.toast('⏳ Generando vista previa...','info');
-  var doc = await this._buildComprobantePDF(v);
-  var blobUrl = doc.output('bloburl');
-  var w = window.open(blobUrl, '_blank');
-  if (!w) { App.toast('Activa ventanas emergentes para ver el comprobante', 'warning'); return; }
 },
 
   // ─────────────────────────────────────────────────────────
@@ -1660,13 +1687,19 @@ async visualizarPDF(id) {
     var res = await fetch(gasUrl + '?' + params.toString());
     if(!res.ok) throw new Error('HTTP ' + res.status);
     var data = await res.json();
-    if(data.status === 'PENDIENTE' || data.status === 'ACEPTADO'){
-      DB.ventas[idx].estado = 'ACEPTADO';
-      DB.ventas[idx].sunat_documentId = data.documentId || '';
-      Storage.guardarVentas();
-      SupabaseDB.actualizarVenta(DB.ventas[idx]);
-      App.toast('✅ Comprobante enviado y aceptado por SUNAT','success');
-    } else if(data.status === 'RECHAZADO' || data.status === 'EXCEPCION'){
+    if(data.status === 'ACEPTADO'){
+  DB.ventas[idx].estado = 'ACEPTADO';
+  DB.ventas[idx].sunat_documentId = data.documentId || '';
+  Storage.guardarVentas();
+  SupabaseDB.actualizarVenta(DB.ventas[idx]);
+  App.toast('✅ Comprobante enviado y aceptado por SUNAT','success');
+} else if(data.status === 'PENDIENTE'){
+  DB.ventas[idx].estado = 'ENVIADO';
+  DB.ventas[idx].sunat_documentId = data.documentId || '';
+  Storage.guardarVentas();
+  SupabaseDB.actualizarVenta(DB.ventas[idx]);
+  App.toast('⏳ Enviado a SUNAT — está en cola, aún no confirmado. Usa "Verificar Estado" en unos minutos.','info');
+} else if(data.status === 'RECHAZADO' || data.status === 'EXCEPCION'){
       var msg = (data.observations&&data.observations[0])||data.error||JSON.stringify(data);
       App.toast('⚠️ SUNAT rechazó: '+msg,'error');
       console.error('APISUNAT respuesta:', data);
@@ -1755,7 +1788,7 @@ async visualizarPDF(id) {
       ['Fecha','Hora','Comprobante','Tipo','Cliente','Doc. Cliente','Método de Pago','Total (S/)','Estado SUNAT','Cajero']
     ];
     var tipoLabel = {'BOL':'Boleta Electrónica','FAC':'Factura Electrónica','N. VENTA':'Nota de Venta'};
-    var estadoLabel = {'ACEPTADO':'✓ Aceptado','NO_ENVIADO':'⏳ Por enviar','ANULADO':'✗ Anulado'};
+    var estadoLabel = {'ACEPTADO':'✓ Aceptado','ENVIADO':'📤 Enviado (verificar)','NO_ENVIADO':'⏳ Por enviar','ANULADO':'✗ Anulado'};
     filtered.forEach(function(v) {
       var cli = (DB.clientes||[]).find(function(c){return c.id===v.cliente_id;});
       detalle.push([
