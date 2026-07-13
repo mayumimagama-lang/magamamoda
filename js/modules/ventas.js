@@ -1227,6 +1227,36 @@ this.montoPago       = v.monto_pago || v.total;
     var v=(DB.ventas||[]).find(function(x){return Number(x.id)===Number(id);}); if(v) this.imprimirComprobante(v);
   },
 
+  async visualizarPDF(id) {
+    var v = (DB.ventas||[]).find(function(x){ return Number(x.id)===Number(id); });
+    if (!v) { App.toast('Comprobante no encontrado','error'); return; }
+    if (typeof window.jspdf === 'undefined') { App.toast('Librería PDF no cargada. Recarga la página (Ctrl+Shift+R).','error'); return; }
+    App.toast('⏳ Generando PDF...', 'info');
+    try {
+      var doc = await this._buildComprobantePDF(v);
+      var blobUrl = doc.output('bloburl');
+      window.open(blobUrl, '_blank');
+    } catch(e) {
+      console.error(e);
+      App.toast('❌ Error generando el PDF','error');
+    }
+  },
+
+  async descargarPDF(id) {
+    var v = (DB.ventas||[]).find(function(x){ return Number(x.id)===Number(id); });
+    if (!v) { App.toast('Comprobante no encontrado','error'); return; }
+    if (typeof window.jspdf === 'undefined') { App.toast('Librería PDF no cargada. Recarga la página (Ctrl+Shift+R).','error'); return; }
+    App.toast('⏳ Generando PDF...', 'info');
+    try {
+      var doc = await this._buildComprobantePDF(v);
+      doc.save(v.serie + '-' + v.numero + '.pdf');
+      App.toast('✅ PDF descargado','success');
+    } catch(e) {
+      console.error(e);
+      App.toast('❌ Error generando el PDF','error');
+    }
+  },
+
 async _buildTicketPDF(v) {
   var cfg = (typeof TicketsModule !== 'undefined') ? TicketsModule._getCfg() : {};
   var e = DB.empresa || {};
@@ -1235,7 +1265,6 @@ async _buildTicketPDF(v) {
 
   var pageW = 80, marginX = 4;
   var itemsCount = (v.items||[]).length;
-  // Altura estimada generosa; jsPDF no recorta si sobra espacio en el mismo doc
   var estimatedHeight = 130 + (itemsCount * 9) + (cfg.mostrarQR ? 32 : 0) + (cfg.mostrarFirma ? 14 : 0);
 
   var doc = new window.jspdf.jsPDF({ unit:'mm', format:[pageW, estimatedHeight], compress:true });
@@ -1249,11 +1278,12 @@ async _buildTicketPDF(v) {
     doc.setLineDashPattern([], 0);
   }
 
-  // ── LOGO ──
+  // ── LOGO ── (FIX: se agrega el formato PNG/JPEG requerido por jsPDF)
   if (cfg.mostrarLogo && cfg.logo) {
     try {
       var logoW = 22, logoH = 18;
-      doc.addImage(cfg.logo, pageW/2 - logoW/2, y, logoW, logoH);
+      var logoFmt = cfg.logo.indexOf('data:image/jpeg') === 0 || cfg.logo.indexOf('data:image/jpg') === 0 ? 'JPEG' : 'PNG';
+      doc.addImage(cfg.logo, logoFmt, pageW/2 - logoW/2, y, logoW, logoH);
       y += logoH + 2;
     } catch(err) { console.warn('No se pudo insertar el logo en el PDF:', err); }
   }
@@ -1304,10 +1334,10 @@ async _buildTicketPDF(v) {
   y += 3;
   linea(y); y += 3.5;
 
-  // ── ITEMS ──
+  // ── ITEMS ── (FIX: ancho del nombre limitado para no invadir la zona de números)
   doc.setFont('helvetica','normal'); doc.setFontSize(8.5);
   (v.items||[]).forEach(function(it){
-    var nombreLines = doc.splitTextToSize(it.nombre, pageW - marginX*2 - 2);
+    var nombreLines = doc.splitTextToSize(it.nombre, 26);
     doc.text(nombreLines, marginX, y);
     y += nombreLines.length * 3.6;
     doc.text(String(it.qty), pageW - 38, y - 3.6, { align:'right' });
@@ -1860,7 +1890,7 @@ async _buildTicketPDF(v) {
     try {
       var doc = await this._buildTicketPDF(v);
       var blob = doc.output('blob');
-      var nombreArchivo = v.serie + '-' + v.numero + '-ticket.pdf';
+      var nombreArchivo = v.serie + '-' + v.numero + '-ticket-' + Date.now() + '.pdf';
       var res = await SupabaseDB.subirComprobantePDF(blob, nombreArchivo);
       if (!res.ok || !res.url) { App.toast('❌ No se pudo subir el ticket a Supabase', 'error'); return; }
 
@@ -1890,7 +1920,7 @@ async _buildTicketPDF(v) {
     try {
       var doc = await this._buildComprobantePDF(v);
       var blob = doc.output('blob');
-      var nombreArchivo = v.serie + '-' + v.numero + '.pdf';
+      var nombreArchivo = v.serie + '-' + v.numero + '-' + Date.now() + '.pdf';
       var res = await SupabaseDB.subirComprobantePDF(blob, nombreArchivo);
       if (!res.ok || !res.url) { App.toast('❌ No se pudo subir el PDF a Supabase', 'error'); return; }
 
