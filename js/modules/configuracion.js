@@ -132,6 +132,8 @@ const ConfiguracionModule = {
           '</div>' +
         '</div>' +
         '<div class="form-group"><label class="form-label">Sitio Web</label><input class="form-control" id="cfg_web" value="'+(e.web||'')+'" placeholder="www.mitienda.com"/></div>' +
+        '<div class="form-group" style="grid-column:1/-1"><label class="form-label">Lema / Eslogan</label><input class="form-control" id="cfg_lema" value="'+(e.lema||'')+'" placeholder="Ej: CALIDAD Y CONFIANZA EN CADA PRENDA"/></div>' +
+        '<div class="form-group" style="grid-column:1/-1"><label class="form-label">Resolución de Autorización SUNAT</label><input class="form-control" id="cfg_resolucion" value="'+(e.resolucion||'')+'" placeholder="Ej: 034-005-0010431"/></div>' +
       '</div>' +
       this._saveBtn('ConfiguracionModule._guardarEmpresa()');
 
@@ -171,7 +173,8 @@ const ConfiguracionModule = {
     Object.assign(DB.empresa, { nombre:n, ruc:(document.getElementById('cfg_ruc')?.value||'').trim(),
       sucursal:(document.getElementById('cfg_sucursal')?.value||'').trim(), direccion:(document.getElementById('cfg_dir')?.value||'').trim(),
       telefono:(document.getElementById('cfg_tel')?.value||'').trim(), email:(document.getElementById('cfg_mail')?.value||'').trim(),
-      whatsapp:(document.getElementById('cfg_wa')?.value||'').trim(), web:(document.getElementById('cfg_web')?.value||'').trim() });
+      whatsapp:(document.getElementById('cfg_wa')?.value||'').trim(), web:(document.getElementById('cfg_web')?.value||'').trim(),
+      lema:(document.getElementById('cfg_lema')?.value||'').trim(), resolucion:(document.getElementById('cfg_resolucion')?.value||'').trim() });
     Storage.guardarEmpresa();
     SupabaseDB.actualizarEmpresa(DB.empresa);
     App.toast('✅ Datos de empresa guardados','success');
