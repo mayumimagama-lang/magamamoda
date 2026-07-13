@@ -1228,278 +1228,198 @@ this.montoPago       = v.monto_pago || v.total;
   },
 
 async _buildTicketPDF(v) {
+  var cfg = (typeof TicketsModule !== 'undefined') ? TicketsModule._getCfg() : {};
   var e = DB.empresa || {};
   var cli = (DB.clientes||[]).find(function(c){return c.id===v.cliente_id;});
+  var clienteNombre = cli ? cli.nombre : 'PÚBLICO EN GENERAL';
+
   var pageW = 80, marginX = 4;
   var itemsCount = (v.items||[]).length;
-  var estimatedHeight = 95 + (itemsCount * 8) + 25;
+  // Altura estimada generosa; jsPDF no recorta si sobra espacio en el mismo doc
+  var estimatedHeight = 130 + (itemsCount * 9) + (cfg.mostrarQR ? 32 : 0) + (cfg.mostrarFirma ? 14 : 0);
 
   var doc = new window.jspdf.jsPDF({ unit:'mm', format:[pageW, estimatedHeight], compress:true });
-
+  var centerX = pageW/2;
   var y = 8;
-  doc.setFont('courier','bold'); doc.setFontSize(11); doc.setTextColor(20,20,20);
-  doc.text(e.nombre || 'MI EMPRESA', pageW/2, y, { align:'center' });
-  y += 5;
-  doc.setFont('courier','normal'); doc.setFontSize(8); doc.setTextColor(60,60,60);
-  doc.text('RUC: ' + (e.ruc||''), pageW/2, y, { align:'center' });
-  y += 4;
-  if (e.direccion) {
-    var dirLines = doc.splitTextToSize(e.direccion, pageW - marginX*2);
-    doc.text(dirLines, pageW/2, y, { align:'center' });
-    y += dirLines.length * 3.5;
+
+  function linea(yy) {
+    doc.setDrawColor(0,0,0); doc.setLineWidth(0.15);
+    doc.setLineDashPattern([1,1], 0);
+    doc.line(marginX, yy, pageW-marginX, yy);
+    doc.setLineDashPattern([], 0);
   }
-  y += 2;
-  doc.setDrawColor(150,150,150); doc.setLineWidth(0.2);
-  doc.line(marginX, y, pageW-marginX, y);
-  y += 4;
 
-  doc.setFont('courier','bold'); doc.setFontSize(9); doc.setTextColor(20,20,20);
-  doc.text((v.tipo_comprobante||'').toUpperCase(), pageW/2, y, { align:'center' });
-  y += 4;
-  doc.text(v.serie + ' - ' + v.numero, pageW/2, y, { align:'center' });
-  y += 4;
-  doc.line(marginX, y, pageW-marginX, y);
-  y += 4;
+  // ── LOGO ──
+  if (cfg.mostrarLogo && cfg.logo) {
+    try {
+      var logoW = 22, logoH = 18;
+      doc.addImage(cfg.logo, pageW/2 - logoW/2, y, logoW, logoH);
+      y += logoH + 2;
+    } catch(err) { console.warn('No se pudo insertar el logo en el PDF:', err); }
+  }
 
-  doc.setFont('courier','normal'); doc.setFontSize(8);
+  // ── ENCABEZADO EMPRESA ──
+  doc.setFont('helvetica','bold'); doc.setFontSize(12); doc.setTextColor(0,0,0);
+  doc.text((cfg.nombre || e.nombre || 'MI EMPRESA').toUpperCase(), centerX, y, { align:'center' });
+  y += 5;
+
+  doc.setFont('helvetica','normal'); doc.setFontSize(8);
+  if (cfg.mostrarRuc !== false) { doc.text('RUC: ' + (cfg.ruc || e.ruc || ''), centerX, y, { align:'center' }); y += 3.8; }
+  if (cfg.mostrarDir !== false && (cfg.direccion || e.direccion)) {
+    var dirLines = doc.splitTextToSize(cfg.direccion || e.direccion, pageW - marginX*2);
+    doc.text(dirLines, centerX, y, { align:'center' });
+    y += dirLines.length * 3.6;
+  }
+  if (cfg.mostrarTel && cfg.telefono) { doc.text(cfg.telefono, centerX, y, { align:'center' }); y += 3.8; }
+  if (cfg.mostrarEmail && cfg.email) { doc.text(cfg.email, centerX, y, { align:'center' }); y += 3.8; }
+  if (cfg.mostrarWeb && cfg.web) { doc.text(cfg.web, centerX, y, { align:'center' }); y += 3.8; }
+
+  y += 1.5;
+  linea(y); y += 4;
+
+  // ── TIPO + NÚMERO ──
+  doc.setFont('helvetica','bold'); doc.setFontSize(10);
+  doc.text((v.tipo_comprobante || v.tipo || 'NOTA DE VENTA').toUpperCase(), centerX, y, { align:'center' });
+  y += 4.3;
+  doc.setFontSize(9);
+  doc.text(v.serie + ' - ' + v.numero, centerX, y, { align:'center' });
+  y += 3.5;
+  linea(y); y += 4;
+
+  // ── FECHA / CLIENTE ──
+  doc.setFont('helvetica','normal'); doc.setFontSize(8);
   doc.text('Fecha: ' + v.fecha + ' ' + v.hora, marginX, y);
   y += 4;
-  doc.text('Cliente: ' + (cli ? cli.nombre : 'PUBLICO EN GENERAL'), marginX, y);
-  y += 4;
-  doc.line(marginX, y, pageW-marginX, y);
-  y += 4;
+  var cliLines = doc.splitTextToSize('Cliente: ' + clienteNombre, pageW - marginX*2);
+  doc.text(cliLines, marginX, y);
+  y += cliLines.length * 4;
+  linea(y); y += 4;
 
+  // ── CABECERA TABLA ──
+  doc.setFont('helvetica','bold'); doc.setFontSize(7.5);
+  doc.text('Producto', marginX, y);
+  doc.text('Cant', pageW - 38, y, { align:'right' });
+  doc.text('P.Unit', pageW - 22, y, { align:'right' });
+  doc.text('Total', pageW - marginX, y, { align:'right' });
+  y += 3;
+  linea(y); y += 3.5;
+
+  // ── ITEMS ──
+  doc.setFont('helvetica','normal'); doc.setFontSize(8.5);
   (v.items||[]).forEach(function(it){
-    var nombreLines = doc.splitTextToSize(it.nombre, pageW - marginX*2);
+    var nombreLines = doc.splitTextToSize(it.nombre, pageW - marginX*2 - 2);
     doc.text(nombreLines, marginX, y);
-    y += nombreLines.length * 3.5;
-    doc.text(it.qty + ' x S/' + it.precio.toFixed(2), marginX, y);
-    doc.text('S/ ' + it.total.toFixed(2), pageW-marginX, y, { align:'right' });
-    y += 4.5;
-  });
-
-  doc.line(marginX, y, pageW-marginX, y);
-  y += 5;
-  doc.setFont('courier','bold'); doc.setFontSize(10);
-  doc.text('TOTAL:', marginX, y);
-  doc.text('S/ ' + v.total.toFixed(2), pageW-marginX, y, { align:'right' });
-  y += 6;
-
-  doc.setFont('courier','normal'); doc.setFontSize(8);
-  doc.text('Metodo: ' + v.metodo_pago, marginX, y);
-  y += 4;
-  doc.text('Recibido: S/ ' + (v.monto_pago||v.total).toFixed(2), marginX, y);
-  y += 4;
-  doc.text('Vuelto: S/ ' + (v.vuelto||0).toFixed(2), marginX, y);
-  y += 6;
-
-  doc.setFont('courier','bold'); doc.setFontSize(9);
-  doc.text('GRACIAS POR SU COMPRA!', pageW/2, y, { align:'center' });
-
-  return doc;
-},
-
-async _buildComprobantePDF(v) {
-  var e = DB.empresa || {};
-  var cli = (DB.clientes||[]).find(function(c){return c.id===v.cliente_id;});
-  var doc = new window.jspdf.jsPDF({ unit:'mm', format:'a4', compress:true });
-  var pageW = 210, pageH = 297, marginX = 15;
-  var tc = v.tipo==='BOL' ? [37,99,235] : v.tipo==='FAC' ? [124,58,237] : [234,88,12];
-
-  // ── Generar QR de verificación (con aviso si falla, ya no se traga el error) ──
-  var qrDataUrl = null;
-  try {
-    if (typeof QRCode === 'undefined') {
-      console.warn('QRCode no está cargado — revisa que el script de la librería esté incluido en index.html');
-    } else {
-      var qrCanvas = document.createElement('canvas');
-      var verifyUrl = (e.web ? 'https://' + e.web.replace(/^https?:\/\//,'') : 'https://magamamoda.com') + '/verificar/' + v.serie + '-' + v.numero;
-      await new Promise(function(resolve){
-        QRCode.toCanvas(qrCanvas, verifyUrl, { width: 140, margin: 1 }, function(err){
-          if (err) console.warn('Error generando QR:', err);
-          resolve();
-        });
-      });
-      qrDataUrl = qrCanvas.toDataURL('image/png');
-    }
-  } catch(err) { console.warn('Excepción generando QR:', err); }
-
-  var y = 16;
-
-  // ── Logo + encabezado empresa ──
-  var logoW = 0;
-  if (e.logo) {
-    try { doc.addImage(e.logo, 'PNG', marginX, 12, 26, 26); logoW = 32; } catch(err) {}
-  }
-  var textX = marginX + logoW;
-  var textMaxW = 108 - logoW;
-
-  doc.setFont('helvetica','bold'); doc.setFontSize(15); doc.setTextColor(20,30,50);
-  doc.text(e.nombre || 'MI EMPRESA', textX, y);
-  y += 5;
-
-  doc.setFont('helvetica','normal'); doc.setFontSize(8.5); doc.setTextColor(70,70,70);
-  var direccionLinea = (e.sucursal ? e.sucursal + ' » ' : '') + (e.direccion || '');
-  var dirLines = doc.splitTextToSize(direccionLinea, textMaxW);
-  doc.text(dirLines, textX, y);
-  y += dirLines.length * 3.6 + 1;
-
-  if (e.lema) {
-    doc.setFont('helvetica','italic'); doc.setFontSize(8); doc.setTextColor(100,100,100);
-    var lemaLines = doc.splitTextToSize('"' + e.lema + '"', textMaxW);
-    doc.text(lemaLines, textX, y);
-    y += lemaLines.length * 3.6 + 1;
-  }
-
-  doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(90,90,90);
-  if (e.email) { doc.text('EMAIL: ' + e.email, textX, y); y += 3.6; }
-  if (e.telefono || e.whatsapp) { doc.text('CONTACTO: ' + (e.telefono || e.whatsapp), textX, y); y += 3.6; }
-
-  // ── Caja superior derecha: RUC / tipo / serie-numero ──
-  var boxX = pageW - 78, boxW = 63;
-  doc.setDrawColor(30,30,30); doc.setLineWidth(0.5);
-  doc.rect(boxX, 12, boxW, 11);
-  doc.setFont('helvetica','bold'); doc.setFontSize(13); doc.setTextColor(20,20,20);
-  doc.text(e.ruc || '—', boxX + boxW/2, 19.5, { align:'center' });
-
-  doc.setFillColor(230,230,230);
-  doc.rect(boxX, 23, boxW, 15, 'F');
-  doc.setDrawColor(30,30,30);
-  doc.rect(boxX, 23, boxW, 15);
-  doc.setFont('helvetica','bold'); doc.setFontSize(9.5); doc.setTextColor(30,30,30);
-  var tipoLines = doc.splitTextToSize((v.tipo_comprobante||'').toUpperCase(), boxW - 6);
-  doc.text(tipoLines, boxX + boxW/2, 29.5, { align:'center' });
-
-  doc.setDrawColor(30,30,30);
-  doc.rect(boxX, 38, boxW, 11);
-  doc.setFont('helvetica','bold'); doc.setFontSize(13);
-  doc.text(v.serie + ' - ' + v.numero, boxX + boxW/2, 45.5, { align:'center' });
-
-  y = Math.max(y + 4, 55);
-  doc.setDrawColor(200,200,200); doc.setLineWidth(0.2);
-  doc.line(marginX, y, pageW-marginX, y);
-  y += 7;
-
-  // ── Datos cliente (izq) / fechas (der) ──
-  doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(30,30,30);
-  function campo(label, valor, x, yy) {
-    doc.setFont('helvetica','bold'); doc.text(label + ' : ', x, yy);
-    var w = doc.getTextWidth(label + ' : ');
-    doc.setFont('helvetica','normal'); doc.text(valor || '-', x + w, yy);
-    return w;
-  }
-  function campoWrap(label, valor, x, yy, maxW) {
-    doc.setFont('helvetica','bold'); doc.text(label + ' : ', x, yy);
-    var w = doc.getTextWidth(label + ' : ');
+    y += nombreLines.length * 3.6;
+    doc.text(String(it.qty), pageW - 38, y - 3.6, { align:'right' });
+    doc.text('S/' + it.precio.toFixed(2), pageW - 22, y - 3.6, { align:'right' });
+    doc.setFont('helvetica','bold');
+    doc.text('S/' + it.total.toFixed(2), pageW - marginX, y - 3.6, { align:'right' });
     doc.setFont('helvetica','normal');
-    var lines = doc.splitTextToSize(valor || '-', maxW - w);
-    doc.text(lines, x + w, yy);
-    return lines.length;
-  }
-
-  campo('RUC/DNI', cli ? cli.doc : '00000000', marginX, y);
-  campo('F. EMISIÓN', v.fecha, pageW-90, y);
-  y += 5.5;
-  campo('CLIENTE', cli ? cli.nombre : 'PÚBLICO EN GENERAL', marginX, y);
-  campo('F. VENCIMIENTO', v.fecha, pageW-90, y);
-  y += 5.5;
-  var dirCliLines = campoWrap('DIRECCIÓN', (cli && cli.direccion) || '-', marginX, y, 110);
-  campo('MONEDA', DB.empresa.moneda === 'DOLARES' ? 'DÓLARES' : 'SOLES', pageW-90, y);
-  y += (dirCliLines * 4.5) + 6;
-
-  // ── Tabla de productos ──
-  var rows = (v.items||[]).map(function(it){
-    return [it.qty.toFixed(2), it.nombre, 'S/ ' + it.precio.toFixed(2), 'S/ ' + it.total.toFixed(2)];
-  });
-  doc.autoTable({
-    startY: y,
-    head: [['Cant.','Descripción','P. Unit.','Total']],
-    body: rows,
-    theme: 'plain',
-    headStyles: { fillColor:[15,15,15], textColor:255, fontStyle:'bold', fontSize:9 },
-    bodyStyles: { fontSize:9.5, textColor:40, cellPadding:2.5, minCellHeight: 25 },
-    columnStyles: {
-      0:{halign:'right',cellWidth:18},
-      1:{cellWidth:'auto'},
-      2:{halign:'right',cellWidth:32,textColor:[200,90,20]},
-      3:{halign:'right',cellWidth:32,fontStyle:'bold'}
-    },
-    margin: { left: marginX, right: marginX }
+    y += 1.5;
   });
 
-  var finalY = doc.lastAutoTable.finalY;
+  linea(y); y += 4;
 
-  // ── Fila: monto en letras + totales ──
-  var boxH = 20;
-  doc.setDrawColor(30,30,30); doc.setLineWidth(0.4);
-  doc.rect(marginX, finalY, pageW-marginX*2-70, boxH);
-  doc.rect(pageW-marginX-70, finalY, 70, boxH);
-  doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setTextColor(30,30,30);
-  var letras = VentasModule._numeroALetras(v.total);
-  doc.text(letras, marginX+4, finalY+9, { maxWidth: pageW-marginX*2-78 });
-
-  var tX = pageW-marginX-66;
-  doc.setFontSize(8.5);
-  doc.text('EXONERADO', tX, finalY+6);
-  doc.text('S/', tX+38, finalY+6);
-  doc.text(v.total.toFixed(2), pageW-marginX-3, finalY+6, { align:'right' });
-  doc.text('IGV', tX, finalY+11.5);
-  doc.text('S/', tX+38, finalY+11.5);
-  doc.text('0.00', pageW-marginX-3, finalY+11.5, { align:'right' });
-  doc.setFontSize(9.5);
-  doc.text('TOTAL', tX, finalY+17.5);
-  doc.text('S/', tX+38, finalY+17.5);
-  doc.text(v.total.toFixed(2), pageW-marginX-3, finalY+17.5, { align:'right' });
-
-  finalY += boxH + 9;
-
-  // ── Usuario / método de pago / estado SUNAT ──
-  doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(30,30,30);
-  campo('USUARIO', (v.cajero||'-') + ' - ' + v.fecha + ' - ' + v.hora, marginX, finalY);
-  finalY += 5.5;
-  campo('MÉTODOS DE PAGO', v.metodo_pago, marginX, finalY);
-  finalY += 5.5;
-
-  if (v.tipo === 'BOL' || v.tipo === 'FAC') {
-    var estLabel = {ACEPTADO:'ACEPTADO', ENVIADO:'ENVIADO (PENDIENTE DE CONFIRMACIÓN)', ANULADO:'ANULADO', NO_ENVIADO:'POR ENVIAR'}[v.estado] || v.estado;
-    var estColor = v.estado==='ACEPTADO' ? [22,163,74] : v.estado==='ANULADO' ? [220,38,38] : [217,119,6];
-    doc.setFont('helvetica','bold'); doc.text('RESPUESTA SUNAT : ', marginX, finalY);
-    var wLbl = doc.getTextWidth('RESPUESTA SUNAT : ');
-    doc.setTextColor(estColor[0],estColor[1],estColor[2]);
-    doc.text(estLabel, marginX + wLbl, finalY);
-    doc.setTextColor(30,30,30);
-    finalY += 5.5;
-  }
-  finalY += 4;
-
-  // ── Autorización + QR ──
-  doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(70,70,70);
-  var lineasAuth = [
-    e.resolucion ? ('Autorizado mediante resolución N° ' + e.resolucion + '/SUNAT') : '',
-    'Representación impresa de ' + (v.tipo_comprobante || 'comprobante de venta'),
-    (e.web ? 'Para consultar el comprobante visite ' + e.web : ''),
-    'Código: ' + v.serie + '-' + v.numero + '-' + v.id
-  ].filter(Boolean);
-  doc.text(lineasAuth, marginX, finalY, { lineHeightFactor: 1.6 });
-
-  if (qrDataUrl) {
-    try { doc.addImage(qrDataUrl, 'PNG', pageW-marginX-30, finalY-16, 30, 30); } catch(err) {}
+  // ── SUBTOTAL / IGV ──
+  if (cfg.mostrarIGV !== false) {
+    doc.setFontSize(8);
+    doc.text('Subtotal:', marginX, y);
+    doc.text('S/ ' + v.total.toFixed(2), pageW - marginX, y, { align:'right' });
+    y += 4;
+    doc.text('IGV (Exonerado):', marginX, y);
+    doc.text('S/ 0.00', pageW - marginX, y, { align:'right' });
+    y += 4.5;
   }
 
-  finalY += 28;
+  // ── CAJA TOTAL ──
+  var boxH = 15;
+  doc.setDrawColor(0,0,0); doc.setLineWidth(0.5);
+  doc.rect(marginX, y, pageW - marginX*2, boxH);
+  doc.setFont('helvetica','bold'); doc.setFontSize(8.5);
+  doc.text('TOTAL A PAGAR', centerX, y + 5.5, { align:'center' });
+  doc.setFontSize(17);
+  doc.text('S/ ' + v.total.toFixed(2), centerX, y + 12, { align:'center' });
+  y += boxH + 5;
 
-  // ── Pie de página ──
-  doc.setDrawColor(220,220,220); doc.setLineWidth(0.2);
-  doc.line(marginX, finalY, pageW-marginX, finalY);
-  finalY += 6;
-  doc.setFont('helvetica','bold'); doc.setFontSize(10); doc.setTextColor(tc[0],tc[1],tc[2]);
-  doc.text('¡GRACIAS POR SU PREFERENCIA!', pageW/2, finalY, { align:'center' });
-  finalY += 7;
-  doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setTextColor(30,30,30);
-  doc.text(e.nombre || '', pageW/2, finalY, { align:'center' });
-  finalY += 4.5;
-  doc.setFont('helvetica','normal'); doc.setFontSize(7.5); doc.setTextColor(140,140,140);
-  doc.text('Comprobante generado por ' + (e.nombre||''), pageW/2, finalY, { align:'center' });
+  linea(y); y += 4;
+
+  // ── MÉTODO DE PAGO ──
+  doc.setFont('helvetica','normal'); doc.setFontSize(8);
+  doc.text('Método:', marginX, y);
+  doc.setFont('helvetica','bold');
+  doc.text(v.metodo_pago, pageW - marginX, y, { align:'right' });
+  y += 4;
+  doc.setFont('helvetica','normal');
+  doc.text('Recibido:', marginX, y);
+  doc.text('S/ ' + (v.monto_pago||v.total).toFixed(2), pageW - marginX, y, { align:'right' });
+  y += 4;
+  doc.setFont('helvetica','bold'); doc.setFontSize(8.5);
+  doc.text('VUELTO:', marginX, y);
+  doc.text('S/ ' + (v.vuelto||0).toFixed(2), pageW - marginX, y, { align:'right' });
+  y += 4.5;
+
+  linea(y); y += 4;
+
+  // ── QR ──
+  if (cfg.mostrarQR !== false) {
+    try {
+      if (typeof QRCode === 'undefined') {
+        console.warn('QRCode no está cargado — revisa el script en index.html');
+      } else {
+        var qrCanvas = document.createElement('canvas');
+        var qrData = v.serie + '-' + v.numero + ' ' + (cfg.nombre||'') + ' S/' + v.total.toFixed(2);
+        await new Promise(function(resolve){
+          QRCode.toCanvas(qrCanvas, qrData, { width: 200, margin: 1 }, function(err){
+            if (err) console.warn('Error generando QR:', err);
+            resolve();
+          });
+        });
+        var qrSize = 24;
+        doc.addImage(qrCanvas.toDataURL('image/png'), 'PNG', centerX - qrSize/2, y, qrSize, qrSize);
+        y += qrSize + 2;
+        doc.setFont('helvetica','normal'); doc.setFontSize(7);
+        doc.text(v.serie + '-' + v.numero, centerX, y, { align:'center' });
+        y += 4;
+        linea(y); y += 4;
+      }
+    } catch(err) { console.warn('Excepción generando QR en ticket:', err); }
+  }
+
+  // ── MENSAJES ──
+  if (cfg.mensaje1) {
+    doc.setFont('helvetica','bold'); doc.setFontSize(9.5);
+    doc.text(cfg.mensaje1, centerX, y, { align:'center' });
+    y += 4.5;
+  }
+  if (cfg.mensaje2) {
+    doc.setFont('helvetica','normal'); doc.setFontSize(8);
+    var m2Lines = doc.splitTextToSize(cfg.mensaje2, pageW - marginX*2);
+    doc.text(m2Lines, centerX, y, { align:'center' });
+    y += m2Lines.length * 3.6;
+  }
+  if (cfg.mensaje3) {
+    doc.setFontSize(7.5); doc.setTextColor(60,60,60);
+    var m3Lines = doc.splitTextToSize(cfg.mensaje3, pageW - marginX*2);
+    doc.text(m3Lines, centerX, y, { align:'center' });
+    y += m3Lines.length * 3.4;
+    doc.setTextColor(0,0,0);
+  }
+
+  // ── FIRMA ──
+  if (cfg.mostrarFirma) {
+    y += 6;
+    doc.setDrawColor(80,80,80); doc.setLineWidth(0.2);
+    doc.line(centerX - 15, y, centerX + 15, y);
+    y += 3;
+    doc.setFontSize(6.5); doc.setTextColor(80,80,80);
+    doc.text('Firma del cliente', centerX, y, { align:'center' });
+    doc.setTextColor(0,0,0);
+  }
+
+  y += 3;
+  linea(y); y += 3.5;
+  doc.setFont('helvetica','normal'); doc.setFontSize(7); doc.setTextColor(80,80,80);
+  doc.text((cfg.nombre || e.nombre || '') + ' — ' + v.fecha, centerX, y, { align:'center' });
 
   return doc;
 },
