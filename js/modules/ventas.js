@@ -1258,198 +1258,34 @@ this.montoPago       = v.monto_pago || v.total;
   },
 
 async _buildTicketPDF(v) {
-  var cfg = (typeof TicketsModule !== 'undefined') ? TicketsModule._getCfg() : {};
-  var e = DB.empresa || {};
-  var cli = (DB.clientes||[]).find(function(c){return c.id===v.cliente_id;});
-  var clienteNombre = cli ? cli.nombre : 'PÚBLICO EN GENERAL';
-
-  var pageW = 80, marginX = 4;
-  var itemsCount = (v.items||[]).length;
-  var estimatedHeight = 130 + (itemsCount * 9) + (cfg.mostrarQR ? 32 : 0) + (cfg.mostrarFirma ? 14 : 0);
-
-  var doc = new window.jspdf.jsPDF({ unit:'mm', format:[pageW, estimatedHeight], compress:true });
-  var centerX = pageW/2;
-  var y = 8;
-
-  function linea(yy) {
-    doc.setDrawColor(0,0,0); doc.setLineWidth(0.15);
-    doc.setLineDashPattern([1,1], 0);
-    doc.line(marginX, yy, pageW-marginX, yy);
-    doc.setLineDashPattern([], 0);
+  if (typeof TicketsModule === 'undefined' || typeof TicketsModule._generarTicketHTML !== 'function') {
+    App.toast('No se encontró el diseño de ticket (TicketsModule)', 'error');
+    throw new Error('TicketsModule no disponible');
   }
 
-  // ── LOGO ── (FIX: se agrega el formato PNG/JPEG requerido por jsPDF)
-  if (cfg.mostrarLogo && cfg.logo) {
-    try {
-      var logoW = 22, logoH = 18;
-      var logoFmt = cfg.logo.indexOf('data:image/jpeg') === 0 || cfg.logo.indexOf('data:image/jpg') === 0 ? 'JPEG' : 'PNG';
-      doc.addImage(cfg.logo, logoFmt, pageW/2 - logoW/2, y, logoW, logoH);
-      y += logoH + 2;
-    } catch(err) { console.warn('No se pudo insertar el logo en el PDF:', err); }
+  var cfg = TicketsModule._getCfg();
+  var htmlTicket = TicketsModule._generarTicketHTML(cfg, v);
+
+  // Contenedor temporal e invisible solo para que jsPDF pueda leer el HTML
+  var wrapper = document.createElement('div');
+  wrapper.style.position = 'fixed';
+  wrapper.style.left = '-9999px';
+  wrapper.style.top = '0';
+  wrapper.innerHTML = htmlTicket;
+  document.body.appendChild(wrapper);
+
+  var doc = new window.jspdf.jsPDF({ unit:'px', format:[300, 2000], compress:true });
+
+  try {
+    await doc.html(wrapper, {
+      x: 0,
+      y: 0,
+      html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
+      autoPaging: false
+    });
+  } finally {
+    document.body.removeChild(wrapper);
   }
-
-  // ── ENCABEZADO EMPRESA ──
-  doc.setFont('helvetica','bold'); doc.setFontSize(12); doc.setTextColor(0,0,0);
-  doc.text((cfg.nombre || e.nombre || 'MI EMPRESA').toUpperCase(), centerX, y, { align:'center' });
-  y += 5;
-
-  doc.setFont('helvetica','normal'); doc.setFontSize(8);
-  if (cfg.mostrarRuc !== false) { doc.text('RUC: ' + (cfg.ruc || e.ruc || ''), centerX, y, { align:'center' }); y += 3.8; }
-  if (cfg.mostrarDir !== false && (cfg.direccion || e.direccion)) {
-    var dirLines = doc.splitTextToSize(cfg.direccion || e.direccion, pageW - marginX*2);
-    doc.text(dirLines, centerX, y, { align:'center' });
-    y += dirLines.length * 3.6;
-  }
-  if (cfg.mostrarTel && cfg.telefono) { doc.text(cfg.telefono, centerX, y, { align:'center' }); y += 3.8; }
-  if (cfg.mostrarEmail && cfg.email) { doc.text(cfg.email, centerX, y, { align:'center' }); y += 3.8; }
-  if (cfg.mostrarWeb && cfg.web) { doc.text(cfg.web, centerX, y, { align:'center' }); y += 3.8; }
-
-  y += 1.5;
-  linea(y); y += 4;
-
-  // ── TIPO + NÚMERO ──
-  doc.setFont('helvetica','bold'); doc.setFontSize(10);
-  doc.text((v.tipo_comprobante || v.tipo || 'NOTA DE VENTA').toUpperCase(), centerX, y, { align:'center' });
-  y += 4.3;
-  doc.setFontSize(9);
-  doc.text(v.serie + ' - ' + v.numero, centerX, y, { align:'center' });
-  y += 3.5;
-  linea(y); y += 4;
-
-  // ── FECHA / CLIENTE ──
-  doc.setFont('helvetica','normal'); doc.setFontSize(8);
-  doc.text('Fecha: ' + v.fecha + ' ' + v.hora, marginX, y);
-  y += 4;
-  var cliLines = doc.splitTextToSize('Cliente: ' + clienteNombre, pageW - marginX*2);
-  doc.text(cliLines, marginX, y);
-  y += cliLines.length * 4;
-  linea(y); y += 4;
-
-  // ── CABECERA TABLA ──
-  doc.setFont('helvetica','bold'); doc.setFontSize(7.5);
-  doc.text('Producto', marginX, y);
-  doc.text('Cant', pageW - 38, y, { align:'right' });
-  doc.text('P.Unit', pageW - 22, y, { align:'right' });
-  doc.text('Total', pageW - marginX, y, { align:'right' });
-  y += 3;
-  linea(y); y += 3.5;
-
-  // ── ITEMS ── (FIX: ancho del nombre limitado para no invadir la zona de números)
-  doc.setFont('helvetica','normal'); doc.setFontSize(8.5);
-  (v.items||[]).forEach(function(it){
-    var nombreLines = doc.splitTextToSize(it.nombre, 26);
-    doc.text(nombreLines, marginX, y);
-    y += nombreLines.length * 3.6;
-    doc.text(String(it.qty), pageW - 38, y - 3.6, { align:'right' });
-    doc.text('S/' + it.precio.toFixed(2), pageW - 22, y - 3.6, { align:'right' });
-    doc.setFont('helvetica','bold');
-    doc.text('S/' + it.total.toFixed(2), pageW - marginX, y - 3.6, { align:'right' });
-    doc.setFont('helvetica','normal');
-    y += 1.5;
-  });
-
-  linea(y); y += 4;
-
-  // ── SUBTOTAL / IGV ──
-  if (cfg.mostrarIGV !== false) {
-    doc.setFontSize(8);
-    doc.text('Subtotal:', marginX, y);
-    doc.text('S/ ' + v.total.toFixed(2), pageW - marginX, y, { align:'right' });
-    y += 4;
-    doc.text('IGV (Exonerado):', marginX, y);
-    doc.text('S/ 0.00', pageW - marginX, y, { align:'right' });
-    y += 4.5;
-  }
-
-  // ── CAJA TOTAL ──
-  var boxH = 15;
-  doc.setDrawColor(0,0,0); doc.setLineWidth(0.5);
-  doc.rect(marginX, y, pageW - marginX*2, boxH);
-  doc.setFont('helvetica','bold'); doc.setFontSize(8.5);
-  doc.text('TOTAL A PAGAR', centerX, y + 5.5, { align:'center' });
-  doc.setFontSize(17);
-  doc.text('S/ ' + v.total.toFixed(2), centerX, y + 12, { align:'center' });
-  y += boxH + 5;
-
-  linea(y); y += 4;
-
-  // ── MÉTODO DE PAGO ──
-  doc.setFont('helvetica','normal'); doc.setFontSize(8);
-  doc.text('Método:', marginX, y);
-  doc.setFont('helvetica','bold');
-  doc.text(v.metodo_pago, pageW - marginX, y, { align:'right' });
-  y += 4;
-  doc.setFont('helvetica','normal');
-  doc.text('Recibido:', marginX, y);
-  doc.text('S/ ' + (v.monto_pago||v.total).toFixed(2), pageW - marginX, y, { align:'right' });
-  y += 4;
-  doc.setFont('helvetica','bold'); doc.setFontSize(8.5);
-  doc.text('VUELTO:', marginX, y);
-  doc.text('S/ ' + (v.vuelto||0).toFixed(2), pageW - marginX, y, { align:'right' });
-  y += 4.5;
-
-  linea(y); y += 4;
-
-  // ── QR ──
-  if (cfg.mostrarQR !== false) {
-    try {
-      if (typeof QRCode === 'undefined') {
-        console.warn('QRCode no está cargado — revisa el script en index.html');
-      } else {
-        var qrCanvas = document.createElement('canvas');
-        var qrData = v.serie + '-' + v.numero + ' ' + (cfg.nombre||'') + ' S/' + v.total.toFixed(2);
-        await new Promise(function(resolve){
-          QRCode.toCanvas(qrCanvas, qrData, { width: 200, margin: 1 }, function(err){
-            if (err) console.warn('Error generando QR:', err);
-            resolve();
-          });
-        });
-        var qrSize = 24;
-        doc.addImage(qrCanvas.toDataURL('image/png'), 'PNG', centerX - qrSize/2, y, qrSize, qrSize);
-        y += qrSize + 2;
-        doc.setFont('helvetica','normal'); doc.setFontSize(7);
-        doc.text(v.serie + '-' + v.numero, centerX, y, { align:'center' });
-        y += 4;
-        linea(y); y += 4;
-      }
-    } catch(err) { console.warn('Excepción generando QR en ticket:', err); }
-  }
-
-  // ── MENSAJES ──
-  if (cfg.mensaje1) {
-    doc.setFont('helvetica','bold'); doc.setFontSize(9.5);
-    doc.text(cfg.mensaje1, centerX, y, { align:'center' });
-    y += 4.5;
-  }
-  if (cfg.mensaje2) {
-    doc.setFont('helvetica','normal'); doc.setFontSize(8);
-    var m2Lines = doc.splitTextToSize(cfg.mensaje2, pageW - marginX*2);
-    doc.text(m2Lines, centerX, y, { align:'center' });
-    y += m2Lines.length * 3.6;
-  }
-  if (cfg.mensaje3) {
-    doc.setFontSize(7.5); doc.setTextColor(60,60,60);
-    var m3Lines = doc.splitTextToSize(cfg.mensaje3, pageW - marginX*2);
-    doc.text(m3Lines, centerX, y, { align:'center' });
-    y += m3Lines.length * 3.4;
-    doc.setTextColor(0,0,0);
-  }
-
-  // ── FIRMA ──
-  if (cfg.mostrarFirma) {
-    y += 6;
-    doc.setDrawColor(80,80,80); doc.setLineWidth(0.2);
-    doc.line(centerX - 15, y, centerX + 15, y);
-    y += 3;
-    doc.setFontSize(6.5); doc.setTextColor(80,80,80);
-    doc.text('Firma del cliente', centerX, y, { align:'center' });
-    doc.setTextColor(0,0,0);
-  }
-
-  y += 3;
-  linea(y); y += 3.5;
-  doc.setFont('helvetica','normal'); doc.setFontSize(7); doc.setTextColor(80,80,80);
-  doc.text((cfg.nombre || e.nombre || '') + ' — ' + v.fecha, centerX, y, { align:'center' });
 
   return doc;
 },
