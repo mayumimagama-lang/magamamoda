@@ -149,7 +149,7 @@ const TicketsModule = {
           (paged.length===0
             ? '<tr><td colspan="8"><div class="empty-state"><i class="fas fa-ticket-alt"></i><p>No hay tickets en este periodo</p></div></td></tr>'
             : paged.map(function(v) {
-                var cli   = DB.clientes.find(function(c){ return c.id===v.cliente_id; });
+                var cli   = DB.clientes.find(function(c){ return String(c.id)===String(v.cliente_id); });
                 var tClr  = v.tipo==='BOL'?'#2563eb':v.tipo==='FAC'?'#7c3aed':'#ea580c';
                 var eBg   = v.estado==='ACEPTADO'?'#dcfce7':v.estado==='ANULADO'?'#fee2e2':'#fef3c7';
                 var eClr  = v.estado==='ACEPTADO'?'#16a34a':v.estado==='ANULADO'?'#dc2626':'#d97706';
@@ -300,7 +300,7 @@ const TicketsModule = {
     var numero = venta ? (venta.serie+'-'+venta.numero) : 'NV01-00000001';
     var fecha    = venta ? venta.fecha     : this._fechaLocal();
     var hora     = venta ? venta.hora      : '10:30:00';
-    var cliente  = venta ? (DB.clientes.find(function(c){ return c.id===venta.cliente_id; })||{nombre:'PÚBLICO EN GENERAL'}).nombre : 'PÚBLICO EN GENERAL';
+    var cliente  = venta ? (DB.clientes.find(function(c){ return String(c.id)===String(venta.cliente_id); })||{nombre:'PÚBLICO EN GENERAL'}).nombre : 'PÚBLICO EN GENERAL';
     var metodo   = venta ? venta.metodo_pago : 'EFECTIVO';
     var recibido = venta ? venta.monto_pago  : 100.00;
     var vuelto   = venta ? venta.vuelto      : 22.50;
@@ -478,7 +478,7 @@ const TicketsModule = {
     var id=this.ticketEditando;
     var v=DB.ventas.find(function(x){ return x.id===id; });
     if(!v){ this.ticketEditando=null; return this.renderLista(); }
-    var cli=DB.clientes.find(function(c){ return c.id===v.cliente_id; });
+    var cli=DB.clientes.find(function(c){ return String(c.id)===String(v.cliente_id); });
     var tClr=v.tipo==='BOL'?'#2563eb':v.tipo==='FAC'?'#7c3aed':'#ea580c';
     var itemsHTML=v.items.map(function(item,i){
       var prod=DB.productos.find(function(p){ return p.id===item.prod_id; });
@@ -606,7 +606,7 @@ const TicketsModule = {
 
   verDetalle(id){
     var v=DB.ventas.find(function(x){return x.id===id;}); if(!v) return;
-    var cli=DB.clientes.find(function(c){return c.id===v.cliente_id;});
+    var cli=DB.clientes.find(function(c){return String(c.id)===String(v.cliente_id);});
     var tClr=v.tipo==='BOL'?'#2563eb':v.tipo==='FAC'?'#7c3aed':'#ea580c';
     var eBg=v.estado==='ACEPTADO'?'#dcfce7':v.estado==='ANULADO'?'#fee2e2':'#fef3c7';
     var eClr=v.estado==='ACEPTADO'?'#16a34a':v.estado==='ANULADO'?'#dc2626':'#d97706';
@@ -658,7 +658,7 @@ const TicketsModule = {
     var f=this.getFiltered();
     var h='Fecha,Hora,Serie,Numero,Tipo,Cliente,Items,Total,Estado,Metodo\n';
     var r=f.map(function(v){
-      var cli=DB.clientes.find(function(c){return c.id===v.cliente_id;});
+      var cli=DB.clientes.find(function(c){return String(c.id)===String(v.cliente_id);});
       var items=v.items.map(function(i){return i.nombre+'x'+i.qty;}).join('|');
       return v.fecha+','+v.hora+','+v.serie+','+v.numero+','+v.tipo+',"'+(cli?cli.nombre:'')+'","'+items+'",'+v.total.toFixed(2)+','+v.estado+','+v.metodo_pago;
     }).join('\n');
@@ -676,7 +676,7 @@ const TicketsModule = {
       var mE=self.estadoFilter==='todos'||v.estado===self.estadoFilter;
       var mF=(!self.fechaInicio||v.fecha>=self.fechaInicio)&&(!self.fechaFin||v.fecha<=self.fechaFin);
       var mS=!self.searchTerm||v.numero.indexOf(self.searchTerm)>=0||v.serie.indexOf(self.searchTerm)>=0||
-        (DB.clientes.find(function(c){return c.id===v.cliente_id;})||{nombre:''}).nombre.toLowerCase().indexOf(self.searchTerm.toLowerCase())>=0||
+        (DB.clientes.find(function(c){return String(c.id)===String(v.cliente_id);})||{nombre:''}).nombre.toLowerCase().indexOf(self.searchTerm.toLowerCase())>=0||
         v.items.some(function(i){return i.nombre.toLowerCase().indexOf(self.searchTerm.toLowerCase())>=0;});
       return mT&&mE&&mF&&mS;
     });
@@ -689,7 +689,7 @@ const TicketsModule = {
   enviarWhatsApp(id) {
     var v = DB.ventas.find(function(x){ return x.id===id; });
     if (!v) return;
-    var cli = DB.clientes.find(function(c){ return c.id===v.cliente_id; });
+    var cli = DB.clientes.find(function(c){ return String(c.id)===String(v.cliente_id); });
     var cfg = this._getCfg();
     var waAdmin = (cfg.whatsappAdmin || (DB.empresa && DB.empresa.whatsapp) || '').replace(/\D/g,'');
     var telCliente = (cli && cli.telefono) ? cli.telefono.replace(/\D/g,'') : '';
@@ -729,7 +729,7 @@ const TicketsModule = {
 
   _abrirWhatsApp(numero, v) {
     var cfg = this._getCfg();
-    var cli = DB.clientes.find(function(c){ return c.id===v.cliente_id; }) || { nombre: 'P\u00daBLICO EN GENERAL' };
+    var cli = DB.clientes.find(function(c){ return String(c.id)===String(v.cliente_id); }) || { nombre: 'PÚBLICO EN GENERAL' };
     var lineas = v.items.map(function(i){
       return '  \u2022 '+i.nombre+' x'+i.qty+' \u2014 S/ '+i.total.toFixed(2);
     }).join('\n');
