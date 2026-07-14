@@ -1262,32 +1262,62 @@ async _buildTicketPDF(v) {
     App.toast('No se encontró el diseño de ticket (TicketsModule)', 'error');
     throw new Error('TicketsModule no disponible');
   }
+  if (typeof html2canvas === 'undefined') {
+    App.toast('Falta la librería html2canvas. Agrégala en index.html y recarga.', 'error');
+    throw new Error('html2canvas no cargado');
+  }
 
   var cfg = TicketsModule._getCfg();
   var htmlTicket = TicketsModule._generarTicketHTML(cfg, v);
 
-  // Contenedor temporal e invisible solo para que jsPDF pueda leer el HTML
+  // Contenedor visible en el documento (fuera del viewport verticalmente, no horizontalmente)
+  // para que html2canvas lo capture sin problemas de renderizado
   var wrapper = document.createElement('div');
-  wrapper.style.position = 'fixed';
-  wrapper.style.left = '-9999px';
-  wrapper.style.top = '0';
+  wrapper.style.position = 'absolute';
+  wrapper.style.top = '-10000px';
+  wrapper.style.left = '0';
+  wrapper.style.background = '#ffffff';
+  wrapper.style.zIndex = '-1';
   wrapper.innerHTML = htmlTicket;
   document.body.appendChild(wrapper);
 
-  var doc = new window.jspdf.jsPDF({ unit:'px', format:[300, 2000], compress:true });
+  var ticketEl = wrapper.firstElementChild;
 
   try {
-    await doc.html(wrapper, {
-      x: 0,
-      y: 0,
-      html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
-      autoPaging: false
+    // Esperar a que todas las imágenes (logo, QR) carguen antes de capturar
+    var imgs = ticketEl.querySelectorAll('img');
+    await Promise.all(Array.from(imgs).map(function(img){
+      if (img.complete && img.naturalWidth > 0) return Promise.resolve();
+      return new Promise(function(resolve){
+        img.onload = resolve;
+        img.onerror = resolve; // no bloquear si una imagen falla
+      });
+    }));
+
+    var canvas = await html2canvas(ticketEl, {
+      scale: 3,
+      useCORS: true,
+      allowTaint: false,
+      backgroundColor: '#ffffff',
+      logging: false
     });
+
+    if (!canvas || canvas.width === 0 || canvas.height === 0) {
+      throw new Error('html2canvas generó un canvas vacío');
+    }
+
+    var imgData = canvas.toDataURL('image/png');
+    var pxToMm = 0.264583; // conversión CSS px -> mm (96dpi)
+    var widthMm  = ticketEl.offsetWidth  * pxToMm;
+    var heightMm = ticketEl.offsetHeight * pxToMm;
+
+    var doc = new window.jspdf.jsPDF({ unit:'mm', format:[widthMm, heightMm], compress:true });
+    doc.addImage(imgData, 'PNG', 0, 0, widthMm, heightMm);
+
+    return doc;
   } finally {
     document.body.removeChild(wrapper);
   }
-
-  return doc;
 },
 
   // ─────────────────────────────────────────────────────────
