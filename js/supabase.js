@@ -276,6 +276,8 @@ const SupabaseDB = {
     } catch(e) {
       console.warn('⚠️ Error cargando ventas:', e);
       return { ok: false };
+    } finally {
+      DB._ventasListas = true;
     }
   },
 
