@@ -74,14 +74,26 @@ const DB = {
   // ---- COMPRAS ----
   compras: [],
 
+  // ---- ESTADO DE CARGA ----
+  _ventasListas: false,
+
   // ---- SECUENCIAS ----
   _sequences: { NV01:1, B001:1, F001:1 },
 
   nextNumber(serie) {
-    const n = this._sequences[serie] || 1;
-    this._sequences[serie] = n + 1;
-    return String(n).padStart(8, '0');
-  }
+  // Fuente de verdad: el número más alto ya usado en esa serie según las ventas sincronizadas
+  var maxUsado = 0;
+  (this.ventas || []).forEach(function(v){
+    if (v.serie === serie) {
+      var n = parseInt(v.numero, 10) || 0;
+      if (n > maxUsado) maxUsado = n;
+    }
+  });
+  var siguienteLocal = this._sequences[serie] || 1;
+  var next = Math.max(maxUsado + 1, siguienteLocal);
+  this._sequences[serie] = next + 1;
+  return String(next).padStart(8, '0');
+}
 };
 
 // ============================================================
