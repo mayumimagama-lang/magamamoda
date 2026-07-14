@@ -24,6 +24,7 @@ const VentasModule = {
   modoVista:       'lista',
   _searchResults:  null,
   _subMetodoCombinado: 'YAPE+EFECTIVO',
+  _buscandoCliente: false,
   mayoristaModo:   false,
   _montoCombinadoA: 0,
   _montoCombinadoB: 0,
@@ -847,6 +848,7 @@ this.montoPago       = v.monto_pago || v.total;
   async _consultarAPICliente(doc) {
     var inp=document.getElementById('cliSearch'), tipo=doc.length===11?'RUC':'DNI';
     if(inp) inp.value='🔍 Consultando '+tipo+'...';
+    this._buscandoCliente = true;
     try {
       var ep=doc.length===11?'https://apiperu.dev/api/ruc':'https://apiperu.dev/api/dni';
       var res=await fetch(ep,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json','Authorization':'Bearer 2568cd05aaa32855bded783fdb2a9a7ef984e2d136aaeaf2d59091dc48ef68cb'},body:JSON.stringify(doc.length===11?{ruc:doc}:{dni:doc})});
@@ -859,12 +861,15 @@ this.montoPago       = v.monto_pago || v.total;
         App.toast('✅ '+nombre,'success');
       } else { if(inp) inp.value=''; App.toast('No se encontró el '+tipo+'. Ingresa datos manualmente.','warning'); }
     } catch(e){ if(inp) inp.value=''; App.toast('Error de conexión','error'); }
+    finally { this._buscandoCliente = false; }
   },
 
   // ─────────────────────────────────────────────────────────
   // PROCESAR VENTA
   // ─────────────────────────────────────────────────────────
   procesar() {
+    if (typeof DB !== 'undefined' && DB._ventasListas === false) { App.toast('⏳ Espera unos segundos — el sistema aún está sincronizando tus ventas con la nube','warning'); return; }
+    if (this._buscandoCliente) { App.toast('⏳ Espera a que termine de buscar el cliente antes de procesar','warning'); return; }
     if(!this.currentItems.length){App.toast('Agrega al menos un producto','error');return;}
     if (this._editingId) { this._guardarEdicion(); return; }
     if(!this.selectedCliente){
@@ -971,6 +976,8 @@ this.montoPago       = v.monto_pago || v.total;
   },
 
   _guardarEdicion() {
+    if (typeof DB !== 'undefined' && DB._ventasListas === false) { App.toast('⏳ Espera unos segundos — el sistema aún está sincronizando tus ventas con la nube','warning'); return; }
+    if (this._buscandoCliente) { App.toast('⏳ Espera a que termine de buscar el cliente antes de guardar','warning'); return; }
     var id = this._editingId;
     var idx = (DB.ventas||[]).findIndex(function(x){ return Number(x.id)===Number(id); });
     if (idx < 0) { App.toast('Comprobante no encontrado','error'); this._editingId=null; this.modoVista='lista'; App.renderPage(); return; }
