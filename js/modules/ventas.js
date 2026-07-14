@@ -300,7 +300,7 @@ const VentasModule = {
         total:   it.total
       };
     });
-    var cli = (DB.clientes||[]).find(function(c){ return c.id===v.cliente_id; });
+    var cli = (DB.clientes||[]).find(function(c){ return String(c.id)===String(v.cliente_id); });
     this.selectedCliente = cli || (DB.clientes||[]).find(function(c){ return c.doc==='00000000'; });
     this.serieActual     = v.serie;
     this.tipoComprobante = v.tipo_comprobante || (v.tipo==='BOL'?'BOLETA DE VENTA ELECTRONICA':v.tipo==='FAC'?'FACTURA ELECTRONICA':'NOTA DE VENTA');
@@ -1123,7 +1123,7 @@ this.montoPago       = v.monto_pago || v.total;
   verDetalle(id) {
     var v=(DB.ventas||[]).find(function(x){return Number(x.id)===Number(id);});
     if(!v)return;
-    var cli=(DB.clientes||[]).find(function(c){return c.id===v.cliente_id;});
+    var cli=(DB.clientes||[]).find(function(c){return String(c.id)===String(v.cliente_id);});
     var tipoColor=v.tipo==='BOL'?'#2563eb':v.tipo==='FAC'?'#7c3aed':'#ea580c';
     var estMap={ACEPTADO:{bg:'#f0fdf4',c:'#16a34a'},ENVIADO:{bg:'#eff6ff',c:'#2563eb'},ANULADO:{bg:'#fef2f2',c:'#dc2626'},NO_ENVIADO:{bg:'#fffbeb',c:'#d97706'}};
     var est=estMap[v.estado]||estMap.NO_ENVIADO;
@@ -1615,7 +1615,7 @@ async _buildTicketPDF(v) {
     var tipoLabel = {'BOL':'Boleta Electrónica','FAC':'Factura Electrónica','N. VENTA':'Nota de Venta'};
     var estadoLabel = {'ACEPTADO':'✓ Aceptado','ENVIADO':'📤 Enviado (verificar)','NO_ENVIADO':'⏳ Por enviar','ANULADO':'✗ Anulado'};
     filtered.forEach(function(v) {
-      var cli = (DB.clientes||[]).find(function(c){return c.id===v.cliente_id;});
+      var cli = (DB.clientes||[]).find(function(c){return String(c.id)===String(v.cliente_id);});
       detalle.push([
         v.fecha, v.hora,
         v.serie + '-' + v.numero,
@@ -1703,7 +1703,7 @@ async _buildTicketPDF(v) {
       ['N°','Fecha','Serie-Número','Tipo Comprobante','RUC/DNI Cliente','Razón Social','Op. Exonerada (S/)','IGV (S/)','Total (S/)','Estado']
     ];
     validas.forEach(function(v, idx) {
-      var cli = (DB.clientes||[]).find(function(c){return c.id===v.cliente_id;});
+      var cli = (DB.clientes||[]).find(function(c){return String(c.id)===String(v.cliente_id);});
       contable.push([
         idx+1, v.fecha,
         v.serie+'-'+v.numero,
