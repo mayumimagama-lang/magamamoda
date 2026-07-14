@@ -854,12 +854,14 @@ this.montoPago       = v.monto_pago || v.total;
       var res=await fetch(ep,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json','Authorization':'Bearer 2568cd05aaa32855bded783fdb2a9a7ef984e2d136aaeaf2d59091dc48ef68cb'},body:JSON.stringify(doc.length===11?{ruc:doc}:{dni:doc})});
       var data=await res.json();
       if(data.success){
-        var nombre=doc.length===11?(data.data.nombre_o_razon_social||''):(data.data.nombre_completo||'');
-        var ct={id:Date.now(),doc,tipo,nombre,direccion:data.data?.direccion||'',telefono:'',email:'',tipo_cliente:'cliente'};
-        DB.clientes.push(ct); this.selectedCliente=ct;
-        if(inp) inp.value=doc+' — '+nombre;
-        App.toast('✅ '+nombre,'success');
-      } else { if(inp) inp.value=''; App.toast('No se encontró el '+tipo+'. Ingresa datos manualmente.','warning'); }
+  var nombre=doc.length===11?(data.data.nombre_o_razon_social||''):(data.data.nombre_completo||'');
+  var ct={id:Date.now(),doc,tipo,nombre,direccion:data.data?.direccion||'',telefono:'',email:'',tipo_cliente:'cliente'};
+  DB.clientes.push(ct); this.selectedCliente=ct;
+  Storage.guardarClientes && Storage.guardarClientes();
+  SupabaseDB.guardarCliente(ct);
+  if(inp) inp.value=doc+' — '+nombre;
+  App.toast('✅ '+nombre,'success');
+} else { if(inp) inp.value=''; App.toast('No se encontró el '+tipo+'. Ingresa datos manualmente.','warning'); }
     } catch(e){ if(inp) inp.value=''; App.toast('Error de conexión','error'); }
     finally { this._buscandoCliente = false; }
   },
