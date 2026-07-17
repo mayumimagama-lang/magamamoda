@@ -357,13 +357,21 @@ const Storage = {
   }
 };
 
-// ── Cargar localStorage al iniciar ──
+// — Cargar localStorage al iniciar —
 Storage.cargar();
 
-// ── Cargar desde Supabase al iniciar ──
+DB._clientesListos = false;
+
+// — Cargar desde Supabase al iniciar —
 SupabaseDB.cargarProductos();
 SupabaseDB.cargarVentas();
 SupabaseDB.cargarCaja();
 SupabaseDB.cargarMovimientosCaja();
 SupabaseDB.cargarHistorialCaja();
 SupabaseDB.cargarKardex();
+
+SupabaseDB.cargarClientes().then(function(){
+  if (typeof VentasModule !== 'undefined' && typeof VentasModule.renderLista === 'function' && typeof App !== 'undefined' && App.currentPage === 'ventas') {
+    VentasModule.renderLista();
+  }
+});
