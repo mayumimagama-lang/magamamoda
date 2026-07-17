@@ -139,6 +139,8 @@ const SupabaseDB = {
     } catch(e) {
       console.warn('⚠️ Error cargando clientes:', e);
       return { ok: false };
+    } finally {
+      DB._clientesListos = true;
     }
   },
 
