@@ -114,7 +114,7 @@ const VentasModule = {
         '<button onclick="VentasModule.nuevaVenta()" style="margin-top:12px;padding:9px 20px;background:var(--accent);color:white;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;"><i class="fas fa-plus" style="margin-right:5px;"></i>Crear primer comprobante</button>' +
       '</td></tr>' :
       paged.map(function(v){
-        var cli = (DB.clientes||[]).find(function(c){return c.id===v.cliente_id;});
+        var cli = (DB.clientes||[]).find(function(c){return String(c.id)===String(v.cliente_id);});
         var cliNombre = cli ? cli.nombre : (v.cliente_nombre||'N/A');
         var cliDoc = cli ? (cli.tipo+': '+cli.doc) : (v.cliente_doc||'');
         var tipoColor = v.tipo==='BOL'?'#2563eb':v.tipo==='FAC'?'#7c3aed':'#ea580c';
@@ -1738,7 +1738,7 @@ async _buildTicketPDF(v) {
     return (DB.ventas||[]).filter(function(v){
       var matchTipo   = self.tipoFilter==='todos'||(self.tipoFilter==='ANULADO'?v.estado==='ANULADO':v.tipo===self.tipoFilter&&v.estado!=='ANULADO');
       var q           = (self.searchTerm||'').toLowerCase();
-      var cli         = (DB.clientes||[]).find(function(c){return c.id===v.cliente_id;});
+      var cli         = (DB.clientes||[]).find(function(c){return String(c.id)===String(v.cliente_id);});
       var matchSearch = !q||
         (v.numero||'').includes(q)||(v.serie||'').includes(q)||
         ((cli&&cli.nombre)||'').toLowerCase().includes(q)||
