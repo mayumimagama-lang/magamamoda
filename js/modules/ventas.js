@@ -160,6 +160,8 @@ const VentasModule = {
               '<button onclick="VentasModule.imprimir('+v.id+')" title="Imprimir" style="width:30px;height:30px;border-radius:7px;border:none;background:#f5f3ff;color:#7c3aed;cursor:pointer;font-size:12px;"><i class="fas fa-print"></i></button>' +
               (v.estado!=='ACEPTADO'&&v.estado!=='ANULADO' ?
                 '<button onclick="VentasModule.enviarSunat('+v.id+')" title="Enviar SUNAT" style="width:30px;height:30px;border-radius:7px;border:none;background:#f0fdf4;color:#16a34a;cursor:pointer;font-size:12px;"><i class="fas fa-paper-plane"></i></button>' : '') +
+              (v.estado==='ENVIADO' ?
+                '<button onclick="VentasModule.verificarEstadoSunat('+v.id+')" title="Verificar Estado" style="width:30px;height:30px;border-radius:7px;border:none;background:#eff6ff;color:#2563eb;cursor:pointer;font-size:12px;"><i class="fas fa-sync-alt"></i></button>' : '') +
               (v.estado!=='ANULADO' ?
                 '<button onclick="VentasModule.anular('+v.id+')" title="Anular" style="width:30px;height:30px;border-radius:7px;border:none;background:#fef2f2;color:#dc2626;cursor:pointer;font-size:12px;"><i class="fas fa-ban"></i></button>' : '') +
             '</div>' +
@@ -902,6 +904,8 @@ this.montoPago       = v.monto_pago || v.total;
     var venta={
       id:Date.now(), fecha, hora, serie, numero, tipo:tipoCorto,
       cliente_id:this.selectedCliente.id,
+      cliente_nombre:this.selectedCliente.nombre||'',
+      cliente_doc:this.selectedCliente.doc||'',
       items:this.currentItems.map(function(i){return{prod_id:i.prod_id,nombre:i.nombre,qty:i.qty,precio:i.precio,total:i.total};}),
       subtotal:total, igv:0, total,
       tc:DB.empresa.tipoCambio||3.467, moneda:'SOLES', estado:'NO_ENVIADO',
@@ -1147,8 +1151,8 @@ this.montoPago       = v.monto_pago || v.total;
         '<span style="padding:5px 14px;border-radius:20px;font-size:12px;font-weight:800;background:'+est.bg+';color:'+est.c+';">'+v.estado+'</span>' +
       '</div>' +
       '<div style="background:var(--gray-50);border-radius:10px;padding:12px;margin-bottom:14px;">' +
-        '<div style="font-size:13px;font-weight:800;">'+(cli?cli.nombre:'N/A')+'</div>' +
-        '<div style="font-size:11px;color:var(--gray-400);">'+(cli?cli.tipo+': '+cli.doc:'')+'</div>' +
+        '<div style="font-size:13px;font-weight:800;">'+(cli?cli.nombre:(v.cliente_nombre||'N/A'))+'</div>' +
+        '<div style="font-size:11px;color:var(--gray-400);">'+(cli?cli.tipo+': '+cli.doc:(v.cliente_doc?'DOC: '+v.cliente_doc:''))+'</div>' +
       '</div>' +
       '<div style="border:1px solid var(--gray-200);border-radius:10px;overflow:hidden;margin-bottom:14px;">' +
         '<table style="width:100%;border-collapse:collapse;">' +
@@ -1356,7 +1360,7 @@ async _buildTicketPDF(v) {
   },
 
   _buildApiSunatPayload(venta) {
-    var cli = (DB.clientes||[]).find(function(c){return c.id===venta.cliente_id;});
+    var cli = (DB.clientes||[]).find(function(c){return String(c.id)===String(venta.cliente_id);});
     var numDocCli = '00000000', nombreCli = '---', schemeIdCli = '1';
     if(cli && cli.doc !== '00000000'){
       numDocCli   = cli.doc;
@@ -1477,7 +1481,11 @@ async _buildTicketPDF(v) {
   }
   App.toast('⏳ Enviando a SUNAT...','info');
   try {
-    var cli = (DB.clientes||[]).find(function(c){return c.id===venta.cliente_id;});
+    var cli = (DB.clientes||[]).find(function(c){return String(c.id)===String(venta.cliente_id);});
+    if(venta.tipo === 'FAC' && (!cli || cli.tipo !== 'RUC' || !cli.doc || cli.doc === '00000000')){
+      App.toast('⚠️ Esta factura no tiene un RUC de cliente válido — SUNAT la rechazará. Edita el comprobante y asigna un cliente con RUC antes de enviar.','error');
+      return;
+    }
     var numDocCli='00000000', nombreCli='---', schemeIdCli='1';
     if(cli && cli.doc !== '00000000'){
       numDocCli=cli.doc; nombreCli=cli.nombre||'---';
@@ -1538,6 +1546,46 @@ async _buildTicketPDF(v) {
   }
   App.renderPage();
 },
+
+  async verificarEstadoSunat(id) {
+    var idx = (DB.ventas||[]).findIndex(function(x){ return Number(x.id)===Number(id); });
+    if(idx < 0){ App.toast('Venta no encontrada','error'); return; }
+    var venta = DB.ventas[idx];
+    if(!venta.sunat_documentId){
+      App.toast('Este comprobante no tiene un documentId de SUNAT registrado','warning');
+      return;
+    }
+    App.toast('⏳ Consultando estado en SUNAT...','info');
+    try {
+      var gasUrl = 'https://script.google.com/macros/s/AKfycbzopc9-UZI3fNvav1c1_Tar52kRy_gom7grN5-q4MdlTOQ6SSvD_BH2CSmTmgW1j_EfXg/exec';
+      var params = new URLSearchParams({
+        accion:       'consultar_estado',
+        documentId:   venta.sunat_documentId,
+        personaId:    '6a07684fa58ab9002977930b',
+        personaToken: 'PRD_hijNQEDhfCDVz79A5al6tInLAh5ABPJ9kQJol6jmj5Xo6V1N21HnleBuEx96JOZ7'
+      });
+      var res = await fetch(gasUrl + '?' + params.toString());
+      if(!res.ok) throw new Error('HTTP ' + res.status);
+      var data = await res.json();
+      if(data.status === 'ACEPTADO'){
+        DB.ventas[idx].estado = 'ACEPTADO';
+        Storage.guardarVentas();
+        SupabaseDB.actualizarVenta(DB.ventas[idx]);
+        App.toast('✅ Confirmado: SUNAT aceptó el comprobante','success');
+      } else if(data.status === 'RECHAZADO' || data.status === 'EXCEPCION'){
+        var msg = (data.faults&&data.faults[0])||data.error||JSON.stringify(data);
+        App.toast('⚠️ SUNAT indica que este comprobante fue RECHAZADO: '+msg+' — revisa y usa "Anular" si corresponde','error');
+      } else if(data.status === 'PENDIENTE'){
+        App.toast('⏳ SUNAT aún no ha confirmado — sigue en cola, intenta en unos minutos','info');
+      } else {
+        App.toast('⚠️ Respuesta inesperada: '+JSON.stringify(data),'error');
+      }
+    } catch(e){
+      App.toast('❌ Error de conexión al verificar estado','error');
+      console.error('Verificar estado error:', e);
+    }
+    App.renderPage();
+  },
 
   // ─────────────────────────────────────────────────────────
   // ANULAR — con modal profesional
@@ -1842,6 +1890,9 @@ async _buildTicketPDF(v) {
     }
     if (esBolFac && v.estado!=='ACEPTADO' && noAnulado) {
       b.push(btn('Enviar a SUNAT','fas fa-paper-plane',VERDE,"App.closeModal();VentasModule.enviarSunat("+v.id+");"));
+    }
+    if (v.estado==='ENVIADO') {
+      b.push(btn('Verificar Estado','fas fa-sync-alt',AZUL,"VentasModule.verificarEstadoSunat("+v.id+");"));
     }
     if (noAnulado) b.push(btn('Anular','fas fa-ban',ROJO,"App.closeModal();VentasModule.anular("+v.id+");"));
     b.push(btn('Convertir a Nuevo CPE','fas fa-exchange-alt',AZUL,"VentasModule.convertirCPE("+v.id+")"));
