@@ -1214,7 +1214,7 @@ this.montoPago       = v.monto_pago || v.total;
       TicketsModule._getCfg(); TicketsModule._abrirVentanaImpresion(TicketsModule._generarTicketHTML(TicketsModule.cfg,venta));
     } else {
       // Fallback básico
-      var cli=(DB.clientes||[]).find(function(c){return c.id===venta.cliente_id;});
+      var cli=(DB.clientes||[]).find(function(c){return String(c.id)===String(venta.cliente_id);});
       var w=window.open('','_blank','width=380,height=600');
       if(!w){App.toast('Activa ventanas emergentes para imprimir','warning');return;}
       var itemsHtml=(venta.items||[]).map(function(i){return '<tr><td>'+i.nombre+'</td><td style="text-align:center;">'+i.qty+'</td><td style="text-align:right;">S/'+i.precio.toFixed(2)+'</td><td style="text-align:right;font-weight:700;">S/'+i.total.toFixed(2)+'</td></tr>';}).join('');
@@ -1598,7 +1598,7 @@ async _buildTicketPDF(v) {
       App.toast('No se puede anular: la caja del '+this.formatFecha(v.fecha)+' ya fue cerrada (arqueo realizado)','error');
       return;
     }
-    var cli=(DB.clientes||[]).find(function(c){return c.id===v.cliente_id;});
+    var cli=(DB.clientes||[]).find(function(c){return String(c.id)===String(v.cliente_id);});
     App.showModal('🚫 Anular Comprobante',
       '<div style="text-align:center;padding:10px;">' +
         '<div style="width:60px;height:60px;border-radius:50%;background:#fef2f2;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;">' +
@@ -1905,7 +1905,7 @@ async _buildTicketPDF(v) {
 
   _enviarCorreo(id) {
     var v=(DB.ventas||[]).find(function(x){return Number(x.id)===Number(id);}); if(!v)return;
-    var cli=(DB.clientes||[]).find(function(c){return c.id===v.cliente_id;});
+    var cli=(DB.clientes||[]).find(function(c){return String(c.id)===String(v.cliente_id);});
     var para=(cli&&cli.email)?cli.email:'';
     var asunto=(DB.empresa.nombre||'MAGAMA')+' — '+v.serie+'-'+v.numero;
     var cuerpo='Hola'+(cli&&cli.nombre?' '+cli.nombre:'')+',\n\n'+
@@ -1916,10 +1916,6 @@ async _buildTicketPDF(v) {
       '¡Gracias por su compra!\n'+(DB.empresa.nombre||'MAGAMA');
     window.location.href='mailto:'+encodeURIComponent(para)+'?subject='+encodeURIComponent(asunto)+'&body='+encodeURIComponent(cuerpo);
     App.toast('📧 Abriendo tu correo...','info');
-  },
-
-  _descargarSunat(id, tipo) {
-    App.toast('La descarga de '+(tipo||'').toUpperCase()+' desde SUNAT necesita un paso extra en el proxy. Te lo armo aparte cuando quieras.','info');
   },
 
   _descargarSunat(id, tipo) {
@@ -1945,8 +1941,9 @@ async _buildTicketPDF(v) {
       var p=(DB.productos||[]).find(function(x){return x.id===it.prod_id;});
       return {prod_id:it.prod_id,codigo:p?p.codigo:'',nombre:it.nombre,imagen:p?(p.imagen||''):'',unidad:p?(p.unidad||'UND'):'UND',precio:it.precio,qty:it.qty,dcto:0,total:it.total};
     });
-    var cli=(DB.clientes||[]).find(function(c){return c.id===v.cliente_id;});
+    var cli=(DB.clientes||[]).find(function(c){return String(c.id)===String(v.cliente_id);});
     if(cli) this.selectedCliente=cli;
+else if(v.cliente_nombre) App.toast('⚠️ No se encontró el cliente original — verifica manualmente antes de procesar','warning');
     this._convertingFromId = id;
     App.toast('📋 Productos copiados. Elige BOLETA o FACTURA arriba y procesa — la Nota de Venta original se anulará sola para no duplicar.','info');
     App.renderPage();
